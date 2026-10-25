@@ -14,6 +14,7 @@ import type {
   UserStorageAccess,
 } from "@/lib/api-types";
 import type { UserRole } from "@/lib/auth/policy";
+import { buildAddStorageCommand } from "@/lib/storage-command";
 import { getConfig, type CmmConfig } from "@/server/config";
 import { getDatabase } from "@/server/db/client";
 import { storageAccess, storages, users } from "@/server/db/schema";
@@ -220,8 +221,19 @@ export async function addInternalRoot(rootInput: string, label: string, createdB
   try {
     rootStats = await stat(rootPath);
     await access(rootPath, constants.R_OK);
-  } catch {
-    throw validationFailed("That folder does not exist or CMM can't read it.");
+  } catch (accessError) {
+    const errorCode = (accessError as NodeJS.ErrnoException).code;
+    if (errorCode === "ENOENT" || errorCode === "ENOTDIR") throw validationFailed("That folder does not exist.");
+    /*
+     * The Linux service runs as the cmm user, which can't enter folders such as a 0750 home;
+     * only `cmm add-storage` (as root) can grant it access.
+     */
+    if (getConfig().mode === "server" && process.platform === "linux") {
+      throw validationFailed("CMM doesn't have permission to open that folder.", {
+        addStorageCommand: buildAddStorageCommand(rootPath, label),
+      });
+    }
+    throw validationFailed("CMM can't open that folder.");
   }
   if (!rootStats.isDirectory()) throw validationFailed("That path is not a folder.");
   const dataDirectory = getConfig().dataDir;

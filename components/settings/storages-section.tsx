@@ -16,11 +16,13 @@ import { SettingsPanel, SettingsPanelFooter } from "@/components/page-sections/s
 import { NameDialog } from "@/components/explorer/dialogs/name-dialog";
 import { announce, announceError } from "@/components/explorer/explorer-context";
 import { FormErrorAlert } from "@/components/security/form-error-alert";
+import { StorageAddErrorBanner, StorageSetupBanner } from "@/components/settings/storage-access-help";
 import type { RegisteredStorage, StorageAccessEntry } from "@/lib/api-types";
 import { ROLE_LABELS } from "@/lib/auth/policy";
 import { ApiError, requestJson } from "@/lib/client/api";
 import { pickFolder, useIsDesktopApp } from "@/lib/client/desktop";
 import { QUERY_KEYS } from "@/lib/client/query-keys";
+import { buildAddStorageCommand } from "@/lib/storage-command";
 import { LoadingSkeleton } from "@/components/primitives/loading-skeleton";
 
 const REGISTRY_QUERY_KEY = ["storages", "registry"] as const;
@@ -31,6 +33,17 @@ function readErrorMessage(requestError: unknown): string {
   if (requestError instanceof ApiError && requestError.code === "STEP_UP_REQUIRED")
     return "The change was not confirmed.";
   return requestError instanceof Error ? requestError.message : "Something went wrong.";
+}
+
+/** An add-storage failure; `command` is set when the server lacks access and `cmm add-storage` would grant it. */
+interface AddStorageError {
+  message: string;
+  command?: string;
+}
+
+function readAddStorageError(requestError: unknown): AddStorageError {
+  const command = requestError instanceof ApiError ? requestError.details?.addStorageCommand : undefined;
+  return { message: readErrorMessage(requestError), command: typeof command === "string" ? command : undefined };
 }
 
 function StorageAccessDialog({ storage, onClose }: { storage: RegisteredStorage; onClose: () => void }) {
@@ -239,7 +252,7 @@ export function StoragesSection({
   const [dialog, setDialog] = useState<StorageDialog>();
   const [newRootPath, setNewRootPath] = useState("");
   const [newRootLabel, setNewRootLabel] = useState("");
-  const [addError, setAddError] = useState<string>();
+  const [addError, setAddError] = useState<AddStorageError>();
   const [visibility, setVisibility] = useState(newDrivesVisibleTo);
   const refreshStorages = () => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.storages() });
   const isDesktop = useIsDesktopApp();
@@ -265,7 +278,7 @@ export function StoragesSection({
       setNewRootLabel("");
       setAddError(undefined);
     },
-    onError: (addRootError) => setAddError(readErrorMessage(addRootError)),
+    onError: (addRootError) => setAddError(readAddStorageError(addRootError)),
     onSettled: refreshStorages,
   });
   const saveVisibility = useMutation({
@@ -288,7 +301,7 @@ export function StoragesSection({
   const submitNewRoot = (submitEvent: FormEvent<HTMLFormElement>) => {
     submitEvent.preventDefault();
     if (!newRootPath.trim() || !newRootLabel.trim()) {
-      setAddError("Enter a folder path and a name.");
+      setAddError({ message: "Enter a folder path and a name." });
       return;
     }
     addStorage.mutate();
@@ -306,6 +319,13 @@ export function StoragesSection({
           <StorageRows storages={internalStorages} onOpen={setDialog} onToggleHidden={toggleHidden} />
         ) : (
           <p className="text-foreground-subtle">No internal storages yet.</p>
+        )}
+        {/* A new server install has at most the default /srv/cmm storage; later the error banner explains. */}
+        {mode === "server" && registryQuery.isSuccess && internalStorages.length <= 1 && !addError?.command && (
+          <StorageSetupBanner
+            className="mt-6"
+            command={buildAddStorageCommand(newRootPath.trim() || "/home/you/notes", newRootLabel.trim() || "Notes")}
+          />
         )}
         <form
           onSubmit={submitNewRoot}
@@ -353,7 +373,7 @@ export function StoragesSection({
             Add storage
           </Button>
         </form>
-        <FormErrorAlert message={addError} className="mt-3" />
+        <StorageAddErrorBanner message={addError?.message} command={addError?.command} className="mt-3" />
       </SettingsPanel>
 
       <SettingsPanel title="External drives">
