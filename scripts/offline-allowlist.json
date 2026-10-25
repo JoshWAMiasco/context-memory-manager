@@ -52,6 +52,16 @@
       "urlPattern": "^https?://"
     },
     {
+      "reason": "node-pty (terminals): Windows API, man page and GNU screen doc links in comments. Server-only; the runtime offline guard blocks network use regardless",
+      "files": "standalone/**node_modules/node-pty/**",
+      "urlPattern": "^https?://"
+    },
+    {
+      "reason": "ws (terminal sockets): link to the C source its UTF-8 validator was ported from, in a comment. Server-only; the runtime offline guard blocks network use regardless",
+      "files": "standalone/**node_modules/ws/**",
+      "urlPattern": "^https://www\\.cl\\.cam\\.ac\\.uk/"
+    },
+    {
       "reason": "archiver (zip downloads): API doc links in comments. Server-only; the runtime offline guard blocks network use regardless",
       "files": "standalone/**node_modules/archiver*/**",
       "urlPattern": "^https?://"

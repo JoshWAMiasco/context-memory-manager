@@ -8,7 +8,8 @@
  *   node/       the Node 22 runtime for the target (bin/node), from vendor/node, checked against the
  *               pinned vendor/node/SHASUMS256.txt
  *   bin/cmm     starts app/cli.js with node/bin/node
- *   deploy/     cmm.service, the udisks2 polkit rules, config.example.json, Caddyfile.example
+ *   deploy/     cmm.service, the udisks2 polkit rules, config.example.json, Caddyfile.example,
+ *               nginx-tailscale.conf.example
  *   install.sh  uninstall.sh  README-INSTALL.txt  VERSION  ARCH  BUILD-INFO.txt
  *   docs/       CMM-Server-Guide.pdf, when `npm run docs:pdf` has built it (dist/docs)
  *
@@ -166,6 +167,13 @@ function prepareNativeModules(
   const prebuildsDirectory = path.join(modulesDirectory, "better-sqlite3", "prebuilds");
   for (const prebuild of readdirSync(prebuildsDirectory)) {
     if (prebuild !== `linux-${arch}.node`) rmSync(path.join(prebuildsDirectory, prebuild));
+  }
+  // node-pty's prebuilds are for macOS and Windows; Linux loads build/Release/pty.node from `npm install`.
+  const ptyPrebuildsDirectory = path.join(modulesDirectory, "node-pty", "prebuilds");
+  if (existsSync(ptyPrebuildsDirectory)) {
+    for (const prebuild of readdirSync(ptyPrebuildsDirectory)) {
+      if (prebuild !== `linux-${arch}`) rmSync(path.join(ptyPrebuildsDirectory, prebuild), { recursive: true });
+    }
   }
   const scopeDirectory = path.join(modulesDirectory, "@node-rs");
   for (const scopedPackage of readdirSync(scopeDirectory)) {
@@ -325,6 +333,7 @@ function packageServer(): void {
     "50-cmm-udisks.pkla",
     "config.example.json",
     "Caddyfile.example",
+    "nginx-tailscale.conf.example",
   ]) {
     copyFileSync(path.join(deploySource, deployFile), path.join(packageDirectory, "deploy", deployFile));
   }

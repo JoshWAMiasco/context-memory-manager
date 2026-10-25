@@ -361,7 +361,11 @@ async function findMarkerPages(pdfBytes: Buffer): Promise<Map<string, number>> {
   const pages = new Map<string, number>();
   for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
     const textContent = await (await document.getPage(pageNumber)).getTextContent();
-    const pageText = textContent.items.map((item) => ("str" in item ? item.str : "")).join("");
+    // Without whitespace: some Chromium builds space out the letters of the 1px markers ("c m m m a r k 1 x").
+    const pageText = textContent.items
+      .map((item) => ("str" in item ? item.str : ""))
+      .join("")
+      .replaceAll(/\s+/g, "");
     for (const match of pageText.matchAll(/cmmmark\d+x/g)) {
       if (!pages.has(match[0])) pages.set(match[0], pageNumber);
     }

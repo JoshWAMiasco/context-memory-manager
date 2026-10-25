@@ -1,4 +1,6 @@
 import "server-only";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import systemInformation from "systeminformation";
 import type { Drive, DriveProvider } from "@/server/storage/drives/provider";
 
@@ -189,8 +191,65 @@ export function classifyDrives(
   return [...drivesById.values()];
 }
 
+const runFile = promisify(execFile);
+
+/** One device of `lsblk -J`: older util-linux prints sizes and flags as strings, newer as numbers and booleans. */
+interface LsblkDevice {
+  name: string;
+  type: string;
+  size?: number | string | null;
+  fstype?: string | null;
+  mountpoint?: string | null;
+  uuid?: string | null;
+  rm?: boolean | string | null;
+  tran?: string | null;
+  serial?: string | null;
+  label?: string | null;
+  model?: string | null;
+}
+
+/** Turns `lsblk -bJlo NAME,TYPE,SIZE,FSTYPE,MOUNTPOINT,UUID,RM,TRAN,SERIAL,LABEL,MODEL` output into block devices. */
+export function parseLsblkJson(output: string): BlockDeviceInfo[] {
+  const { blockdevices: devices = [] } = JSON.parse(output) as { blockdevices?: LsblkDevice[] };
+  // lsblk reports the bus (TRAN) on the disk only; a partition takes its disk's.
+  const transportsByDisk = new Map(devices.map((device) => [device.name, device.tran]));
+  return devices.map((device) => ({
+    name: device.name,
+    type: device.type,
+    fsType: device.fstype ?? "",
+    mount: device.mountpoint ?? "",
+    size: Number(device.size) || 0,
+    uuid: device.uuid ?? undefined,
+    label: device.label ?? undefined,
+    model: device.model?.trim() ?? undefined,
+    serial: device.serial ?? undefined,
+    removable: device.rm === true || device.rm === "1",
+    protocol: device.tran ?? transportsByDisk.get(readParentDiskName(device.name)) ?? undefined,
+  }));
+}
+
 /**
- * Lists drives through `systeminformation`. `fsSize()` is cheap (one `df`) and runs on every poll;
+ * Lists Linux block devices with `lsblk`, its output going through a pipe. Ubuntu's AppArmor
+ * profile for lsblk (/etc/apparmor.d/lsblk, seen on Ubuntu 26.04) closes a stdout that is a file
+ * or a socket, and Node gives child processes socket stdio, so `systeminformation.blockDevices()`
+ * gets no output there and finds no drives. A shell pipe (`| cat`) is allowed.
+ */
+async function readLinuxBlockDevices(): Promise<BlockDeviceInfo[]> {
+  try {
+    const { stdout } = await runFile(
+      "/bin/sh",
+      ["-c", "lsblk -bJlo NAME,TYPE,SIZE,FSTYPE,MOUNTPOINT,UUID,RM,TRAN,SERIAL,LABEL,MODEL | cat"],
+      { env: { ...process.env, LC_ALL: "C" }, maxBuffer: 4 * 1024 * 1024 },
+    );
+    if (stdout.trim() !== "") return parseLsblkJson(stdout);
+  } catch (lsblkError) {
+    console.warn("[cmm] lsblk failed, reading drives through systeminformation", lsblkError);
+  }
+  return (await systemInformation.blockDevices()) as BlockDeviceInfo[];
+}
+
+/**
+ * Lists drives through `systeminformation` (and `lsblk` on Linux). `fsSize()` is cheap (one `df`) and runs on every poll;
  * `blockDevices()` is slow (about a second on macOS, more on Windows), so it is re-read only when
  * the set of mounts changes, or every 30 seconds to notice drives that are plugged in but not
  * mounted.
@@ -211,7 +270,10 @@ export class SystemDriveProvider implements DriveProvider {
       now - this.cachedBlockDevices.readAt > BLOCK_DEVICE_REFRESH_MILLISECONDS
     ) {
       this.cachedBlockDevices = {
-        devices: (await systemInformation.blockDevices()) as BlockDeviceInfo[],
+        devices:
+          process.platform === "linux"
+            ? await readLinuxBlockDevices()
+            : ((await systemInformation.blockDevices()) as BlockDeviceInfo[]),
         readAt: now,
         mountKey,
       };
