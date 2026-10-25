@@ -5,9 +5,12 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { ApiRouteError } from "@/server/http/api-error";
 import { getJobQueue } from "@/server/jobs/queue";
+import { closeProtectionWatchesIn, syncProtectionWatches } from "@/server/protection/tamper";
+import { markStorageEjecting } from "@/server/storage/drives/ejecting";
 import type { Drive } from "@/server/storage/drives/provider";
 import { readParentDiskName } from "@/server/storage/drives/system-provider";
 import { closeStorageWatchers } from "@/server/storage/watcher";
+import { closeVersioningWatchesIn, syncVersioningWatches } from "@/server/versioning/external-snapshots";
 
 const runFile = promisify(execFile);
 
@@ -73,14 +76,33 @@ async function runDriveCommands(commands: readonly DriveCommand[]): Promise<void
   }
 }
 
-/** Ejects a drive, refusing with `DRIVE_BUSY` while a job uses it. Its watchers close first. */
+/**
+ * Ejects a drive, refusing with `DRIVE_BUSY` while a job uses it. Every watcher on it closes
+ * first (open folders, versioned folders and protected folders), because each holds the files it
+ * watches open and the system refuses to eject a drive with open files; none may start until the
+ * eject is over. When the system refuses anyway, the versioning and protection watchers come back.
+ */
 export async function ejectDrive(drive: Drive, storageId: string): Promise<void> {
   if (getJobQueue().isVolumeBusy(storageId)) {
     throw new ApiRouteError(409, "DRIVE_BUSY", "A copy or move is still using this drive. Wait for it or cancel it.");
   }
   const commands = buildEjectCommands(process.platform, drive);
-  await closeStorageWatchers(storageId);
-  await runDriveCommands(commands);
+  markStorageEjecting(storageId, true);
+  try {
+    await Promise.all([
+      closeStorageWatchers(storageId),
+      closeVersioningWatchesIn(storageId),
+      closeProtectionWatchesIn(storageId),
+    ]);
+    await runDriveCommands(commands);
+  } catch (ejectError) {
+    markStorageEjecting(storageId, false);
+    await Promise.all([syncVersioningWatches(), syncProtectionWatches()]).catch((syncError: unknown) =>
+      console.warn("[cmm] could not watch the drive again after a failed eject", syncError),
+    );
+    throw ejectError;
+  }
+  markStorageEjecting(storageId, false);
 }
 
 /** Mounts a drive with udisks2, when it is installed. */

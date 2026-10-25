@@ -6,6 +6,7 @@ import { effectiveState } from "@/server/meta/effective";
 import { getGlobalSingleton } from "@/server/runtime/global-singleton";
 import { areTestHooksEnabled } from "@/server/runtime/test-hooks";
 import { isHiddenCmmName } from "@/server/security/path-jail";
+import { isStorageEjecting } from "@/server/storage/drives/ejecting";
 import { findActiveStorage } from "@/server/storage/roots";
 import { joinStoragePath } from "@/server/storage/storage-path";
 import { commitScopeChanges, hasPendingAutocommit, wasWrittenByApp } from "@/server/versioning/autocommit";
@@ -111,13 +112,16 @@ async function closeWatch(scopeWatch: ScopeWatch): Promise<void> {
   await scopeWatch.watcher.close();
 }
 
-/** Watches every indexed versioned folder on a mounted storage, and stops watching the rest. */
+/**
+ * Watches every indexed versioned folder on a mounted storage, and stops watching the rest. A drive
+ * being ejected counts as unmounted.
+ */
 export async function syncVersioningWatches(): Promise<void> {
   const watches = getState().watches;
   const wanted = new Map<string, { row: VersionedScopeRow; rootPath: string; absolutePath: string }>();
   for (const row of listVersionedScopeRows()) {
     const storage = findActiveStorage(row.storageId);
-    if (!storage?.available) continue;
+    if (!storage?.available || isStorageEjecting(storage.id)) continue;
     const absolutePath = row.path === "" ? storage.rootPath : joinStoragePath(storage.rootPath, ...row.path.split("/"));
     if (!(await readVersioning(absolutePath))?.enabled) {
       forgetVersionedScope(row.storageId, row.path);
@@ -132,6 +136,16 @@ export async function syncVersioningWatches(): Promise<void> {
   }
   for (const [watchKey, { row, rootPath, absolutePath }] of wanted) {
     if (!watches.has(watchKey)) watches.set(watchKey, watchScope(row, rootPath, absolutePath));
+  }
+}
+
+/** Stops watching the versioned folders of one storage (before its drive is ejected). */
+export async function closeVersioningWatchesIn(storageId: string): Promise<void> {
+  const watches = getState().watches;
+  for (const [watchKey, scopeWatch] of watches) {
+    if (scopeWatch.row.storageId !== storageId) continue;
+    watches.delete(watchKey);
+    await closeWatch(scopeWatch);
   }
 }
 

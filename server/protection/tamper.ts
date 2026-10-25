@@ -13,6 +13,7 @@ import { isScopeBusy, listProtectedScopes, type ProtectedScopeRow } from "@/serv
 import { getGlobalSingleton } from "@/server/runtime/global-singleton";
 import { isHiddenCmmName } from "@/server/security/path-jail";
 import type { BackgroundService } from "@/server/services";
+import { isStorageEjecting } from "@/server/storage/drives/ejecting";
 import { findActiveStorage } from "@/server/storage/roots";
 import { joinStoragePath } from "@/server/storage/storage-path";
 
@@ -112,13 +113,16 @@ function watchScope(row: ProtectedScopeRow, absolutePath: string): ScopeWatch {
   return scopeWatch;
 }
 
-/** Watches every indexed protected folder and file on a mounted storage, and stops watching the rest. */
+/**
+ * Watches every indexed protected folder and file on a mounted storage, and stops watching the
+ * rest. A drive being ejected counts as unmounted.
+ */
 export async function syncProtectionWatches(): Promise<void> {
   const scopeWatches = getScopeWatches();
   const wanted = new Map<string, { row: ProtectedScopeRow; absolutePath: string }>();
   for (const row of listProtectedScopes()) {
     const storage = findActiveStorage(row.storageId);
-    if (!storage?.available) continue;
+    if (!storage?.available || isStorageEjecting(storage.id)) continue;
     wanted.set(toWatchKey(row), {
       row,
       absolutePath: row.path === "" ? storage.rootPath : joinStoragePath(storage.rootPath, ...row.path.split("/")),
@@ -132,6 +136,17 @@ export async function syncProtectionWatches(): Promise<void> {
   }
   for (const [watchKey, { row, absolutePath }] of wanted) {
     if (!scopeWatches.has(watchKey)) scopeWatches.set(watchKey, watchScope(row, absolutePath));
+  }
+}
+
+/** Stops watching the protected folders and files of one storage (before its drive is ejected). */
+export async function closeProtectionWatchesIn(storageId: string): Promise<void> {
+  const scopeWatches = getScopeWatches();
+  for (const [watchKey, scopeWatch] of scopeWatches) {
+    if (scopeWatch.row.storageId !== storageId) continue;
+    scopeWatches.delete(watchKey);
+    clearTimeout(scopeWatch.flushTimer);
+    await scopeWatch.watcher.close();
   }
 }
 

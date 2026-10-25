@@ -3,6 +3,7 @@ import path from "node:path";
 import chokidar, { type FSWatcher } from "chokidar";
 import { getEventBus } from "@/server/events/bus";
 import { getGlobalSingleton } from "@/server/runtime/global-singleton";
+import { isStorageEjecting } from "@/server/storage/drives/ejecting";
 import { isHiddenCmmName, joinRelativePath, resolveInStorage } from "@/server/security/path-jail";
 import type { ActiveStorage } from "@/server/storage/roots";
 
@@ -48,9 +49,10 @@ function scheduleFlush(directoryWatch: DirectoryWatch): void {
  * Watches one folder (not its subfolders) and emits `fs.changed` for changes made outside CMM
  *. Watches are shared and counted: each subscriber gets an unsubscribe function, and the
  * watcher closes when the last one leaves. Changes are batched for 300 ms; `.cmm*` and `.git` are
- * ignored.
+ * ignored. A drive being ejected isn't watched (the subscription does nothing).
  */
 export async function subscribeToDirectory(storage: ActiveStorage, relativePath: string): Promise<() => Promise<void>> {
+  if (isStorageEjecting(storage.id)) return async () => undefined;
   const resolvedPath = await resolveInStorage(storage, relativePath);
   const watchKey = toWatchKey(storage.id, resolvedPath.relativePath);
   const registry = getWatchRegistry();
