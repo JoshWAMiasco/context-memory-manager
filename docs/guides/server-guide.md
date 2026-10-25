@@ -1175,6 +1175,34 @@ Terminals**, which asks for the admin's password.
 A terminal is a shell on the server, running as the `cmm` service user, inside the limits of its systemd service. Anyone
 who can open one can do anything that user can, so only admins can open terminals. Leave them off unless you need them.
 
+## Agent CLIs on a server
+
+Because a terminal runs as `cmm`, it doesn't see the tools installed for your own account: `claude` in a CMM terminal
+says `command not found` even when it works in your desktop terminal. Install the agent once for the `cmm` user, whose
+home is `/var/lib/cmm`. For Claude Code, run on the server:
+
+```
+sudo -u cmm -H bash -c 'curl -fsSL https://claude.ai/install.sh | bash'
+sudo -u cmm -H bash -c 'echo "export PATH=\"\$HOME/.local/bin:\$PATH\"" >> ~/.profile'
+```
+
+The first line installs `claude` in `/var/lib/cmm/.local/bin`, where the service may write, so its own updates work.
+The second puts that folder on the PATH of the login shell a terminal starts.
+
+Then open a **new** terminal in CMM (one opened earlier keeps the old PATH), run `claude` and sign in with `/login`: it
+shows a link to open in your browser and a code to paste back. This sign-in belongs to the `cmm` user, separate from
+the one on your own account.
+
+Keep in mind:
+
+- The agent can touch only what `cmm` can: the storages added with `sudo cmm add-storage` and `/var/lib/cmm`.
+- Files it creates are owned by `cmm`; the access `cmm add-storage` set up lets your own account open and edit them.
+- The service blocks namespaces (`RestrictNamespaces=yes`), so Claude Code's sandbox mode doesn't work there.
+  Ordinary use does.
+
+Other agent CLIs follow the same pattern: install them as `cmm` with `sudo -u cmm -H …` into `/var/lib/cmm`, and make
+sure their folder is on the PATH in `/var/lib/cmm/.profile`.
+
 # Users and roles
 
 ## Roles
