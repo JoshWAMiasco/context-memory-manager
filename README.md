@@ -19,8 +19,9 @@
 ![The Drives page: every storage and USB drive as a card, with free space.](docs/guides/assets/screens/drives-dashboard.png)
 
 AI agents and chat tools keep their memory in plain folders: personas, project knowledge, scratchpads, notes,
-datasets. CMM gives those folders a proper home. Browse and edit them in one app, mark folders as memories, lock or
-encrypt the sensitive ones, keep a history of every change, and back everything up to a USB stick or external drive.
+datasets. CMM gives those folders a proper home. Browse and edit them in one app, mark folders as memories, run any
+agent CLI (Claude Code, Gemini CLI, Codex…) right inside them, lock or encrypt the sensitive ones, keep a history of
+every change, and back everything up to a USB stick or external drive, ready to clone onto another computer.
 Nothing leaves your machine: there is no account, no cloud and no telemetry.
 
 CMM runs two ways:
@@ -93,11 +94,17 @@ running transfer.
 |---|---|
 | ![The backup page with the computer and its drives.](docs/guides/assets/screens/backup-idle.png) | ![A backup in progress.](docs/guides/assets/screens/backup-transfer.png) |
 
+![Backing up two memories into a new memory on a USB drive.](docs/guides/assets/screens/backup-to-memory.png)
+
 ### Terminals
 
-Open a terminal in any folder or memory to run commands, Git, or command-line agents such as Claude Code. Terminals
-dock along the bottom of the window like chat windows: open several, minimize, resize, and pick up where you left off
-after a reload. Admins only; on a server they stay off until an admin turns them on.
+**Run any agent CLI you like, right inside a memory**: Claude Code, Gemini CLI, Codex, opencode, Aider, or your own
+scripts and Git. Open a terminal on a folder or memory and it starts there, with your own shell, PATH and tools, so the
+agent reads and writes that memory directly. Terminals dock along the bottom of the window like chat windows: keep
+several open at once (one per agent or memory), minimize them (a dot shows new output), resize them, and pick up where
+you left off after a reload. Admins only; on a server they stay off until an admin turns them on.
+
+![Claude Code, Gemini CLI and opencode in a memory's terminal, with two more terminals minimized.](docs/guides/assets/screens/terminals.png)
 
 ### Users and security
 

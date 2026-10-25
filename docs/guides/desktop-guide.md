@@ -390,7 +390,7 @@ If you save while the file has changed on disk, CMM says the file **changed on d
 This chapter covers everyday tasks: creating, renaming, moving, copying, uploading and downloading. Most of them are
 in the right-click menu of the file tree.
 
-![The right-click menu of a file in the tree.](assets/screens/explorer-context-menu.png)
+![The right-click menu of a memory in the tree.](assets/screens/explorer-context-menu.png)
 
 ## Creating files and folders
 
@@ -1132,6 +1132,8 @@ a new computer.
 3. Choose the drive and folder to **Create the memory in**, a mode and options, as for any profile.
 4. Click **Save and run**.
 
+![Backing up two memories into a new memory on a USB drive.](assets/screens/backup-to-memory.png)
+
 CMM creates a new memory folder named after the memory, for example **agent-memory** for "Agent memory". One folder's
 files go straight into it. With several folders, each one goes into a folder of its own inside it. Each folder's CMM
 details (memory name, icon and colour, encryption, versioning) go with it. The profile stays in the **Profiles** tab, so
@@ -1177,8 +1179,12 @@ copied, left unchanged or couldn't copy. Click a run for the details, including 
 
 # Terminals
 
-A terminal runs commands in a folder, without leaving CMM: `git`, scripts, or command-line agents such as Claude Code
-(`claude`). Terminals sit along the bottom of the window like chat windows, and you can have several open at once.
+A terminal runs commands in a folder or memory without leaving CMM. Use it to run **any agent CLI you like** right inside
+a memory: Claude Code (`claude`), Gemini CLI (`gemini`), Codex (`codex`), opencode, Aider, or your own scripts and `git`.
+The agent then reads and writes that memory directly. Terminals sit along the bottom of the window like chat windows,
+and you can have several open at once, for example one per agent or memory.
+
+![Claude Code, Gemini CLI and opencode in a memory's terminal, with two more terminals minimized at the bottom.](assets/screens/terminals.png)
 
 ## Opening a terminal
 
@@ -1187,7 +1193,8 @@ A terminal runs commands in a folder, without leaving CMM: `git`, scripts, or co
 - click **Open in terminal** on a folder's or memory's overview.
 
 The terminal starts in that folder, with your usual shell (on a Mac, the one Terminal uses; on Windows, the Command
-Prompt), so the commands you have installed work as they do there.
+Prompt), so the commands and agent CLIs you have installed work as they do there. Type `claude`, `gemini` or another
+agent's command to start it in that memory.
 
 ## Working with terminal windows
 
