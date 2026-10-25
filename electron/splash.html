@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; img-src 'self'; style-src 'unsafe-inline'"
+    />
+    <title>CCM</title>
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        background: #04101a;
+        color: #d8f1ff;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, sans-serif;
+        user-select: none;
+        -webkit-app-region: drag;
+        border: 1px solid #1b3a52;
+        box-sizing: border-box;
+      }
+      img {
+        width: 96px;
+        height: 96px;
+      }
+      h1 {
+        margin: 0;
+        color: #4cc9f0;
+        font-size: 22px;
+        letter-spacing: 0.08em;
+      }
+      p {
+        margin: 0;
+        color: #9ab8cf;
+        font-size: 13px;
+      }
+      .dots::after {
+        display: inline-block;
+        width: 1em;
+        text-align: left;
+        content: "";
+        animation: dots 1.2s steps(4) infinite;
+      }
+      @keyframes dots {
+        0% {
+          content: "";
+        }
+        25% {
+          content: ".";
+        }
+        50% {
+          content: "..";
+        }
+        75% {
+          content: "...";
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .dots::after {
+          animation: none;
+          content: "…";
+        }
+      }
+    </style>
+  </head>
+  <body data-testid="ccm-splash">
+    <img src="logo.svg" alt="" />
+    <h1>CCM</h1>
+    <p>Starting<span class="dots"></span></p>
+  </body>
+</html>

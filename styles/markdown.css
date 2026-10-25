@@ -1,0 +1,317 @@
+/*
+ * Rendered Markdown and the rich Markdown editor: a prose stylesheet built from
+ * the design tokens, plus colours for highlight.js tokens in code blocks.
+ */
+.markdown-body {
+  color: var(--color-foreground);
+  font-size: 0.875rem;
+  line-height: 1.7;
+  overflow-wrap: break-word;
+
+  & > :first-child {
+    margin-top: 0;
+  }
+
+  & > * + * {
+    margin-top: 0.9em;
+  }
+
+  & h1,
+  & h2,
+  & h3,
+  & h4,
+  & h5,
+  & h6 {
+    margin-top: 1.6em;
+    color: var(--color-foreground-strong);
+    font-family: var(--font-display);
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  & h1 {
+    border-bottom: 1px solid var(--color-line);
+    padding-bottom: 0.3em;
+    font-size: 1.85em;
+  }
+
+  & h2 {
+    border-bottom: 1px solid var(--color-line);
+    padding-bottom: 0.25em;
+    font-size: 1.5em;
+  }
+
+  & h3 {
+    font-size: 1.25em;
+  }
+
+  & h4 {
+    font-size: 1.1em;
+  }
+
+  & h5,
+  & h6 {
+    font-size: 1em;
+    color: var(--color-foreground-muted);
+  }
+
+  & a {
+    color: var(--color-brand);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+  }
+
+  & strong {
+    color: var(--color-foreground-strong);
+    font-weight: 700;
+  }
+
+  & ul,
+  & ol {
+    padding-left: 1.6em;
+  }
+
+  & ul {
+    list-style-type: disc;
+  }
+
+  & ul ul {
+    list-style-type: circle;
+  }
+
+  & ul ul ul {
+    list-style-type: square;
+  }
+
+  & ol ol {
+    list-style-type: lower-alpha;
+  }
+
+  & ol {
+    list-style-type: decimal;
+  }
+
+  & li + li,
+  & li > ul,
+  & li > ol {
+    margin-top: 0.25em;
+  }
+
+  & li > p {
+    margin: 0;
+  }
+
+  & ul.contains-task-list,
+  & ul[data-type="taskList"] {
+    list-style-type: none;
+    padding-left: 0.25em;
+  }
+
+  & .task-list-item,
+  & ul[data-type="taskList"] > li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5em;
+  }
+
+  & ul[data-type="taskList"] > li > label {
+    flex: none;
+  }
+
+  & ul[data-type="taskList"] > li > div {
+    flex: 1;
+  }
+
+  & input[type="checkbox"] {
+    margin-top: 0.35em;
+    border-radius: var(--radius-sm);
+    border-color: var(--color-line-strong);
+    background-color: var(--color-field);
+    color: var(--color-brand);
+  }
+
+  & blockquote {
+    border-left: 3px solid var(--color-line-strong);
+    padding-left: 1em;
+    color: var(--color-foreground-muted);
+  }
+
+  & hr {
+    border: 0;
+    border-top: 1px solid var(--color-line-strong);
+  }
+
+  & code {
+    border-radius: var(--radius-sm);
+    background-color: var(--color-surface-strong);
+    padding: 0.1em 0.35em;
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+  }
+
+  & pre {
+    overflow-x: auto;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-md);
+    background-color: var(--color-field);
+    padding: 0.9em 1em;
+    line-height: 1.55;
+  }
+
+  & pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.85em;
+  }
+
+  & table {
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+  }
+
+  & th,
+  & td {
+    border: 1px solid var(--color-line-strong);
+    padding: 0.4em 0.8em;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  & th {
+    background-color: var(--color-surface-muted);
+    color: var(--color-foreground-strong);
+    font-weight: 600;
+  }
+
+  & tr:nth-child(even) td {
+    background-color: color-mix(in srgb, var(--color-surface-muted) 40%, transparent);
+  }
+
+  & img {
+    display: inline-block;
+    max-width: 100%;
+    border-radius: var(--radius-md);
+  }
+
+  & del,
+  & s {
+    color: var(--color-foreground-subtle);
+  }
+}
+
+/* A remote image, replaced by a chip. */
+.markdown-blocked-image {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  border: 1px dashed var(--color-line-strong);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-muted);
+  padding: 0.15em 0.6em;
+  color: var(--color-foreground-subtle);
+  font-size: 0.8em;
+}
+
+/* The rich editor: the same prose, plus ProseMirror's editing states. */
+.markdown-editor-content {
+  min-height: 100%;
+  padding: 1.25rem 1.5rem 4rem;
+  outline: none;
+
+  & p.is-editor-empty:first-child::before {
+    float: left;
+    height: 0;
+    color: var(--color-foreground-faint);
+    content: attr(data-placeholder);
+    pointer-events: none;
+  }
+
+  & .selectedCell::after {
+    position: absolute;
+    inset: 0;
+    background: color-mix(in srgb, var(--color-brand) 18%, transparent);
+    content: "";
+    pointer-events: none;
+  }
+
+  & th,
+  & td {
+    position: relative;
+    min-width: 4em;
+  }
+
+  & .ProseMirror-selectednode {
+    outline: 2px solid var(--color-brand);
+  }
+}
+
+/* highlight.js tokens (rehype-highlight). */
+.markdown-body .hljs-keyword,
+.markdown-body .hljs-selector-tag,
+.markdown-body .hljs-built_in,
+.markdown-body .hljs-doctag {
+  color: var(--color-accent);
+}
+
+.markdown-body .hljs-string,
+.markdown-body .hljs-regexp,
+.markdown-body .hljs-addition,
+.markdown-body .hljs-template-tag {
+  color: var(--color-success);
+}
+
+.markdown-body .hljs-number,
+.markdown-body .hljs-literal,
+.markdown-body .hljs-symbol,
+.markdown-body .hljs-bullet {
+  color: var(--color-pending);
+}
+
+.markdown-body .hljs-comment,
+.markdown-body .hljs-quote {
+  color: var(--color-foreground-faint);
+  font-style: italic;
+}
+
+.markdown-body .hljs-title,
+.markdown-body .hljs-section,
+.markdown-body .hljs-name,
+.markdown-body .hljs-selector-id {
+  color: var(--color-brand);
+}
+
+.markdown-body .hljs-type,
+.markdown-body .hljs-class .hljs-title,
+.markdown-body .hljs-title.class_ {
+  color: var(--color-warning);
+}
+
+.markdown-body .hljs-attr,
+.markdown-body .hljs-attribute,
+.markdown-body .hljs-property,
+.markdown-body .hljs-variable,
+.markdown-body .hljs-params {
+  color: var(--color-info);
+}
+
+.markdown-body .hljs-meta,
+.markdown-body .hljs-selector-class,
+.markdown-body .hljs-selector-pseudo {
+  color: var(--color-foreground-subtle);
+}
+
+.markdown-body .hljs-deletion {
+  color: var(--color-danger);
+}
+
+.markdown-body .hljs-emphasis {
+  font-style: italic;
+}
+
+.markdown-body .hljs-strong {
+  font-weight: 700;
+}

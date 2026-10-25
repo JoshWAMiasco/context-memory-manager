@@ -1,0 +1,18 @@
+// Lets the CCM service account mount, unmount, eject and power off removable drives through
+// udisks2 without a desktop session (polkit 0.106 and later, Ubuntu 24.04). Installed by
+// install.sh as /etc/polkit-1/rules.d/50-ccm-udisks.rules when udisksctl is present.
+polkit.addRule(function (action, subject) {
+  var allowedActions = [
+    "org.freedesktop.udisks2.filesystem-mount",
+    "org.freedesktop.udisks2.filesystem-mount-other-seat",
+    "org.freedesktop.udisks2.filesystem-unmount-others",
+    "org.freedesktop.udisks2.eject-media",
+    "org.freedesktop.udisks2.eject-media-other-seat",
+    "org.freedesktop.udisks2.power-off-drive",
+    "org.freedesktop.udisks2.power-off-drive-other-seat",
+  ];
+  if (subject.user == "ccm" && allowedActions.indexOf(action.id) >= 0) {
+    return polkit.Result.YES;
+  }
+  return polkit.Result.NOT_HANDLED;
+});

@@ -1,0 +1,63 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/forms";
+
+@import "./design-tokens.css";
+@import "./tailwind-version-three-compatibility.css";
+@import "./background-image-utilities.css";
+@import "./component-utilities.css";
+/* Rendered Markdown and the rich Markdown editor . */
+@import "./markdown.css";
+/* The Backup page's topology animations. */
+@import "./backup.css";
+@import "./theme-layout.css";
+@import "./theme-decorations.css";
+
+@theme {
+  --breakpoint-3xl: 100rem;
+}
+
+@utility container {
+  width: 100%;
+  margin-inline: auto;
+  @media (width >= 1320px) {
+    max-width: 1320px;
+  }
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    background-color: var(--color-canvas);
+  }
+
+  html body {
+    font-size: var(--text-sm);
+    line-height: calc(var(--spacing) * 5);
+    font-family: var(--font-body);
+    color: var(--color-foreground);
+    background-color: var(--color-canvas);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"]),
+  select,
+  textarea {
+    background-color: var(--color-field);
+    color: var(--color-foreground);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+  }
+
+  ::selection {
+    color: var(--color-on-primary);
+    background-color: var(--color-primary);
+  }
+}

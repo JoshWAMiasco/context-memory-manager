@@ -1,0 +1,81 @@
+/*
+ * Small component classes the markup relies on: .box (card surface), .box--stacked (card with a
+ * second card peeking out below), .image-fit, .scrollbar-hidden, .typing-dots and .zoom-in.
+ */
+@utility box {
+  position: relative;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-box);
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-box);
+}
+
+@utility box--stacked {
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: calc(var(--spacing) * 3.5);
+    left: calc(var(--spacing) * 3.5);
+    z-index: -1;
+    height: 100%;
+    margin-top: calc(var(--spacing) * 3);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-box);
+    background-color: var(--color-surface-subtle);
+    box-shadow: var(--shadow-xs);
+  }
+}
+
+@layer components {
+  .image-fit {
+    position: relative;
+  }
+
+  .image-fit > img {
+    position: absolute;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .scrollbar-hidden::-webkit-scrollbar {
+    width: 0;
+    background-color: transparent;
+  }
+
+  .typing-dots span {
+    opacity: 0;
+  }
+
+  .typing-dots span:nth-child(1) {
+    animation: typing-dot-blink 1s infinite 0.33333s;
+  }
+
+  .typing-dots span:nth-child(2) {
+    animation: typing-dot-blink 1s infinite 0.66666s;
+  }
+
+  .typing-dots span:nth-child(3) {
+    animation: typing-dot-blink 1s infinite 0.99999s;
+  }
+
+  .zoom-in {
+    cursor: pointer;
+    transition-property: transform, box-shadow;
+    transition-duration: 300ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .zoom-in:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-xl);
+  }
+}
+
+@keyframes typing-dot-blink {
+  50% {
+    opacity: 1;
+  }
+}

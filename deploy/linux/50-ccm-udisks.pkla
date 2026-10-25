@@ -1,0 +1,9 @@
+# The same permissions as 50-ccm-udisks.rules for polkit 0.105 (Ubuntu 22.04), which reads .pkla
+# files instead of JavaScript rules. Installed by install.sh as
+# /etc/polkit-1/localauthority/50-local.d/50-ccm-udisks.pkla when that folder exists.
+[CCM udisks2 drive access]
+Identity=unix-user:ccm
+Action=org.freedesktop.udisks2.filesystem-mount;org.freedesktop.udisks2.filesystem-mount-other-seat;org.freedesktop.udisks2.filesystem-unmount-others;org.freedesktop.udisks2.eject-media;org.freedesktop.udisks2.eject-media-other-seat;org.freedesktop.udisks2.power-off-drive;org.freedesktop.udisks2.power-off-drive-other-seat
+ResultAny=yes
+ResultInactive=yes
+ResultActive=yes

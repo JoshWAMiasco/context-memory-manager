@@ -1,0 +1,28 @@
+/*
+ * Restores the Tailwind CSS v3 defaults the components' class strings were written against, so
+ * they render the same under v4: borders default to the theme's line colour,
+ * placeholders to the subtle text colour, and buttons show a pointer.
+ */
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-line, currentColor);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-foreground-subtle);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  dialog {
+    margin: auto;
+  }
+}

@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 452" font-family="Oxanium, sans-serif" role="img" aria-labelledby="versioning-undo-redo-title">
+  <title id="versioning-undo-redo-title">Versions: each save makes a new version (v1, v2, v3). Undo adds a new version that reverses v3; Redo adds another that brings it back. History is never rewritten, and the folder is a normal Git repository.</title>
+  <defs>
+    <marker id="versioning-undo-redo-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#275070"/>
+    </marker>
+    <marker id="versioning-undo-redo-arrow-violet" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#5b2fb0"/>
+    </marker>
+  </defs>
+
+  <text x="24" y="40" font-size="24" font-weight="700" fill="#0b1f2e">Versions: undo and redo never erase history</text>
+  <text x="24" y="66" font-size="15" fill="#31506a">In a folder with versioning on, every save becomes a new version.</text>
+
+  <!-- timeline -->
+  <path d="M140 230 H918" fill="none" stroke="#275070" stroke-width="3" marker-end="url(#versioning-undo-redo-arrow)"/>
+  <text x="916" y="216" text-anchor="end" font-size="13" fill="#31506a">time</text>
+
+  <!-- undo / redo arcs -->
+  <path d="M650 212 C650 158 520 150 493 214" fill="none" stroke="#5b2fb0" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#versioning-undo-redo-arrow-violet)"/>
+  <text x="590" y="166" text-anchor="middle" font-size="13" font-weight="700" fill="#0b1f2e">takes v3's change out</text>
+  <path d="M820 212 C820 96 480 96 480 210" fill="none" stroke="#5b2fb0" stroke-width="2" stroke-dasharray="2 4" stroke-linecap="round" marker-end="url(#versioning-undo-redo-arrow-violet)"/>
+  <text x="650" y="114" text-anchor="middle" font-size="13" font-weight="700" fill="#0b1f2e">puts v3's change back</text>
+
+  <!-- versions -->
+  <circle cx="180" cy="230" r="16" fill="#b8ebfa" stroke="#153049" stroke-width="2.5"/>
+  <circle cx="180" cy="230" r="5" fill="#153049"/>
+  <text x="180" y="270" text-anchor="middle" font-size="17" font-weight="700" fill="#0b1f2e">v1</text>
+  <text x="180" y="289" text-anchor="middle" font-size="14" fill="#31506a">you save</text>
+  <rect x="124" y="302" width="112" height="44" rx="8" fill="#ffffff" stroke="#275070" stroke-width="1.5"/>
+  <rect x="168" y="313" width="24" height="22" rx="4" fill="#e0f6fd" stroke="#153049" stroke-width="1.2"/>
+  <text x="180" y="329" text-anchor="middle" font-family="'Martian Mono', monospace" font-size="12" fill="#153049">A</text>
+  <circle cx="330" cy="230" r="16" fill="#b8ebfa" stroke="#153049" stroke-width="2.5"/>
+  <circle cx="330" cy="230" r="5" fill="#153049"/>
+  <text x="330" y="270" text-anchor="middle" font-size="17" font-weight="700" fill="#0b1f2e">v2</text>
+  <text x="330" y="289" text-anchor="middle" font-size="14" fill="#31506a">you save</text>
+  <rect x="274" y="302" width="112" height="44" rx="8" fill="#ffffff" stroke="#275070" stroke-width="1.5"/>
+  <rect x="303" y="313" width="24" height="22" rx="4" fill="#e0f6fd" stroke="#153049" stroke-width="1.2"/>
+  <text x="315" y="329" text-anchor="middle" font-family="'Martian Mono', monospace" font-size="12" fill="#153049">A</text>
+  <rect x="333" y="313" width="24" height="22" rx="4" fill="#ddfbef" stroke="#153049" stroke-width="1.2"/>
+  <text x="345" y="329" text-anchor="middle" font-family="'Martian Mono', monospace" font-size="12" fill="#153049">B</text>
+  <circle cx="480" cy="230" r="16" fill="#b8ebfa" stroke="#153049" stroke-width="2.5"/>
+  <circle cx="480" cy="230" r="5" fill="#153049"/>
+  <text x="480" y="270" text-anchor="middle" font-size="17" font-weight="700" fill="#0b1f2e">v3</text>
+  <text x="480" y="289" text-anchor="middle" font-size="14" fill="#31506a">you save</text>
+  <rect x="424" y="302" width="112" height="44" rx="8" fill="#ffffff" stroke="#275070" stroke-width="1.5"/>
+  <rect x="438" y="313" width="24" height="22" rx="4" fill="#e0f6fd" stroke="#153049" stroke-width="1.2"/>
+  <text x="450" y="329" text-anchor="middle" font-family="'Martian Mono', monospace" font-size="12" fill="#153049">A</text>
+  <rect x="468" y="313" width="24" height="22" rx="4" fill="#ddfbef" stroke="#153049" stroke-width="1.2"/>
+  <text x="480" y="329" text-anchor="middle" font-family="'Martian Mono', monospace" font-size="12" fill="#153049">B</text>
+  <rect x="498" y="313" width="24" height="22" rx="4" fill="#fff3d1" stroke="#153049" stroke-width="1.2"/>
+  <text x="510" y="329" text-anchor="middle" font-family="'Martian Mono', monospace" font-size="12" fill="#153049">C</text>
+  <circle cx="650" cy="230" r="17" fill="#d9c4ff" stroke="#153049" stroke-width="2.5"/>
+  <path d="M642 226 H652 a6 6 0 0 1 0 12 H646" fill="none" stroke="#153049" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M646 221 L641 226 L646 231" fill="none" stroke="#153049" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="650" y="270" text-anchor="middle" font-size="17" font-weight="700" fill="#0b1f2e">v4</text>
+  <text x="650" y="289" text-anchor="middle" font-size="14" font-weight="700" fill="#0b1f2e">Undo v3</text>
+  <rect x="594" y="302" width="112" height="44" rx="8" fill="#ffffff" stroke="#275070" stroke-width="1.5"/>
+  <rect x="623" y="313" width="24" height="22" rx="4" fill="#e0f6fd" stroke="#153049" stroke-width="1.2"/>
+  <text x="635" y="329" text-anchor="middle" font-family="'Martian Mono', monospace" font-size="12" fill="#153049">A</text>
+  <rect x="653" y="313" width="24" height="22" rx="4" fill="#ddfbef" stroke="#153049" stroke-width="1.2"/>
+  <text x="665" y="329" text-anchor="middle" font-family="'Martian Mono', monospace" font-size="12" fill="#153049">B</text>
+  <text x="650" y="364" text-anchor="middle" font-size="13" fill="#31506a">same as v2</text>
+  <circle cx="820" cy="230" r="17" fill="#d9c4ff" stroke="#153049" stroke-width="2.5"/>
+  <path d="M828 226 H818 a6 6 0 0 0 0 12 H824" fill="none" stroke="#153049" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M824 221 L829 226 L824 231" fill="none" stroke="#153049" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="820" y="270" text-anchor="middle" font-size="17" font-weight="700" fill="#0b1f2e">v5</text>
+  <text x="820" y="289" text-anchor="middle" font-size="14" font-weight="700" fill="#0b1f2e">Redo v3</text>
+  <rect x="764" y="302" width="112" height="44" rx="8" fill="#ffffff" stroke="#275070" stroke-width="1.5"/>
+  <rect x="778" y="313" width="24" height="22" rx="4" fill="#e0f6fd" stroke="#153049" stroke-width="1.2"/>
+  <text x="790" y="329" text-anchor="middle" font-family="'Martian Mono', monospace" font-size="12" fill="#153049">A</text>
+  <rect x="808" y="313" width="24" height="22" rx="4" fill="#ddfbef" stroke="#153049" stroke-width="1.2"/>
+  <text x="820" y="329" text-anchor="middle" font-family="'Martian Mono', monospace" font-size="12" fill="#153049">B</text>
+  <rect x="838" y="313" width="24" height="22" rx="4" fill="#fff3d1" stroke="#153049" stroke-width="1.2"/>
+  <text x="850" y="329" text-anchor="middle" font-family="'Martian Mono', monospace" font-size="12" fill="#153049">C</text>
+  <text x="820" y="364" text-anchor="middle" font-size="13" fill="#31506a">same as v3</text>
+  <text x="24" y="320" font-size="14" font-weight="700" fill="#0b1f2e">In the file</text>
+  <text x="24" y="338" font-size="13" fill="#31506a">after each step</text>
+
+  <!-- notes -->
+  <rect x="24" y="384" width="440" height="48" rx="12" fill="#f0e8ff" stroke="#275070" stroke-width="1.5"/>
+  <g fill="#153049">
+    <circle cx="48" cy="408" r="5"/><circle cx="64" cy="408" r="5"/><circle cx="80" cy="408" r="5"/>
+  </g>
+  <path d="M48 408 H80" stroke="#153049" stroke-width="2"/>
+  <text x="98" y="413" font-size="14" fill="#0b1f2e"><tspan font-weight="700">History is never rewritten:</tspan> every step adds a version.</text>
+  <rect x="484" y="384" width="452" height="48" rx="12" fill="#e0f6fd" stroke="#275070" stroke-width="1.5"/>
+  <g fill="none" stroke="#153049" stroke-width="2" stroke-linecap="round">
+    <path d="M506 398 V420 M506 404 C506 412 524 406 524 414"/>
+  </g>
+  <g fill="#ffffff" stroke="#153049" stroke-width="2">
+    <circle cx="506" cy="397" r="3.5"/><circle cx="506" cy="421" r="3.5"/><circle cx="524" cy="401" r="3.5"/>
+  </g>
+  <text x="542" y="413" font-size="14" fill="#0b1f2e"><tspan font-weight="700">A normal Git repository:</tspan> any Git tool can read it.</text>
+</svg>

@@ -1,0 +1,4 @@
+icons: vscode-icons 13.0.0 (VS Code extension)
+mapping: vscode-icons-js 11.6.1
+copied: 871
+missing in the source (fall back to the default icons): _opened.svg, drawio.svg, file_type_light_zeit.svg, file_type_makefile.svg, file_type_slang.svg, file_type_webp.svg, file_type_zeit.svg

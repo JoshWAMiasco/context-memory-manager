@@ -1,0 +1,95 @@
+# Desktop installers. Built by `npm run build:desktop` (scripts/build-desktop.ts), which
+# prepares dist/electron (main process, the app.asar contents) and dist/app (the CCM server) first.
+# Nothing here publishes or updates over the network.
+appId: app.ccm.desktop # Changing it moves the app's userData folder.
+productName: CCM
+copyright: Copyright © 2026 Joshua Miasco
+electronVersion: 45.0.0
+
+directories:
+  app: dist/electron
+  output: dist/desktop
+  buildResources: build
+
+asar: true
+# app.asar holds dist/electron only. With no dependencies there, electron-builder would fall back to
+# the project's node_modules; the main process is one bundled file and needs none of them.
+files:
+  - "**/*"
+  - "!**/*.map"
+  - "!node_modules{,/**/*}"
+
+# The server runs from real files next to app.asar, not from inside it: resources/app-server is
+# dist/app (entry.js, the Next standalone output, its node_modules with the native modules and the
+# trash helpers), and resources/docs holds the PDF guides.
+extraResources:
+  # No tsconfig.json: the server never reads it, and one inside dist/desktop gets traced into the
+  # next `npm run build` (Next's tracer matches tsconfig.json files anywhere in the project).
+  - from: dist/app
+    to: app-server
+    filter:
+      - "**/*"
+      - "!**/*.map"
+      - "!tsconfig.json"
+  # electron-builder always drops a node_modules folder at the root of a copy, so it gets its own entry.
+  # Only this platform's better-sqlite3 prebuild; no sharp (images are unoptimized, Next never loads it).
+  - from: dist/app/node_modules
+    to: app-server/node_modules
+    filter:
+      - "**/*"
+      - "!**/*.map"
+      - "!better-sqlite3/prebuilds/!(${platform}-${arch}).node"
+      - "!sharp{,/**/*}"
+      - "!@img{,/**/*}"
+  - from: dist/resources/docs
+    to: docs
+    filter:
+      - "*.pdf"
+
+# Native modules are N-API prebuilds (better-sqlite3, @node-rs/argon2): nothing to rebuild for Electron.
+npmRebuild: false
+nodeGypRebuild: false
+buildDependenciesFromSource: false
+publish: null
+
+afterSign: build/notarize.cjs
+
+mac:
+  target:
+    - target: dmg
+  category: public.app-category.productivity
+  icon: build/icon.icns
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: electron/entitlements.mac.plist
+  entitlementsInherit: electron/entitlements.mac.plist
+  # Notarization runs in build/notarize.cjs, only when APPLE_ID and APPLE_TEAM_ID are set.
+  notarize: false
+
+dmg:
+  title: CCM ${version}
+  artifactName: CCM-${version}-${arch}.dmg
+
+win:
+  target:
+    - target: nsis
+  icon: build/icon.ico
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createStartMenuShortcut: true
+  createDesktopShortcut: true
+  shortcutName: CCM
+  artifactName: CCM-Setup-${version}-${arch}.exe
+
+linux:
+  target:
+    - target: AppImage
+    - target: deb
+  category: Utility
+  icon: build/icons
+  synopsis: Offline file manager for LLM context, memories and private files
+  maintainer: CCM <ccm@localhost>
+  artifactName: CCM-${version}-${arch}.${ext}

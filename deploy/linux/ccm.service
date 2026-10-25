@@ -1,0 +1,48 @@
+# CCM (Context Memory Manager) server, installed by install.sh as /etc/systemd/system/ccm.service.
+# Storage roots are opened to the service by the drop-in ccm.service.d/storage.conf, which
+# `ccm add-storage` and `ccm remove-storage` regenerate. The ccm user is in plugdev (when that
+# group exists) through its own group list, so no SupplementaryGroups= line is needed here.
+[Unit]
+Description=CCM Context Memory Manager
+After=network-online.target udisks2.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ccm
+Group=ccm
+Environment=CCM_MODE=server CCM_CONFIG=/etc/ccm/config.json CCM_DATA_DIR=/var/lib/ccm NODE_ENV=production NEXT_TELEMETRY_DISABLED=1
+ExecStart=/opt/ccm/current/node/bin/node /opt/ccm/current/app/entry.js
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=20
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=yes
+# lsblk and udisks need to see the block devices.
+PrivateDevices=no
+ReadWritePaths=/var/lib/ccm
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+CapabilityBoundingSet=
+AmbientCapabilities=
+KeyringMode=private
+RemoveIPC=yes
+UMask=0027
+
+[Install]
+WantedBy=multi-user.target

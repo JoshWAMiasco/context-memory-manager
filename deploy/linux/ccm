@@ -1,0 +1,5 @@
+#!/bin/sh
+# The ccm admin CLI, started with the Node runtime bundled in this package. /usr/local/bin/ccm
+# links here, so the link is resolved first to find the package folder.
+here="$(dirname "$(readlink -f "$0")")"
+exec "$here/../node/bin/node" "$here/../app/cli.js" "$@"

@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" font-family="Oxanium, sans-serif" role="img" aria-labelledby="architecture-server-title">
+  <title id="architecture-server-title">CCM on a server: browsers on your network (and, optionally, from outside) reach the CCM service directly or through an HTTPS proxy. The service works on the storages and keeps its config and database on the server. The admin uses the ccm command over SSH.</title>
+  <defs>
+    <marker id="architecture-server-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#275070"/>
+    </marker>
+    <symbol id="architecture-server-folder" viewBox="0 0 38 30">
+      <path d="M1 5 a3 3 0 0 1 3 -3 h10 l4 4 h16 a3 3 0 0 1 3 3 v17 a3 3 0 0 1 -3 3 h-30 a3 3 0 0 1 -3 -3 z" fill="#a8f5d5" stroke="#275070" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M1 11 H37" stroke="#275070" stroke-width="1.5"/>
+    </symbol>
+  </defs>
+
+  <!-- title -->
+  <text x="24" y="40" font-size="24" font-weight="700" fill="#0b1f2e">CCM on a server</text>
+  <text x="24" y="66" font-size="15" fill="#31506a">One CCM service on your server. People open it in a web browser.</text>
+
+  <!-- your network -->
+  <rect x="20" y="88" width="190" height="248" rx="12" fill="#edf2ff" stroke="#275070" stroke-width="1.5"/>
+  <text x="115" y="112" text-anchor="middle" font-size="14" font-weight="700" fill="#0b1f2e">Your network (LAN)</text>
+  <g stroke="#275070" stroke-width="2" stroke-linejoin="round">
+    <rect x="83" y="128" width="64" height="42" rx="3" fill="#ffffff"/>
+    <path d="M83 138 H147" fill="none"/>
+    <path d="M74 176 H156 L151 170 H79 Z" fill="#c9d8ff"/>
+    <rect x="102" y="214" width="26" height="46" rx="5" fill="#ffffff"/>
+    <path d="M102 224 H128" fill="none" stroke-width="1.5"/>
+  </g>
+  <g fill="#275070"><circle cx="89" cy="133" r="1.8"/><circle cx="95" cy="133" r="1.8"/><circle cx="101" cy="133" r="1.8"/><rect x="111" y="252" width="8" height="2.5" rx="1"/></g>
+  <g fill="#c4d4e0"><rect x="89" y="144" width="40" height="5" rx="2"/><rect x="89" y="154" width="28" height="5" rx="2"/><rect x="107" y="230" width="16" height="4" rx="1.5"/><rect x="107" y="239" width="11" height="4" rx="1.5"/></g>
+  <text x="115" y="196" text-anchor="middle" font-size="14" fill="#0b1f2e">Laptop</text>
+  <text x="115" y="280" text-anchor="middle" font-size="14" fill="#0b1f2e">Phone</text>
+  <text x="115" y="314" text-anchor="middle" font-size="13" fill="#31506a">both use a web browser</text>
+
+  <!-- remote -->
+  <rect x="20" y="356" width="190" height="96" rx="12" fill="#ffffff" stroke="#275070" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <g fill="none" stroke="#275070" stroke-width="2">
+    <circle cx="56" cy="404" r="18" fill="#edf2ff"/>
+    <ellipse cx="56" cy="404" rx="8" ry="18"/>
+    <path d="M38 404 H74 M42 394 H70 M42 414 H70" stroke-width="1.5"/>
+  </g>
+  <text x="86" y="400" font-size="14" font-weight="700" fill="#0b1f2e">From outside</text>
+  <text x="86" y="418" font-size="13" fill="#31506a">optional (remote)</text>
+
+  <!-- proxy (optional) -->
+  <rect x="250" y="160" width="150" height="130" rx="12" fill="#f0e8ff" stroke="#275070" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <g stroke="#153049" stroke-width="2" stroke-linejoin="round">
+    <path d="M315 190 v-6 a10 10 0 0 1 20 0 v6" fill="none"/>
+    <rect x="309" y="190" width="32" height="24" rx="3" fill="#d9c4ff"/>
+    <circle cx="325" cy="201" r="3" fill="#153049" stroke="none"/>
+    <path d="M325 203 v5" />
+  </g>
+  <text x="325" y="236" text-anchor="middle" font-size="15" font-weight="700" fill="#0b1f2e">HTTPS proxy</text>
+  <text x="325" y="254" text-anchor="middle" font-size="13" fill="#31506a">optional</text>
+  <text x="325" y="276" text-anchor="middle" font-family="'Martian Mono', monospace" font-size="12" fill="#153049">Caddy</text>
+
+  <!-- server machine -->
+  <rect x="430" y="88" width="510" height="432" rx="16" fill="#f6fafc" stroke="#153049" stroke-width="2"/>
+  <g stroke="#153049" stroke-width="1.8" fill="#e0f6fd">
+    <rect x="448" y="99" width="26" height="9" rx="2"/>
+    <rect x="448" y="110" width="26" height="9" rx="2"/>
+  </g>
+  <g fill="#153049"><circle cx="453" cy="103.5" r="1.6"/><circle cx="453" cy="114.5" r="1.6"/></g>
+  <text x="484" y="117" font-size="16" font-weight="700" fill="#0b1f2e">Linux server</text>
+
+  <!-- client arrows -->
+  <g fill="none" stroke="#275070" stroke-width="2">
+    <path d="M212 220 H246" marker-end="url(#architecture-server-arrow)"/>
+    <path d="M212 404 H325 V294" marker-end="url(#architecture-server-arrow)"/>
+    <path d="M402 220 H448" marker-end="url(#architecture-server-arrow)"/>
+    <path d="M212 146 H448" stroke-dasharray="6 4" marker-end="url(#architecture-server-arrow)"/>
+  </g>
+  <text x="325" y="138" text-anchor="middle" font-size="13" fill="#0b1f2e">or directly</text>
+
+  <!-- CCM service -->
+  <rect x="450" y="132" width="190" height="160" rx="12" fill="#e0f6fd" stroke="#275070" stroke-width="2"/>
+  <text x="545" y="160" text-anchor="middle" font-size="16" font-weight="700" fill="#0b1f2e">CCM service</text>
+  <g font-family="'Martian Mono', monospace" font-size="12" fill="#153049">
+    <text x="468" y="190">ccm.service</text>
+    <text x="468" y="214">port 7420</text>
+  </g>
+  <text x="468" y="244" font-size="14" fill="#0b1f2e">Built-in HTTPS</text>
+  <text x="468" y="262" font-size="13" fill="#31506a">optional</text>
+  <text x="468" y="280" font-size="13" fill="#31506a">starts with the server</text>
+
+  <!-- config + database -->
+  <path d="M545 296 V320" fill="none" stroke="#275070" stroke-width="2" marker-start="url(#architecture-server-arrow)" marker-end="url(#architecture-server-arrow)"/>
+  <rect x="450" y="324" width="190" height="104" rx="12" fill="#ffffff" stroke="#275070" stroke-width="1.5"/>
+  <g stroke="#275070" stroke-width="2" stroke-linejoin="round">
+    <path d="M466 336 h14 l7 7 v21 h-21 z" fill="#fff3d1"/>
+    <path d="M471 350 h11 M471 356 h11" stroke-width="1.5"/>
+    <path d="M465 380 V400 A11 4 0 0 0 487 400 V380" fill="#f0e8ff"/>
+    <ellipse cx="476" cy="380" rx="11" ry="4" fill="#d9c4ff"/>
+  </g>
+  <g font-family="'Martian Mono', monospace" font-size="12" fill="#153049">
+    <text x="500" y="348">/etc/ccm</text>
+    <text x="500" y="390">/var/lib/ccm</text>
+  </g>
+  <text x="500" y="365" font-size="13" fill="#31506a">config</text>
+  <text x="500" y="407" font-size="13" fill="#31506a">database</text>
+
+  <!-- storages -->
+  <path d="M642 212 H680" fill="none" stroke="#275070" stroke-width="2" marker-start="url(#architecture-server-arrow)" marker-end="url(#architecture-server-arrow)"/>
+  <rect x="684" y="132" width="238" height="262" rx="12" fill="#ddfbef" stroke="#275070" stroke-width="1.5"/>
+  <text x="803" y="158" text-anchor="middle" font-size="15" font-weight="700" fill="#0b1f2e">Storages</text>
+  <text x="803" y="176" text-anchor="middle" font-size="13" fill="#31506a">the folders CCM shows</text>
+  <use href="#architecture-server-folder" x="698" y="194" width="38" height="30"/>
+  <use href="#architecture-server-folder" x="698" y="252" width="38" height="30"/>
+  <g stroke="#275070" stroke-width="2" stroke-linejoin="round">
+    <rect x="698" y="336" width="28" height="20" rx="4" fill="#ffe8a3"/>
+    <rect x="726" y="340" width="12" height="12" rx="1" fill="#ffffff"/>
+  </g>
+  <g font-family="'Martian Mono', monospace" font-size="12" fill="#153049">
+    <text x="750" y="208">/srv/ccm</text>
+    <text x="750" y="266">/home/…</text>
+    <text x="750" y="302">ccm add-storage</text>
+    <text x="750" y="346">/media/…</text>
+  </g>
+  <g font-size="13" fill="#31506a">
+    <text x="750" y="226">default</text>
+    <text x="750" y="284">home folders, added with</text>
+    <text x="750" y="364">USB drives</text>
+  </g>
+
+  <!-- ccm command -->
+  <rect x="684" y="414" width="238" height="90" rx="12" fill="#ffffff" stroke="#275070" stroke-width="1.5"/>
+  <g stroke="#275070" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
+    <rect x="698" y="428" width="40" height="30" rx="4" fill="#0a1c2b"/>
+    <path d="M705 438 l5 4 l-5 4 M714 448 h9" fill="none" stroke="#5ef0b4"/>
+  </g>
+  <text x="750" y="441" font-size="15" font-weight="700" fill="#0b1f2e">ccm command</text>
+  <text x="750" y="458" font-size="13" fill="#31506a">for the admin</text>
+  <text x="698" y="488" font-family="'Martian Mono', monospace" font-size="12" fill="#153049">ccm status, ccm logs…</text>
+
+  <!-- admin over SSH -->
+  <g stroke="#275070" stroke-width="2">
+    <circle cx="276" cy="446" r="9" fill="#fff3d1"/>
+    <path d="M261 474 a15 13 0 0 1 30 0 z" fill="#fff3d1" stroke-linejoin="round"/>
+  </g>
+  <text x="300" y="452" font-size="15" font-weight="700" fill="#0b1f2e">Admin</text>
+  <text x="300" y="470" font-size="13" fill="#31506a">signs in over SSH</text>
+  <path d="M412 462 H680" fill="none" stroke="#275070" stroke-width="2" marker-end="url(#architecture-server-arrow)"/>
+  <text x="560" y="454" text-anchor="middle" font-family="'Martian Mono', monospace" font-size="12" fill="#153049">ssh</text>
+</svg>

@@ -1,0 +1,94 @@
+/*
+ * CCM's design tokens. Every component and page reads its colours, corner radii, shadows
+ * and fonts from these variables, so restyling the theme means editing this file only.
+ *
+ * Use them as Tailwind classes: `bg-surface`, `text-foreground-muted`, `border-line`,
+ * `text-on-primary`, `rounded-box`, `shadow-box`, `font-display`. Opacity modifiers work
+ * as usual (`bg-primary/20`).
+ */
+@theme static {
+  /* Page and panel surfaces, from the page background up to the strongest filled area. */
+  --color-canvas: #04101a;
+  --color-surface: #0a1c2b;
+  --color-surface-subtle: #0d2133;
+  --color-surface-muted: #10263a;
+  --color-surface-strong: #153049;
+  --color-surface-heavy: #1d3d5c;
+
+  /* Text and icons, strongest to faintest. */
+  --color-foreground-strong: #eef8ff;
+  --color-foreground: #d8f1ff;
+  --color-foreground-muted: #9ab8cf;
+  --color-foreground-subtle: #7b9bb5;
+  --color-foreground-faint: #4f6a80;
+
+  /* Form fields: inputs, selects, text areas, checkboxes. */
+  --color-field: #061420;
+
+  /* Borders and dividers. */
+  --color-line: #1b3a52;
+  --color-line-strong: #275070;
+
+  /* Text drawn on top of coloured fills: `on-primary` over primary, status and brand fills;
+     `on-neutral` over the `dark` fill, photos and dark overlays. */
+  --color-on-primary: #04101a;
+  --color-on-neutral: #eaf6ff;
+
+  /* Brand colours: `brand` leads (links, active menu, highlights), `accent` pairs with it. */
+  --color-brand: #4cc9f0;
+  --color-accent: #b388ff;
+
+  /* Component colours used by buttons, badges and alerts. */
+  --color-primary: #4cc9f0;
+  --color-secondary: #1b3a52;
+  --color-success: #5ef0b4;
+  --color-info: #7aa2ff;
+  --color-warning: #ffd166;
+  --color-pending: #ff9f5a;
+  --color-danger: #ff6b81;
+  --color-light: #153049;
+  --color-dark: #020a12;
+
+  /* Corners: barely rounded, like machined panels. */
+  --radius-xs: 1px;
+  --radius-sm: 2px;
+  --radius-md: 2px;
+  --radius-lg: 3px;
+  --radius-xl: 4px;
+  --radius-2xl: 4px;
+  --radius-3xl: 6px;
+  --radius-4xl: 8px;
+  --radius-box: 3px;
+
+  /* Depth: soft navy shadows with a faint frost highlight; a cold glow for primary actions. */
+  --shadow-2xs: 0 1px 0 rgb(0 0 0 / 0.35);
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-sm: 0 1px 3px rgb(0 0 0 / 0.45);
+  --shadow-md: 0 6px 14px -4px rgb(0 0 0 / 0.55);
+  --shadow-lg: 0 12px 24px -8px rgb(0 0 0 / 0.6);
+  --shadow-xl: 0 20px 36px -12px rgb(0 0 0 / 0.65);
+  --shadow-2xl: 0 28px 56px -16px rgb(0 0 0 / 0.7);
+  --shadow-box: 0 10px 28px -18px rgb(0 0 0 / 0.9), inset 0 1px 0 rgb(216 241 255 / 0.05);
+  --shadow-overlay: 0 16px 40px -12px rgb(0 0 0 / 0.85), 0 0 0 1px rgb(76 201 240 / 0.2);
+  --shadow-glow: 0 0 16px rgb(76 201 240 / 0.35);
+  --shadow-glow-accent: 0 0 16px rgb(179 136 255 / 0.35);
+
+  /* Type: Oxanium for headings and numbers that should stand out, Martian Mono for everything
+     else. Martian Mono is wide, so the text scale is a step smaller than Tailwind's default. */
+  --font-display: var(--font-family-display), "Oxanium", ui-sans-serif, sans-serif;
+  --font-body: var(--font-family-body), "Martian Mono", ui-monospace, monospace;
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-body);
+  --text-xs: 0.6875rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+}
+
+:root {
+  /* Theme decorations (see styles/theme-decorations.css). */
+  --decoration-aurora-start: rgb(76 201 240 / 0.12);
+  --decoration-aurora-end: rgb(179 136 255 / 0.1);
+  --decoration-scanline-color: rgb(76 201 240 / 0.035);
+  --decoration-heading-letter-spacing: 0.03em;
+  --decoration-text-glow: 0 0 12px rgb(76 201 240 / 0.4);
+}

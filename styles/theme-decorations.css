@@ -1,0 +1,57 @@
+/*
+ * CCM's decorations: a cold aurora over the deep-navy backdrop, faint horizontal data lines,
+ * frosted floating panels and a soft cyan glow on primary actions. Values come from the
+ * decoration variables in styles/design-tokens.css.
+ */
+@utility decoration-grid-backdrop {
+  &::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background-color: var(--color-canvas);
+    background-image:
+      radial-gradient(ellipse at 15% -10%, var(--decoration-aurora-start), transparent 50%),
+      radial-gradient(ellipse at 95% 0%, var(--decoration-aurora-end), transparent 45%),
+      repeating-linear-gradient(to bottom, var(--decoration-scanline-color) 0 1px, transparent 1px 6px);
+  }
+}
+
+@utility decoration-hero-backdrop {
+  background-color: var(--color-canvas);
+  background-image:
+    radial-gradient(ellipse at 75% 15%, rgb(76 201 240 / 0.2), transparent 50%),
+    radial-gradient(ellipse at 10% 95%, rgb(179 136 255 / 0.16), transparent 45%),
+    repeating-linear-gradient(to bottom, var(--decoration-scanline-color) 0 1px, transparent 1px 6px);
+}
+
+@utility decoration-text-glow {
+  text-shadow: var(--decoration-text-glow);
+}
+
+@layer base {
+  .font-display,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    letter-spacing: var(--decoration-heading-letter-spacing);
+  }
+
+  :focus-visible {
+    outline: 1px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+
+  * {
+    scrollbar-color: var(--color-line-strong) transparent;
+  }
+}
+
+@layer components {
+  .ccm .bg-primary.border-primary:hover:not(:disabled) {
+    box-shadow: var(--shadow-glow);
+  }
+}

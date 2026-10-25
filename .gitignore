@@ -1,0 +1,31 @@
+# dependencies
+/node_modules
+
+# next.js
+/.next/
+/out/
+next-env.d.ts
+*.tsbuildinfo
+
+# build output
+/dist/
+# vendored Node runtimes (downloaded once per build machine); only their pinned checksums are committed
+/vendor/node/*
+!/vendor/node/SHASUMS256.txt
+# target argon2 packages packed by scripts/package-server.ts (checked against package-lock.json)
+/vendor/native/
+
+# copied from node_modules by scripts/copy-pdfjs-assets.ts
+/public/vendor/pdfjs/
+
+# local data
+/.ccm-dev-data/
+
+# misc
+.DS_Store
+*.pem
+npm-debug.log*
+
+# env files: .env holds no secrets and is committed
+.env*.local
+

@@ -1,0 +1,117 @@
+"use client";
+
+import { LockKeyhole } from "lucide-react";
+import { useState, type FormEvent } from "react";
+import { Button } from "@/components/primitives/button";
+import { FormErrorMessage, FormLabel } from "@/components/primitives/form-field";
+import { PasswordInput } from "@/components/primitives/password-input";
+import { KeyFileDropzone } from "@/components/encryption/key-file-dropzone";
+import { announce } from "@/components/explorer/explorer-context";
+import { ApiError } from "@/lib/client/api";
+import { useEncryptionMutations } from "@/lib/client/encryption";
+import { mergeClassNames } from "@/utilities/merge-class-names";
+
+/**
+ * What a locked encrypted folder shows instead of its content: the key file, the
+ * account password and Unlock. Unlocking holds the key in memory for this session only.
+ *
+ * @example
+ * <UnlockPanel storageId={storageId} path="persona/notes.md" folderName="persona" />
+ */
+export function UnlockPanel({
+  storageId,
+  path: entryPath,
+  folderName,
+  message,
+  onUnlocked,
+  className,
+}: {
+  storageId: string;
+  path: string;
+  folderName: string;
+  /** Replaces the default explanation (for example "Folder locked — unlock to save your changes"). */
+  message?: string;
+  onUnlocked?: () => void;
+  className?: string;
+}) {
+  const { unlock } = useEncryptionMutations();
+  const [keyFile, setKeyFile] = useState<File>();
+  const [password, setPassword] = useState("");
+  const [keyFileError, setKeyFileError] = useState<string>();
+  const [passwordError, setPasswordError] = useState<string>();
+  const [formError, setFormError] = useState<string>();
+
+  const submit = async (submitEvent: FormEvent<HTMLFormElement>) => {
+    submitEvent.preventDefault();
+    if (!keyFile) {
+      setKeyFileError("Choose the folder's key file.");
+      return;
+    }
+    setKeyFileError(undefined);
+    setPasswordError(undefined);
+    setFormError(undefined);
+    try {
+      await unlock.mutateAsync({ storageId, path: entryPath, keyFile, password });
+      setPassword("");
+      announce("Unlocked", `"${folderName}" stays unlocked for this session until it locks again.`);
+      onUnlocked?.();
+    } catch (unlockError) {
+      if (unlockError instanceof ApiError && unlockError.code === "INVALID_CREDENTIALS") {
+        setPasswordError("Wrong password.");
+      } else if (unlockError instanceof ApiError && unlockError.code === "WRONG_KEY_FILE") {
+        setKeyFileError(
+          unlockError.message.includes("belong") ? "Key file doesn't belong to this folder." : unlockError.message,
+        );
+      } else {
+        setFormError(unlockError instanceof Error ? unlockError.message : "Couldn't unlock the folder.");
+      }
+    }
+  };
+
+  return (
+    <div className={mergeClassNames("flex flex-1 items-center justify-center p-6", className)}>
+      <form
+        className="box w-full max-w-md p-6"
+        data-testid="unlock-panel"
+        onSubmit={(submitEvent) => void submit(submitEvent)}
+      >
+        <div className="flex flex-col items-center text-center">
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-danger/10 text-danger">
+            <LockKeyhole className="h-7 w-7 stroke-[1.5]" aria-hidden />
+          </span>
+          <h3 className="mt-3 text-lg font-medium">&ldquo;{folderName}&rdquo; is encrypted</h3>
+          <p className="mt-1 text-sm leading-relaxed text-foreground-muted">
+            {message ??
+              "Its files stay encrypted on disk. Unlock it with its key file and your password to view and edit them in this session."}
+          </p>
+        </div>
+        <div className="mt-5 grid gap-4">
+          <div>
+            <KeyFileDropzone file={keyFile} onFile={setKeyFile} />
+            <FormErrorMessage message={keyFileError} />
+          </div>
+          <div>
+            <FormLabel htmlFor="unlock-password">Your password</FormLabel>
+            <PasswordInput
+              id="unlock-password"
+              value={password}
+              autoComplete="current-password"
+              onChange={(changeEvent) => setPassword(changeEvent.target.value)}
+              hasError={passwordError !== undefined}
+            />
+            <FormErrorMessage message={passwordError} />
+          </div>
+          <FormErrorMessage message={formError} />
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={unlock.isPending || password === ""}
+            data-testid="unlock-submit"
+          >
+            {unlock.isPending ? "Unlocking…" : "Unlock"}
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}

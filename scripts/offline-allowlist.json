@@ -1,0 +1,140 @@
+{
+  "description": "URL literals that check-offline-bundle accepts. Every rule needs a reason. `files` is a glob over the scanned path (static/... or standalone/...); `**` matches any depth. Keep app-chunk rules narrow: a new host in static/ or standalone/.next/ is a real finding until proven otherwise.",
+  "rules": [
+    {
+      "reason": "XML, SVG and JSON Schema namespace URIs: identifiers, never fetched",
+      "files": "**",
+      "urlPattern": "^https?://(www\\.w3\\.org|json-schema\\.org)/"
+    },
+    {
+      "reason": "React error decoder and docs links in error messages",
+      "files": "**",
+      "urlPattern": "^https://react\\.dev/"
+    },
+    {
+      "reason": "Next.js docs and error-message links",
+      "files": "**",
+      "urlPattern": "^https://(preview\\.)?nextjs\\.org/(docs|telemetry)"
+    },
+    {
+      "reason": "Source, issue and license links in comments and error messages",
+      "files": "**",
+      "urlPattern": "^https?://(gist\\.)?github\\.com/"
+    },
+    {
+      "reason": "Web standard specifications cited in comments",
+      "files": "**",
+      "urlPattern": "^https?://((fetch|url|html|infra|mimesniff|webidl|websockets)\\.spec\\.whatwg\\.org|(w3c|wicg)\\.github\\.io|(tools|datatracker)\\.ietf\\.org|httpwg\\.org|tc39\\.es|www\\.iana\\.org)/"
+    },
+    {
+      "reason": "MDN and Node.js reference docs cited in comments",
+      "files": "**",
+      "urlPattern": "^https://(developer\\.mozilla\\.org|nodejs\\.org)/"
+    },
+    {
+      "reason": "RFC 2606 reserved example domains in third-party docs and samples: never resolvable. Not allowed in app chunks, so the acceptance probe fetch(\"https://example.com\") still fails",
+      "files": "standalone/**node_modules/**",
+      "urlPattern": "^https?://([a-z0-9-]+\\.)*example\\.(com|org|net)([/:?#]|$)"
+    },
+    {
+      "reason": "Next.js network features CCM keeps off at runtime: telemetry (NEXT_TELEMETRY_DISABLED=1), the dev-only npm registry version check and config schema download. The runtime offline guard blocks them as well",
+      "files": "standalone/node_modules/next/**",
+      "urlPattern": "^https://(telemetry\\.nextjs\\.org|registry\\.npmjs\\.org|unpkg\\.com|raw\\.githubusercontent\\.com)/"
+    },
+    {
+      "reason": "Documentation and attribution links in comments and messages of traced third-party packages",
+      "files": "standalone/**node_modules/**",
+      "urlPattern": "^https?://(stackoverflow\\.com|security\\.stackexchange\\.com|lodash\\.com|underscorejs\\.org|feross\\.org|openjsf\\.org|npms\\.io|people\\.mozilla\\.org|www\\.cse\\.yorku\\.ca|en\\.wikipedia\\.org|support\\.1password\\.com|developers\\.google\\.com|developers\\.facebook\\.com|developer\\.twitter\\.com|developer\\.chrome\\.com|hreflang\\.org|www\\.typescriptlang\\.org|www\\.youtube\\.com|vercel\\.com|linear\\.app|sharp\\.pixelplumbing\\.com|opentelemetry\\.io|rustwasm\\.github\\.io|bugs\\.webkit\\.org|webpack\\.js\\.org)([/:?#]|$)"
+    },
+    {
+      "reason": "systeminformation (drive detection): links in comments and in its inet*/wifi helpers, which CCM never calls; CCM only uses blockDevices() and fsSize(), which run local commands. Server-only; the runtime offline guard blocks network use regardless",
+      "files": "standalone/**node_modules/systeminformation*/**",
+      "urlPattern": "^https?://"
+    },
+    {
+      "reason": "archiver (zip downloads): API doc links in comments. Server-only; the runtime offline guard blocks network use regardless",
+      "files": "standalone/**node_modules/archiver*/**",
+      "urlPattern": "^https?://"
+    },
+    {
+      "reason": "async: dependency of archiver or trash (Phase 2); spec, blog and doc links in comments only. Server-only; the runtime offline guard blocks network use regardless",
+      "files": "standalone/**node_modules/async/**",
+      "urlPattern": "^https?://"
+    },
+    {
+      "reason": "crc-32: dependency of archiver or trash (Phase 2); spec, blog and doc links in comments only. Server-only; the runtime offline guard blocks network use regardless",
+      "files": "standalone/**node_modules/crc-32/**",
+      "urlPattern": "^https?://"
+    },
+    {
+      "reason": "cross-spawn: dependency of archiver or trash (Phase 2); spec, blog and doc links in comments only. Server-only; the runtime offline guard blocks network use regardless",
+      "files": "standalone/**node_modules/cross-spawn/**",
+      "urlPattern": "^https?://"
+    },
+    {
+      "reason": "globby: dependency of archiver or trash (Phase 2); spec, blog and doc links in comments only. Server-only; the runtime offline guard blocks network use regardless",
+      "files": "standalone/**node_modules/globby/**",
+      "urlPattern": "^https?://"
+    },
+    {
+      "reason": "lodash: dependency of archiver or trash (Phase 2); spec, blog and doc links in comments only. Server-only; the runtime offline guard blocks network use regardless",
+      "files": "standalone/**node_modules/lodash/**",
+      "urlPattern": "^https?://"
+    },
+    {
+      "reason": "normalize-path: dependency of archiver or trash (Phase 2); spec, blog and doc links in comments only. Server-only; the runtime offline guard blocks network use regardless",
+      "files": "standalone/**node_modules/normalize-path/**",
+      "urlPattern": "^https?://"
+    },
+    {
+      "reason": "readable-stream: dependency of archiver or trash (Phase 2); spec, blog and doc links in comments only. Server-only; the runtime offline guard blocks network use regardless",
+      "files": "standalone/**node_modules/readable-stream/**",
+      "urlPattern": "^https?://"
+    },
+    {
+      "reason": "text-decoder: dependency of archiver or trash (Phase 2); spec, blog and doc links in comments only. Server-only; the runtime offline guard blocks network use regardless",
+      "files": "standalone/**node_modules/text-decoder/**",
+      "urlPattern": "^https?://"
+    },
+    {
+      "reason": "wsl-utils: dependency of archiver or trash (Phase 2); spec, blog and doc links in comments only. Server-only; the runtime offline guard blocks network use regardless",
+      "files": "standalone/**node_modules/wsl-utils/**",
+      "urlPattern": "^https?://"
+    },
+    {
+      "reason": "abort-controller: dependency of archiver or trash (Phase 2); spec, blog and doc links in comments only. Server-only; the runtime offline guard blocks network use regardless",
+      "files": "standalone/**node_modules/abort-controller/**",
+      "urlPattern": "^https?://"
+    },
+    {
+      "reason": "event-target-shim: dependency of archiver or trash (Phase 2); spec, blog and doc links in comments only. Server-only; the runtime offline guard blocks network use regardless",
+      "files": "standalone/**node_modules/event-target-shim/**",
+      "urlPattern": "^https?://"
+    },
+    {
+      "reason": "prosemirror-model schema error message links to its guide (the Markdown editor); text only, never fetched",
+      "files": "**",
+      "urlPattern": "^https://prosemirror\\.net/docs/"
+    },
+    {
+      "reason": "pdf.js (PDF viewer) uses these as dummy base URLs for `new URL(relative, base)` when checking link targets; never fetched",
+      "files": "**",
+      "urlPattern": "^(http://example\\.com|https://foo\\.bar)$"
+    },
+    {
+      "reason": "RFC 2606 example domains in the JSDoc @example lines of the desktop main process (electron/, scanned from source): never resolvable, never fetched",
+      "files": "../electron/**",
+      "urlPattern": "^https?://([a-z0-9-]+\\.)*example\\.(com|org|net)([/:?#]|$)"
+    },
+    {
+      "reason": "Server package only (scripts/package-server.ts scans the bundled entry.js and cli.js): drizzle-orm error messages and comments link to its own and PostgreSQL documentation, and bundled licence headers (tsyringe, reflect-metadata) name the Apache licence; never fetched",
+      "files": "standalone/*.js",
+      "urlPattern": "^https?://(orm\\.drizzle\\.team/docs/|www\\.postgresql\\.org/docs/|www\\.apache\\.org/licenses/)"
+    },
+    {
+      "reason": "Server package only: the pdf.js worker served from public/vendor/pdfjs names XML namespaces (XFA, Adobe XDP/XFDF/XMP) and its Apache licence; identifiers, never fetched",
+      "files": "standalone/public/vendor/pdfjs/**",
+      "urlPattern": "^https?://(www\\.xfa\\.org/schema/|ns\\.adobe\\.com/|www\\.apache\\.org/licenses/)"
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{{title}}</title>
+    <style>
+      {{fontFaces}}
+    </style>
+    <style>
+      {{stylesheet}}
+    </style>
+  </head>
+  <body>
+    <section class="cover">
+      <div class="cover-band">
+        {{logo}}
+        <div>
+          <div class="cover-brand">CCM</div>
+          <div class="cover-brand-detail">Context Memory Manager</div>
+        </div>
+      </div>
+      <div class="cover-stripe"></div>
+      <div class="cover-body">
+        <h1 class="cover-title">{{title}}</h1>
+        <p class="cover-subtitle">{{subtitle}}</p>
+        <dl class="cover-meta">
+          <dt>Version</dt>
+          <dd>{{version}}</dd>
+          <dt>Date</dt>
+          <dd>{{date}}</dd>
+          <dt>Works</dt>
+          <dd>fully offline: no internet connection needed, ever</dd>
+        </dl>
+      </div>
+      <p class="cover-footer">
+        This guide ships with CCM. Open it any time from {{whereToOpen}}.
+      </p>
+    </section>
+    <nav class="toc">
+      <h1 class="toc-title">Contents</h1>
+      {{toc}}
+    </nav>
+    <main>{{content}}</main>
+  </body>
+</html>

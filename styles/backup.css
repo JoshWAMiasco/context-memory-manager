@@ -1,0 +1,50 @@
+/*
+ * The Backup page's topology: idle pipes shimmer slowly, active pipes stream, paused
+ * pipes breathe, failed pipes flicker. Reduced motion turns every animation off.
+ */
+@layer components {
+  .backup-pipe-shimmer {
+    stroke-dasharray: 3 17;
+    animation: backup-dash 9s linear infinite;
+  }
+
+  .backup-flow-dash {
+    stroke-dasharray: 10 16;
+    animation: backup-dash 0.9s linear infinite;
+  }
+
+  .backup-pipe-pulse {
+    animation: backup-pulse 2.4s ease-in-out infinite;
+  }
+
+  .backup-pipe-flicker {
+    animation: backup-flicker 1.1s steps(2, jump-none) infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .backup-pipe-shimmer,
+    .backup-flow-dash,
+    .backup-pipe-pulse,
+    .backup-pipe-flicker {
+      animation: none;
+    }
+  }
+}
+
+@keyframes backup-dash {
+  to {
+    stroke-dashoffset: -260;
+  }
+}
+
+@keyframes backup-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes backup-flicker {
+  50% {
+    opacity: 0.4;
+  }
+}

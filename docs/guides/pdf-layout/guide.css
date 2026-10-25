@@ -1,0 +1,623 @@
+/*
+ * Print stylesheet of the CCM PDF guides. A4 pages for paper: dark text on white, the
+ * app's colours as accents only, and nothing that relies on colour alone, so a guide still reads
+ * when printed in black and white. Fonts are embedded by the build (Oxanium for headings, Inter
+ * for text, Martian Mono for commands).
+ */
+
+/*
+ * Page margin boxes carry the running footer: the guide's title (set by the build) on the left,
+ * "page / pages" on the right. The cover has neither.
+ */
+@page {
+  size: A4;
+  margin: 18mm 18mm 20mm 18mm;
+
+  @bottom-left {
+    content: "CCM";
+    font-family: "Inter", sans-serif;
+    font-size: 7.5pt;
+    color: #6b8296;
+    vertical-align: middle;
+  }
+
+  @bottom-right {
+    content: counter(page) " / " counter(pages);
+    font-family: "Inter", sans-serif;
+    font-size: 7.5pt;
+    color: #6b8296;
+    vertical-align: middle;
+  }
+}
+
+@page :first {
+  margin: 0;
+
+  @bottom-left {
+    content: none;
+  }
+
+  @bottom-right {
+    content: none;
+  }
+}
+
+:root {
+  --ink: #0b1f2e;
+  --ink-muted: #3d5468;
+  --ink-faint: #6b8296;
+  --line: #c9d6e2;
+  --line-strong: #8fa6ba;
+  --paper-tint: #f3f7fa;
+  --brand: #0e7ea3;
+  --brand-tint: #e3f5fb;
+  --navy: #04101a;
+  --navy-soft: #153049;
+  --cyan: #4cc9f0;
+  --violet: #7c4dff;
+  --tip: #0f8a5f;
+  --tip-tint: #e6f7f0;
+  --note: #3559c7;
+  --note-tint: #e9eefc;
+  --warning: #9a6a00;
+  --warning-tint: #fff6dc;
+  --danger: #b4233c;
+  --danger-tint: #fde9ed;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.55;
+  color: var(--ink);
+  background: #ffffff;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+  font-variant-numeric: tabular-nums;
+}
+
+body {
+  margin: 0;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: "Oxanium", "Inter", sans-serif;
+  color: var(--navy);
+  line-height: 1.2;
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+p,
+li {
+  orphans: 3;
+  widows: 3;
+}
+
+a {
+  color: var(--brand);
+  text-decoration: none;
+}
+
+strong {
+  font-weight: 650;
+  color: var(--navy);
+}
+
+code,
+kbd,
+pre {
+  font-family: "Martian Mono", ui-monospace, monospace;
+}
+
+/* ---------- Cover ---------- */
+
+.cover {
+  position: relative;
+  height: 297mm;
+  width: 210mm;
+  display: flex;
+  flex-direction: column;
+  break-after: page;
+  page-break-after: always;
+  overflow: hidden;
+}
+
+.cover-band {
+  background: var(--navy);
+  color: #eef8ff;
+  padding: 26mm 22mm 20mm;
+  display: flex;
+  align-items: center;
+  gap: 8mm;
+}
+
+.cover-band svg {
+  width: 30mm;
+  height: 30mm;
+  flex: none;
+}
+
+.cover-brand {
+  font-family: "Oxanium", sans-serif;
+  font-size: 30pt;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.cover-brand-detail {
+  margin-top: 2mm;
+  font-size: 11pt;
+  color: #9ab8cf;
+  letter-spacing: 0.02em;
+}
+
+.cover-stripe {
+  height: 3mm;
+  background: linear-gradient(90deg, var(--cyan), var(--violet));
+}
+
+.cover-body {
+  flex: 1;
+  padding: 34mm 22mm 0;
+}
+
+.cover-title {
+  margin: 0;
+  font-size: 36pt;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.cover-subtitle {
+  margin: 6mm 0 0;
+  max-width: 140mm;
+  font-size: 15pt;
+  line-height: 1.4;
+  color: var(--ink-muted);
+}
+
+.cover-meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2mm 8mm;
+  margin: 18mm 0 0;
+  font-size: 11pt;
+}
+
+.cover-meta dt {
+  font-family: "Oxanium", sans-serif;
+  font-weight: 600;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 9pt;
+  padding-top: 0.6mm;
+}
+
+.cover-meta dd {
+  margin: 0;
+}
+
+.cover-footer {
+  padding: 0 22mm 20mm;
+  font-size: 9pt;
+  color: var(--ink-faint);
+}
+
+/* ---------- Table of contents ---------- */
+
+.toc {
+  break-after: page;
+  page-break-after: always;
+}
+
+.toc-title {
+  margin: 0 0 8mm;
+  font-size: 24pt;
+}
+
+.toc ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.toc-chapter {
+  margin-top: 3.2mm;
+  break-inside: avoid;
+}
+
+.toc-entry {
+  display: flex;
+  align-items: baseline;
+  gap: 2mm;
+}
+
+.toc-entry a {
+  color: inherit;
+}
+
+.toc-chapter > .toc-entry {
+  font-family: "Oxanium", sans-serif;
+  font-weight: 600;
+  font-size: 11.5pt;
+  color: var(--navy);
+}
+
+.toc-sections {
+  margin-left: 9mm !important;
+  font-size: 9.5pt;
+  color: var(--ink-muted);
+}
+
+.toc-sections .toc-entry {
+  margin-top: 0.8mm;
+}
+
+.toc-number {
+  flex: none;
+  min-width: 9mm;
+}
+
+.toc-sections .toc-number {
+  min-width: 10mm;
+}
+
+.toc-leader {
+  flex: 1;
+  border-bottom: 1px dotted var(--line-strong);
+  transform: translateY(-1mm);
+}
+
+.toc-page {
+  flex: none;
+  min-width: 8mm;
+  text-align: right;
+}
+
+/* ---------- Chapters ---------- */
+
+.chapter {
+  break-before: page;
+  page-break-before: always;
+}
+
+.chapter-header {
+  margin: 0 0 7mm;
+  padding-bottom: 4mm;
+  border-bottom: 2px solid var(--navy);
+}
+
+.chapter-eyebrow {
+  font-family: "Oxanium", sans-serif;
+  font-size: 10pt;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brand);
+}
+
+.chapter-header h1 {
+  margin: 1.5mm 0 0;
+  font-size: 23pt;
+  font-weight: 700;
+}
+
+h2 {
+  margin: 8mm 0 2.5mm;
+  font-size: 14.5pt;
+  font-weight: 650;
+}
+
+h2 .section-number {
+  color: var(--brand);
+  margin-right: 2.5mm;
+}
+
+h3 {
+  margin: 6mm 0 2mm;
+  font-size: 11.5pt;
+  font-weight: 650;
+}
+
+h4 {
+  margin: 5mm 0 1.5mm;
+  font-size: 10.5pt;
+}
+
+p {
+  margin: 0 0 3mm;
+}
+
+ul {
+  margin: 0 0 3mm;
+  padding-left: 5.5mm;
+}
+
+ul li {
+  margin: 0 0 1.2mm;
+}
+
+ul li::marker {
+  color: var(--brand);
+}
+
+/* Heading anchors for the table of contents: positioned, so they never move the layout. */
+.page-marker {
+  position: absolute;
+  font-size: 1px;
+  color: transparent;
+}
+
+/* ---------- Steps ---------- */
+
+ol.steps {
+  list-style: none;
+  counter-reset: step var(--step-start, 0);
+  margin: 0 0 4mm;
+  padding: 0;
+}
+
+ol.steps > li {
+  counter-increment: step;
+  position: relative;
+  margin: 0 0 2.4mm;
+  padding: 0.4mm 0 0 10mm;
+  min-height: 6.5mm;
+}
+
+ol.steps > li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 6.4mm;
+  height: 6.4mm;
+  border-radius: 50%;
+  background: var(--navy);
+  color: #ffffff;
+  font-family: "Oxanium", sans-serif;
+  font-weight: 700;
+  font-size: 9.5pt;
+  line-height: 6.4mm;
+  text-align: center;
+}
+
+ol.steps > li > p {
+  margin-bottom: 1.5mm;
+}
+
+ol.steps ol.steps > li::before {
+  background: #ffffff;
+  color: var(--navy);
+  border: 1.2px solid var(--navy);
+  line-height: 6mm;
+}
+
+/* ---------- Figures ---------- */
+
+figure {
+  margin: 4mm 0 5mm;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+figure.screen img {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--line-strong);
+  border-radius: 2mm;
+  box-shadow: 0 1.2mm 3mm rgba(4, 16, 26, 0.18);
+}
+
+figure.diagram svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 120mm;
+}
+
+figcaption {
+  margin-top: 2.5mm;
+  font-size: 9pt;
+  color: var(--ink-muted);
+  line-height: 1.45;
+}
+
+figcaption .figure-number {
+  font-family: "Oxanium", sans-serif;
+  font-weight: 700;
+  color: var(--navy);
+  margin-right: 1.5mm;
+}
+
+.missing-asset {
+  padding: 12mm;
+  border: 2px dashed var(--danger);
+  color: var(--danger);
+  text-align: center;
+  font-weight: 600;
+}
+
+/* ---------- Callouts ---------- */
+
+.callout {
+  margin: 4mm 0;
+  padding: 3mm 4mm 3mm 4mm;
+  border: 1px solid var(--line);
+  border-left-width: 1.6mm;
+  border-radius: 1.5mm;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.callout p:last-child,
+.callout ul:last-child,
+.callout ol:last-child {
+  margin-bottom: 0;
+}
+
+.callout-label {
+  display: flex;
+  align-items: center;
+  gap: 1.8mm;
+  margin-bottom: 1.2mm;
+  font-family: "Oxanium", sans-serif;
+  font-weight: 700;
+  font-size: 9.5pt;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.callout-label svg {
+  width: 4.4mm;
+  height: 4.4mm;
+  flex: none;
+}
+
+.callout-note {
+  background: var(--note-tint);
+  border-color: var(--note);
+}
+
+.callout-note .callout-label {
+  color: var(--note);
+}
+
+.callout-tip {
+  background: var(--tip-tint);
+  border-color: var(--tip);
+}
+
+.callout-tip .callout-label {
+  color: var(--tip);
+}
+
+/* Warnings and dangers also differ in border style, for black-and-white printing. */
+.callout-warning {
+  background: var(--warning-tint);
+  border-color: var(--warning);
+  border-style: solid solid solid double;
+  border-left-width: 2.2mm;
+}
+
+.callout-warning .callout-label {
+  color: var(--warning);
+}
+
+.callout-danger {
+  background: var(--danger-tint);
+  border: 0.8mm solid var(--danger);
+  border-left-width: 2.4mm;
+}
+
+.callout-danger .callout-label {
+  color: var(--danger);
+}
+
+/* ---------- Code, keys and tables ---------- */
+
+pre {
+  margin: 3mm 0 4mm;
+  padding: 3mm 4mm;
+  background: var(--paper-tint);
+  border: 1px solid var(--line);
+  border-left: 1.2mm solid var(--navy-soft);
+  border-radius: 1.5mm;
+  font-size: 7.8pt;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+pre code {
+  font-size: inherit;
+  background: none;
+  padding: 0;
+  border: 0;
+}
+
+pre[data-language]::before {
+  content: attr(data-language);
+  display: block;
+  margin-bottom: 1.5mm;
+  font-family: "Oxanium", sans-serif;
+  font-size: 7pt;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+code {
+  font-size: 8.6pt;
+  padding: 0.2mm 1mm;
+  background: var(--paper-tint);
+  border: 1px solid var(--line);
+  border-radius: 0.8mm;
+  overflow-wrap: anywhere;
+}
+
+kbd {
+  display: inline-block;
+  font-size: 8pt;
+  padding: 0 1.4mm;
+  border: 1px solid var(--line-strong);
+  border-bottom-width: 2px;
+  border-radius: 1mm;
+  background: #ffffff;
+  line-height: 1.5;
+}
+
+table {
+  width: 100%;
+  margin: 3mm 0 5mm;
+  border-collapse: collapse;
+  font-size: 9pt;
+  break-inside: auto;
+}
+
+thead {
+  display: table-header-group;
+}
+
+tr {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+th {
+  text-align: left;
+  font-family: "Oxanium", sans-serif;
+  font-weight: 700;
+  color: var(--navy);
+  border-bottom: 2px solid var(--navy);
+  padding: 1.6mm 2mm;
+}
+
+td {
+  border-bottom: 1px solid var(--line);
+  padding: 1.6mm 2mm;
+  vertical-align: top;
+}
+
+td code {
+  font-size: 7.8pt;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 6mm 0;
+}
