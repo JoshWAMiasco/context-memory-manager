@@ -2,7 +2,14 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { FileEntry, JobSummary, ProtectionState } from "@/lib/api-types";
-import type { MemoryColor, MemoryIcon, MemoryStats, MemorySummary, MemoryTemplateSummary } from "@/lib/memory";
+import type {
+  MemoryColor,
+  MemoryIcon,
+  MemoryListing,
+  MemoryStats,
+  MemorySummary,
+  MemoryTemplateSummary,
+} from "@/lib/memory";
 import type { ProtectionMode } from "@/lib/protection";
 import { requestJson } from "@/lib/client/api";
 import { QUERY_KEYS, readParentPath } from "@/lib/client/query-keys";
@@ -65,6 +72,22 @@ export function useProtection(storageId: string, entryPath: string, isEnabled = 
   });
 }
 
+/**
+ * The memory folders on the internal storages the user can open, for the dashboard (fetched again
+ * each time it mounts).
+ *
+ * @example
+ * const { data } = useMemories(); // data.memories: [{ storageId, storageLabel, path, memory }]
+ */
+export function useMemories() {
+  return useQuery({
+    queryKey: QUERY_KEYS.memories(),
+    queryFn: ({ signal }) => requestJson<MemoryListing>("/api/memory/list", { signal }),
+    // Folders are moved, renamed and deleted elsewhere: check again on every visit.
+    staleTime: 0,
+  });
+}
+
 /** The memory templates (they never change while CMM runs). */
 export function useMemoryTemplates() {
   return useQuery({
@@ -88,6 +111,7 @@ export function useMemoryMutations() {
     void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.directory(storageId, readParentPath(entryPath)) });
     void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.stat(storageId, entryPath) });
     void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.folderState(storageId) });
+    void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.memories() });
   };
   const createMemory = useMutation({
     mutationFn: (

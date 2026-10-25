@@ -55,7 +55,8 @@ Press <kbd>⌘</kbd>/<kbd>Ctrl</kbd>+<kbd>K</kbd> to switch drives, jump to a pa
 ### Memory folders
 
 Turn any folder into a **memory** with a name, a colour and a description, or start one from a template (LLM persona,
-project knowledge, agent scratchpad). Each memory gets an overview with its size, recent files and quick actions.
+project knowledge, agent scratchpad). Each memory gets an overview with its size, recent files and quick actions, a card
+of its own on the Drives page, and its own view whose file tree starts at the memory.
 Folders can be made **view-only** or **locked**, so an agent or a slip of the mouse can't change them.
 
 | Memory overview | Protection |

@@ -56,6 +56,21 @@ export interface MemorySummary {
   createdAt: string;
 }
 
+/** A memory folder found on a storage, for the dashboard's Memories cards. */
+export interface MemoryLocation {
+  storageId: string;
+  storageLabel: string;
+  /** The memory folder, relative to the storage root. */
+  path: string;
+  memory: MemorySummary;
+}
+
+export interface MemoryListing {
+  memories: MemoryLocation[];
+  /** False when a storage was too big to search completely, so some memories may be missing. */
+  isComplete: boolean;
+}
+
 export interface MemoryStats {
   fileCount: number;
   totalBytes: number;

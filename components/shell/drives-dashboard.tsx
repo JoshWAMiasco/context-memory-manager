@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ArchiveRestore, HardDrive, Plus, Search, Settings, Trash2, type LucideIcon } from "lucide-react";
-import { useCallback, useState } from "react";
+import { Fragment, useCallback, useState } from "react";
 import { ConfirmDialog } from "@/components/interactive/confirm-dialog";
 import { showToastNotification } from "@/components/interactive/toast-notification";
 import { ButtonLink } from "@/components/primitives/button";
@@ -11,14 +11,17 @@ import { EmptyState } from "@/components/primitives/empty-state";
 import { FormInput } from "@/components/primitives/form-input";
 import { ProgressBar } from "@/components/primitives/progress-bar";
 import { formatFileSize } from "@/components/page-sections/applications/file-manager/format-file-size";
-import { EjectShieldIcon } from "@/components/icons/cmm-icons";
+import { MemoryIcon } from "@/components/explorer/memory-icon";
+import { BrainIcon, EjectShieldIcon } from "@/components/icons/cmm-icons";
 import { StorageKindIcon } from "@/components/icons/storage-kind-icon";
 import { useServerEvent } from "@/hooks/use-server-events";
 import type { StorageKind, StorageSummary } from "@/lib/api-types";
 import { ApiError } from "@/lib/client/api";
 import { useDriveActions, useStorages } from "@/lib/client/fs";
-import { buildStorageHref } from "@/lib/client/routes";
+import { useMemories } from "@/lib/client/memory";
+import { buildMemoryHref, buildStorageHref } from "@/lib/client/routes";
 import { useTrash } from "@/lib/client/trash";
+import type { MemoryLocation } from "@/lib/memory";
 import { mergeClassNames } from "@/utilities/merge-class-names";
 
 const NEW_DRIVE_HIGHLIGHT_MILLISECONDS = 4000;
@@ -122,6 +125,74 @@ function DriveCard({
   );
 }
 
+function MemoryCard({ location }: { location: MemoryLocation }) {
+  const { memory } = location;
+  const where = `${location.storageLabel} › ${location.path.split("/").join(" › ")}`;
+  return (
+    <Card
+      className="group/memory relative flex flex-col gap-3 p-5 transition-[border-color,box-shadow] hover:border-brand/60 hover:shadow-lg"
+      data-testid={`memory-card-${location.storageId}-${location.path}`}
+      title={memory.description ? `${memory.name}: ${memory.description}` : memory.name}
+    >
+      <div className="flex items-start gap-3.5">
+        <div className="flex h-11 w-11 flex-none items-center justify-center rounded-lg border border-line bg-surface-subtle">
+          <MemoryIcon icon={memory.icon} color={memory.color} className="h-6 w-6" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <Link
+            href={buildMemoryHref(location.storageId, location.path)}
+            className="block truncate font-medium group-hover/memory:text-brand after:absolute after:inset-0 after:content-['']"
+          >
+            {memory.name}
+          </Link>
+          <div className="mt-0.5 truncate text-xs text-foreground-subtle" title={where}>
+            {where}
+          </div>
+        </div>
+      </div>
+      <p className="line-clamp-2 text-xs text-foreground-muted">{memory.description || "No description"}</p>
+    </Card>
+  );
+}
+
+/**
+ * The memories on the internal storages, each a card that opens the memory's own explorer, below
+ * the internal storages. A storage too big to search completely gets a note.
+ */
+function MemoriesSection({ filter }: { filter: string }) {
+  const { data: listing, isLoading } = useMemories();
+  const memories = (listing?.memories ?? []).filter(
+    (location) => filter === "" || location.memory.name.toLowerCase().includes(filter),
+  );
+  if (filter !== "" && memories.length === 0) return null;
+  return (
+    <section aria-label="Memories" data-testid="memories-group">
+      <h2 className="mb-3 text-xs font-medium tracking-wide text-foreground-muted uppercase">Memories</h2>
+      {isLoading ? (
+        <p className="text-sm text-foreground-muted">Looking for memories…</p>
+      ) : memories.length === 0 ? (
+        <Card className="flex items-center gap-3.5 p-4" data-testid="no-memories">
+          <BrainIcon className="h-5 w-5 flex-none text-foreground-subtle" />
+          <p className="text-sm text-foreground-muted">
+            No memories yet. Open a storage and choose New memory, or convert a folder into one.
+          </p>
+        </Card>
+      ) : (
+        <div className={CARD_GRID_CLASS_NAMES}>
+          {memories.map((location) => (
+            <MemoryCard key={`${location.storageId}\u0000${location.path}`} location={location} />
+          ))}
+        </div>
+      )}
+      {listing && !listing.isComplete && (
+        <p className="mt-2 text-xs text-foreground-subtle" data-testid="memories-incomplete">
+          Some folders were too many or too deep to search, so a memory may be missing here. Its storage still has it.
+        </p>
+      )}
+    </section>
+  );
+}
+
 function SystemCard({
   href,
   title,
@@ -155,8 +226,10 @@ function SystemCard({
 /**
  * The home page after sign-in: every storage the user can open as a card, grouped into internal
  * storages, external drives and USB / flash drives, live over drive events (a new drive is
- * highlighted for a moment), with free space, eject and mount. A filter box appears once there are
- * many. Backup, Trash and Settings sit below. Opening a card goes to that storage's explorer.
+ * highlighted for a moment), with free space, eject and mount. The memories on the internal
+ * storages follow the internal storages as cards of their own, each opening the memory's own
+ * explorer. A filter box appears once there are many storages. Backup, Trash and Settings sit
+ * below. Opening a drive card goes to that storage's explorer.
  *
  * @example
  * <DrivesDashboard isAdmin={user.role === "admin"} />
@@ -192,6 +265,7 @@ export function DrivesDashboard({ isAdmin }: { isAdmin: boolean }) {
 
   const normalizedFilter = filterText.trim().toLowerCase();
   const visibleStorages = storages.filter((storage) => storage.label.toLowerCase().includes(normalizedFilter));
+  const hasInternalStorages = storages.some((storage) => storage.kind === "internal");
 
   return (
     <div className="flex flex-col gap-8" data-testid="drives-dashboard">
@@ -250,28 +324,29 @@ export function DrivesDashboard({ isAdmin }: { isAdmin: boolean }) {
 
       {STORAGE_GROUPS.map((storageGroup) => {
         const groupStorages = visibleStorages.filter((storage) => storageGroup.kinds.includes(storage.kind));
-        if (groupStorages.length === 0) return null;
+        const hasMemories = storageGroup.kinds.includes("internal") && hasInternalStorages;
         return (
-          <section
-            key={storageGroup.title}
-            aria-label={storageGroup.title}
-            data-testid={`storage-group-${storageGroup.kinds.join("-")}`}
-          >
-            <h2 className="mb-3 text-xs font-medium tracking-wide text-foreground-muted uppercase">
-              {storageGroup.title}
-            </h2>
-            <div className={CARD_GRID_CLASS_NAMES}>
-              {groupStorages.map((storage) => (
-                <DriveCard
-                  key={storage.id}
-                  storage={storage}
-                  isHighlighted={highlightedIds.has(storage.id)}
-                  onEject={setEjectTarget}
-                  onMount={mount}
-                />
-              ))}
-            </div>
-          </section>
+          <Fragment key={storageGroup.title}>
+            {groupStorages.length > 0 && (
+              <section aria-label={storageGroup.title} data-testid={`storage-group-${storageGroup.kinds.join("-")}`}>
+                <h2 className="mb-3 text-xs font-medium tracking-wide text-foreground-muted uppercase">
+                  {storageGroup.title}
+                </h2>
+                <div className={CARD_GRID_CLASS_NAMES}>
+                  {groupStorages.map((storage) => (
+                    <DriveCard
+                      key={storage.id}
+                      storage={storage}
+                      isHighlighted={highlightedIds.has(storage.id)}
+                      onEject={setEjectTarget}
+                      onMount={mount}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+            {hasMemories && <MemoriesSection filter={normalizedFilter} />}
+          </Fragment>
         );
       })}
 

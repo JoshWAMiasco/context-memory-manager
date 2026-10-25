@@ -1,6 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
 import { showToastNotification } from "@/components/interactive/toast-notification";
 import type { FileEntry, FileStat, StorageSummary } from "@/lib/api-types";
@@ -14,11 +15,12 @@ import {
   type StoragePath,
   type TransferResult,
 } from "@/lib/client/fs";
-import { joinEntryPath, QUERY_KEYS, readBaseName, readParentPath } from "@/lib/client/query-keys";
-import { buildStorageHref } from "@/lib/client/routes";
+import { isInsideFolder, joinEntryPath, QUERY_KEYS, readBaseName, readParentPath } from "@/lib/client/query-keys";
+import { buildMemoryHref, buildStorageHref } from "@/lib/client/routes";
 import { protectionReason } from "@/lib/client/protection";
 import { confirmLeave } from "@/lib/client/unsaved-changes";
 import { getUploadQueue } from "@/lib/client/upload-queue";
+import type { MemorySummary } from "@/lib/memory";
 
 export type ApplicationMode = "desktop" | "server";
 
@@ -44,8 +46,15 @@ export type FolderSettingsTab = "general" | "protection" | "encryption" | "versi
 export interface ContextMenuState {
   x: number;
   y: number;
-  /** The entry right-clicked, or undefined for the empty area (the storage root). */
+  /** The entry right-clicked, or undefined for the empty area (the explorer's root folder). */
   entry?: FileEntry;
+}
+
+/** The memory a memory's own explorer is rooted at. */
+export interface MemoryRoot {
+  /** The memory folder, relative to the storage root. */
+  path: string;
+  memory: MemorySummary;
 }
 
 export interface DraftItem {
@@ -55,6 +64,13 @@ export interface DraftItem {
 
 export interface ExplorerContextValue {
   storage: StorageSummary;
+  /**
+   * The folder the tree starts at: "" for the whole storage, or the memory folder in a memory's
+   * own explorer. Paths stay storage-relative either way.
+   */
+  rootPath: string;
+  /** Set in a memory's own explorer. */
+  memoryRoot?: MemoryRoot;
   mode: ApplicationMode;
   /** The signed-in user's role (only admins can unlock locked items). */
   userRole: UserRole;
@@ -160,9 +176,13 @@ export function announceError(title: string, requestError: unknown): void {
   });
 }
 
-function readAncestorPaths(entryPath: string): string[] {
+/** The folders between `rootPath` (left out) and `entryPath` (left out), which the tree expands to show it. */
+function readAncestorPaths(entryPath: string, rootPath: string): string[] {
   const segments = entryPath.split("/").filter(Boolean);
-  return segments.slice(0, -1).map((_segment, segmentIndex) => segments.slice(0, segmentIndex + 1).join("/"));
+  return segments
+    .slice(0, -1)
+    .map((_segment, segmentIndex) => segments.slice(0, segmentIndex + 1).join("/"))
+    .filter((ancestorPath) => ancestorPath !== rootPath && isInsideFolder(ancestorPath, rootPath));
 }
 
 function describeTransfer(kind: "move" | "copy", result: TransferResult): string {
@@ -174,24 +194,31 @@ function describeTransfer(kind: "move" | "copy", result: TransferResult): string
 /**
  * Holds what the explorer shows and does for one storage: selection (mirrored in the URL),
  * expanded folders, inline rename and new-item drafts, the open dialog and context menu, and the
- * file actions behind the toolbar, keyboard, drag and drop and the context menu.
+ * file actions behind the toolbar, keyboard, drag and drop and the context menu. With
+ * `memoryRoot`, it is that memory's own explorer: the tree starts at the memory folder, and
+ * selecting something outside it (after a rename or delete of the memory itself) goes back to the
+ * storage's explorer.
  *
  * @example
  * <ExplorerProvider storage={storage} mode="server" initialPath="notes/today.md">…</ExplorerProvider>
  */
 export function ExplorerProvider({
   storage,
+  memoryRoot,
   mode,
   userRole,
   initialPath,
   children,
 }: {
   storage: StorageSummary;
+  memoryRoot?: MemoryRoot;
   mode: ApplicationMode;
   userRole: UserRole;
   initialPath: string;
   children: ReactNode;
 }) {
+  const rootPath = memoryRoot?.path ?? "";
+  const router = useRouter();
   const queryClient = useQueryClient();
   const mutations = useFileMutations();
   const [selectedPath, setSelectedPath] = useState(initialPath);
@@ -199,7 +226,7 @@ export function ExplorerProvider({
   const [selection, setSelection] = useState<ReadonlySet<string>>(() => new Set(initialPath ? [initialPath] : []));
   const [anchorPath, setAnchorPath] = useState(initialPath);
   const [expandedPaths, setExpandedPaths] = useState<ReadonlySet<string>>(
-    () => new Set(readAncestorPaths(initialPath)),
+    () => new Set(readAncestorPaths(initialPath, rootPath)),
   );
   const [renamingPath, setRenamingPath] = useState<string>();
   const [draft, setDraft] = useState<DraftItem>();
@@ -214,24 +241,29 @@ export function ExplorerProvider({
     setSelectedPath(initialPath);
     setSelection(new Set(initialPath ? [initialPath] : []));
     setAnchorPath(initialPath);
-    setExpandedPaths((previousPaths) => new Set([...previousPaths, ...readAncestorPaths(initialPath)]));
+    setExpandedPaths((previousPaths) => new Set([...previousPaths, ...readAncestorPaths(initialPath, rootPath)]));
   }
 
   const canWrite = storage.access === "write";
   const readOnlyReason = canWrite ? undefined : "You can only view files in this storage.";
 
+  // A memory's own folder isn't in a loaded listing there (its parent isn't shown), so its stat stands in.
   const findEntry = useCallback(
     (entryPath: string) =>
-      readCachedEntries(queryClient, storage.id, readParentPath(entryPath))?.find((entry) => entry.path === entryPath),
+      readCachedEntries(queryClient, storage.id, readParentPath(entryPath))?.find(
+        (entry) => entry.path === entryPath,
+      ) ?? queryClient.getQueryData<FileStat>(QUERY_KEYS.stat(storage.id, entryPath))?.entry,
     [queryClient, storage.id],
   );
 
   const showInUrl = useCallback(
     (entryPath: string) => {
-      const href = buildStorageHref(storage.id, entryPath);
-      if (window.location.pathname !== href) window.history.replaceState(null, "", href);
+      const href = memoryRoot
+        ? buildMemoryHref(storage.id, memoryRoot.path, entryPath)
+        : buildStorageHref(storage.id, entryPath);
+      if (`${window.location.pathname}${window.location.search}` !== href) window.history.replaceState(null, "", href);
     },
-    [storage.id],
+    [memoryRoot, storage.id],
   );
 
   const selectPath = useCallback(
@@ -256,12 +288,16 @@ export function ExplorerProvider({
           return;
         }
       }
+      if (!isInsideFolder(entryPath, rootPath)) {
+        confirmLeave(() => router.push(buildStorageHref(storage.id, entryPath)));
+        return;
+      }
       const applySelection = () => {
         setSelection(new Set(entryPath ? [entryPath] : []));
         setAnchorPath(entryPath);
         setSelectedPath(entryPath);
         setExpandedPaths((previousPaths) => {
-          const ancestorPaths = readAncestorPaths(entryPath);
+          const ancestorPaths = readAncestorPaths(entryPath, rootPath);
           return ancestorPaths.every((ancestorPath) => previousPaths.has(ancestorPath))
             ? previousPaths
             : new Set([...previousPaths, ...ancestorPaths]);
@@ -271,7 +307,7 @@ export function ExplorerProvider({
       if (entryPath === selectedPath) applySelection();
       else confirmLeave(applySelection);
     },
-    [anchorPath, selectedPath, showInUrl],
+    [anchorPath, rootPath, router, selectedPath, showInUrl, storage.id],
   );
 
   const setExpanded = useCallback((entryPath: string, isExpanded: boolean) => {
@@ -287,11 +323,11 @@ export function ExplorerProvider({
 
   const readTargetFolder = useCallback(
     (entryPath = selectedPath) => {
-      if (entryPath === "") return "";
+      if (entryPath === rootPath) return rootPath;
       const entry = findEntry(entryPath);
       return entry?.type === "directory" ? entryPath : readParentPath(entryPath);
     },
-    [findEntry, selectedPath],
+    [findEntry, rootPath, selectedPath],
   );
 
   const readWriteReason = useCallback(
@@ -311,23 +347,24 @@ export function ExplorerProvider({
       try {
         await mutations.renameEntry.mutateAsync({ storageId: storage.id, path: entryPath, newName });
         const renamedPath = joinEntryPath(readParentPath(entryPath), newName);
-        if (selectedPath === entryPath) selectPath(renamedPath);
+        if (memoryRoot && entryPath === memoryRoot.path) router.replace(buildMemoryHref(storage.id, renamedPath));
+        else if (selectedPath === entryPath) selectPath(renamedPath);
         return true;
       } catch (renameError) {
         announceError("Couldn't rename", renameError);
         return false;
       }
     },
-    [mutations.renameEntry, selectPath, selectedPath, storage.id],
+    [memoryRoot, mutations.renameEntry, router, selectPath, selectedPath, storage.id],
   );
 
   const startDraft = useCallback(
     (type: "file" | "directory", parentPath?: string) => {
       const folderPath = parentPath ?? readTargetFolder();
-      if (folderPath !== "") setExpanded(folderPath, true);
+      if (folderPath !== rootPath) setExpanded(folderPath, true);
       setDraft({ parentPath: folderPath, type });
     },
-    [readTargetFolder, setExpanded],
+    [readTargetFolder, rootPath, setExpanded],
   );
 
   const commitDraft = useCallback(
@@ -466,6 +503,8 @@ export function ExplorerProvider({
   const contextValue = useMemo<ExplorerContextValue>(
     () => ({
       storage,
+      rootPath,
+      memoryRoot,
       mode,
       userRole,
       canWrite,
@@ -510,6 +549,8 @@ export function ExplorerProvider({
     }),
     [
       storage,
+      rootPath,
+      memoryRoot,
       mode,
       userRole,
       canWrite,

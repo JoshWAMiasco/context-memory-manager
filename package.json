@@ -1,6 +1,6 @@
 {
   "name": "context-memory-manager",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "CMM (Context Memory Manager): a self-hosted file manager for LLM context, memories and private files.",
   "license": "MIT",

@@ -12,6 +12,8 @@ export const QUERY_KEYS = {
       ? (["folder-state", storageId] as const)
       : (["folder-state", storageId, entryPath] as const),
   memoryTemplates: () => ["memory-templates"] as const,
+  /** The memory folders found on internal storages, for the dashboard. */
+  memories: () => ["memories"] as const,
   /** Encryption status of one entry; `encryption()` covers every folder. */
   encryption: (storageId?: string, entryPath?: string) =>
     storageId === undefined
@@ -43,4 +45,15 @@ export function readBaseName(entryPath: string): string {
 /** Joins a folder path and a name into a storage-relative path. */
 export function joinEntryPath(directoryPath: string, entryName: string): string {
   return directoryPath === "" ? entryName : `${directoryPath}/${entryName}`;
+}
+
+/**
+ * Whether a storage-relative path is `folderPath` itself or inside it ("" contains everything).
+ *
+ * @example
+ * isInsideFolder("persona/notes.md", "persona"); // true
+ * isInsideFolder("personal", "persona"); // false
+ */
+export function isInsideFolder(entryPath: string, folderPath: string): boolean {
+  return folderPath === "" || entryPath === folderPath || entryPath.startsWith(`${folderPath}/`);
 }

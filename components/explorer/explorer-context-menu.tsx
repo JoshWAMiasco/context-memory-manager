@@ -13,6 +13,7 @@ import {
   useListNavigation,
   useRole,
 } from "@floating-ui/react";
+import { useRouter } from "next/navigation";
 import {
   ClipboardPaste,
   Copy,
@@ -21,6 +22,7 @@ import {
   FolderOpen,
   FolderPlus,
   Info,
+  PanelsTopLeft,
   Pencil,
   Scissors,
   Settings2,
@@ -36,6 +38,7 @@ import { useMemoryMutations } from "@/lib/client/memory";
 import { useFileClipboard } from "@/lib/client/clipboard";
 import { isDesktopApp, readFileManagerName, revealInFileManager } from "@/lib/client/desktop";
 import { readParentPath } from "@/lib/client/query-keys";
+import { buildMemoryHref } from "@/lib/client/routes";
 import { mergeClassNames } from "@/utilities/merge-class-names";
 
 interface MenuAction {
@@ -58,6 +61,7 @@ interface MenuAction {
  */
 export function ExplorerContextMenu() {
   const explorer = useExplorer();
+  const router = useRouter();
   const { convertMemory } = useMemoryMutations();
   const onConvertToFolder = (folderPath: string) => {
     convertMemory.mutateAsync({ storageId: explorer.storage.id, path: folderPath, to: "folder" }).then(
@@ -91,7 +95,7 @@ export function ExplorerContextMenu() {
 
   if (!contextMenu) return null;
   const { entry } = contextMenu;
-  const folderPath = entry ? (entry.type === "directory" ? entry.path : readParentPath(entry.path)) : "";
+  const folderPath = entry ? (entry.type === "directory" ? entry.path : readParentPath(entry.path)) : explorer.rootPath;
   const actionPaths = entry ? explorer.readActionPaths(entry.path) : [];
   const folderReason = canWrite ? explorer.readWriteReason(folderPath) : readOnlyReason;
   const entryReason = entry ? explorer.readWriteReason(entry.path) : folderReason;
@@ -108,6 +112,14 @@ export function ExplorerContextMenu() {
         explorer.selectPath(entry.path);
       },
     });
+    if (entry.badges.isMemory && entry.path !== explorer.rootPath) {
+      actions.push({
+        key: "open-memory-view",
+        label: "Open memory view",
+        icon: PanelsTopLeft,
+        onSelect: () => router.push(buildMemoryHref(explorer.storage.id, entry.path)),
+      });
+    }
   }
   actions.push(
     {
@@ -184,11 +196,11 @@ export function ExplorerContextMenu() {
       key: "download",
       label: entry?.type === "file" ? "Download" : "Download as zip",
       icon: Download,
-      onSelect: () => void explorer.download(entry?.path ?? ""),
+      onSelect: () => void explorer.download(entry?.path ?? explorer.rootPath),
     },
   );
   if (explorer.mode === "desktop") {
-    const revealPath = entry?.path ?? "";
+    const revealPath = entry?.path ?? explorer.rootPath;
     actions.push({
       key: "reveal",
       label: `Reveal in ${readFileManagerName()}`,

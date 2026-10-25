@@ -1,6 +1,7 @@
 "use client";
 
 import dayjs from "dayjs";
+import { useRouter } from "next/navigation";
 import relativeTime from "dayjs/plugin/relativeTime";
 import {
   FilePlus,
@@ -8,6 +9,7 @@ import {
   History,
   KeyRound,
   Lock,
+  PanelsTopLeft,
   Settings2,
   Shield,
   ShieldAlert,
@@ -30,6 +32,7 @@ import { useVersioningStatus } from "@/lib/client/versioning";
 import { useFolderStats, useMemory, useMemoryMutations, useProtection } from "@/lib/client/memory";
 import type { MemorySummary } from "@/lib/memory";
 import { readBaseName } from "@/lib/client/query-keys";
+import { buildMemoryHref } from "@/lib/client/routes";
 
 dayjs.extend(relativeTime);
 
@@ -227,7 +230,7 @@ function InlineDescription({
 
 /**
  * What the file pane shows for a folder. A memory gets its icon, name and editable
- * description, stats, recent files and quick actions; a plain folder gets the stats, recent files
+ * description, stats, recent files and quick actions (one opens it in its own explorer); a plain folder gets the stats, recent files
  * and Convert to memory. Both show the tamper banner when another program changed a protected
  * folder, the unlock panel while an encrypted folder is locked (not while it is being
  * decrypted), and live progress while it is decrypted, encrypted or re-keyed in the background.
@@ -237,6 +240,7 @@ function InlineDescription({
  */
 export function FolderOverview({ entry }: { entry: FileEntry }) {
   const explorer = useExplorer();
+  const router = useRouter();
   const { data: memory } = useMemory(explorer.storage.id, entry.path);
   const writeReason = explorer.readWriteReason(entry.path);
   const { lock } = useEncryptionMutations();
@@ -294,6 +298,14 @@ export function FolderOverview({ entry }: { entry: FileEntry }) {
           }}
           testId="quick-new-note"
         />
+        {memory && entry.path !== explorer.rootPath && (
+          <QuickAction
+            label="Open memory view"
+            icon={PanelsTopLeft}
+            onClick={() => router.push(buildMemoryHref(explorer.storage.id, entry.path))}
+            testId="quick-open-memory-view"
+          />
+        )}
         {!memory && (
           <QuickAction
             label="Convert to memory"

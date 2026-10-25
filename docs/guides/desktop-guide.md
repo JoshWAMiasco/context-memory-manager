@@ -68,7 +68,7 @@ This chapter shows how to install CMM on a Mac, on Windows and on Linux. Follow 
 
 ## On a Mac
 
-The Mac installer is a `.dmg` file, for example `CMM-0.1.0-arm64.dmg`.
+The Mac installer is a `.dmg` file, for example `CMM-1.0.0-arm64.dmg`.
 
 1. Double-click the `.dmg` file. A window opens with the CMM icon and your Applications folder.
 2. Drag the **CMM** icon onto the **Applications** folder.
@@ -100,7 +100,7 @@ CMM now opens, and macOS remembers your choice.
 
 ## On Windows
 
-The Windows installer is a `.exe` file, for example `CMM-Setup-0.1.0-x64.exe`.
+The Windows installer is a `.exe` file, for example `CMM-Setup-1.0.0-x64.exe`.
 
 1. Double-click the installer.
 2. If Windows shows **Windows protected your PC**, click **More info**, then **Run anyway**. This message appears
@@ -119,7 +119,7 @@ The installer adds a **CMM** shortcut to your desktop and to the Start menu.
 
 There are two kinds of Linux installer. Choose one:
 
-- the **AppImage** (`CMM-0.1.0-x86_64.AppImage` or `CMM-0.1.0-arm64.AppImage`) runs on Ubuntu, Fedora and most other
+- the **AppImage** (`CMM-1.0.0-x86_64.AppImage` or `CMM-1.0.0-arm64.AppImage`) runs on Ubuntu, Fedora and most other
   versions of Linux, and needs no installation;
 - the **deb package** (a file ending in `.deb`) installs CMM on Ubuntu and Debian, with an entry in the applications
   menu.
@@ -225,7 +225,10 @@ After you sign in, CMM opens the **Drives** page. It shows each of your **storag
 - **External drives**: external hard drives you plug in.
 - **USB / flash drives**: USB sticks and memory cards.
 
-Click a card to open that storage. A drive appears a few seconds after you plug it in, and is highlighted briefly. Each
+Below the internal storages, **Memories** shows every memory on them as a card of its own, with its icon, name, where it
+is and its description. Click a memory's card to open it in its own view (see *A memory's own view*).
+
+Click a drive's card to open that storage. A drive appears a few seconds after you plug it in, and is highlighted briefly. Each
 card shows how much space is free, for example "2.8 GB free of 3 GB". Drives you can unplug have an eject button. Click
 it and confirm with **Eject**. When CMM says the drive was ejected, you can unplug it.
 
@@ -580,8 +583,21 @@ size, when it last changed, whether it keeps a history, and its most recent file
 
 Click the description to change it. Press <kbd>Enter</kbd> to save it.
 
-The buttons under the description give quick access to common tasks: **New note**, **Folder settings**, **Set
-protection**, **Enable encryption** and **Enable versioning** (or **History** once versioning is on).
+The buttons under the description give quick access to common tasks: **New note**, **Open memory view**, **Folder
+settings**, **Set protection**, **Enable encryption** and **Enable versioning** (or **History** once versioning is on).
+
+## A memory's own view
+
+A memory can open in a view of its own, where the file tree starts at the memory instead of at the storage, so you only
+see the memory's files. Open it in any of these ways:
+
+- click the memory's card on the **Drives** page;
+- click **Open memory view** in the memory's overview;
+- right-click the memory in the tree and choose **Open memory view**.
+
+The memory's icon and name sit above its tree. Everything works as in the storage's explorer: creating, renaming, moving,
+uploading and editing files. To go back to the whole storage, click the drive button next to the memory's name; CMM
+keeps the file you had open selected.
 
 ## Turning an existing folder into a memory
 

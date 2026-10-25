@@ -11,7 +11,7 @@ import type { DirectoryListing, FileEntry } from "@/lib/api-types";
 import { useFileClipboard } from "@/lib/client/clipboard";
 import { getServerEventsClient } from "@/lib/client/events";
 import { directoryQueryOptions, loadMoreEntries, type StoragePath } from "@/lib/client/fs";
-import { readParentPath } from "@/lib/client/query-keys";
+import { isInsideFolder, readParentPath } from "@/lib/client/query-keys";
 import { mergeClassNames } from "@/utilities/merge-class-names";
 
 /** The drag data type of entries dragged inside CMM (`{ storageId, paths }`). */
@@ -32,6 +32,7 @@ interface DraggedEntries {
 }
 
 function buildRows(
+  rootPath: string,
   listings: ReadonlyMap<string, DirectoryListing | undefined>,
   expandedPaths: ReadonlySet<string>,
   draft: { parentPath: string; type: "file" | "directory" } | undefined,
@@ -52,7 +53,7 @@ function buildRows(
     }
     if (listing.nextCursor) rows.push({ kind: "more", key: `more:${directoryPath}`, depth, directoryPath });
   };
-  addFolder("", 0);
+  addFolder(rootPath, 0);
   return rows;
 }
 
@@ -100,8 +101,8 @@ function useDirectoryWatches(storageId: string, directoryPaths: readonly string[
 }
 
 /**
- * The file tree. Folders load when expanded and are watched while open, so changes made
- * outside CMM show up. Rows are virtualised at 26px. A newly selected entry (from the URL, a link
+ * The file tree, starting at the explorer's root: the storage, or a memory in its own explorer.
+ * Folders load when expanded and are watched while open, so changes made outside CMM show up. Rows are virtualised at 26px. A newly selected entry (from the URL, a link
  * or the pane) is scrolled into view once its row has loaded.
  *
  * - **Keyboard:** arrows move and select (Shift extends), Right/Left expand and collapse, Enter
@@ -115,7 +116,8 @@ function useDirectoryWatches(storageId: string, directoryPaths: readonly string[
  */
 export function FileTree() {
   const explorer = useExplorer();
-  const { storage, expandedPaths, draft, selection, selectedPath, renamingPath, canWrite } = explorer;
+  const { storage, rootPath, memoryRoot, expandedPaths, draft, selection, selectedPath, renamingPath, canWrite } =
+    explorer;
   const queryClient = useQueryClient();
   const clipboard = useFileClipboard();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -126,7 +128,15 @@ export function FileTree() {
   const [pendingCrossCopy, setPendingCrossCopy] = useState<{ sources: StoragePath[]; destination: StoragePath }>();
   const typeAhead = useRef({ text: "", lastKeyAt: 0 });
 
-  const loadedPaths = useMemo(() => ["", ...[...expandedPaths].toSorted()], [expandedPaths]);
+  const loadedPaths = useMemo(
+    () => [
+      rootPath,
+      ...[...expandedPaths]
+        .filter((expandedPath) => expandedPath !== rootPath && isInsideFolder(expandedPath, rootPath))
+        .toSorted(),
+    ],
+    [expandedPaths, rootPath],
+  );
   const listingQueries = useQueries({
     queries: loadedPaths.map((directoryPath) => directoryQueryOptions(storage.id, directoryPath)),
   });
@@ -134,7 +144,7 @@ export function FileTree() {
   const listings = new Map(
     loadedPaths.map((directoryPath, pathIndex) => [directoryPath, listingQueries[pathIndex]?.data]),
   );
-  const rows = buildRows(listings, expandedPaths, draft);
+  const rows = buildRows(rootPath, listings, expandedPaths, draft);
   const entryRows = rows.filter((row): row is Extract<TreeRow, { kind: "entry" }> => row.kind === "entry");
   const visiblePaths = entryRows.map((row) => row.entry.path);
   const rootError = listingQueries[0]?.error;
@@ -187,7 +197,10 @@ export function FileTree() {
   const selectedParentCursor =
     selectedParentPath === undefined ? undefined : listings.get(selectedParentPath)?.nextCursor;
   const isSelectedParentShown =
-    selectedParentPath === "" || (selectedParentPath !== undefined && expandedPaths.has(selectedParentPath));
+    selectedParentPath === rootPath ||
+    (selectedParentPath !== undefined &&
+      isInsideFolder(selectedParentPath, rootPath) &&
+      expandedPaths.has(selectedParentPath));
   useEffect(() => {
     if (selectedRowIndex !== -1 || !selectedParentCursor || !isSelectedParentShown) return;
     void loadMoreEntries(queryClient, storage.id, selectedParentPath ?? "");
@@ -320,7 +333,7 @@ export function FileTree() {
   };
 
   const readDropFolder = (entry: FileEntry | undefined) =>
-    entry === undefined ? "" : entry.type === "directory" ? entry.path : readParentPath(entry.path);
+    entry === undefined ? rootPath : entry.type === "directory" ? entry.path : readParentPath(entry.path);
 
   const handleDragStart = (entry: FileEntry, dragEvent: DragEvent<HTMLDivElement>) => {
     const paths = explorer.readActionPaths(entry.path);
@@ -366,7 +379,7 @@ export function FileTree() {
         return;
       }
       void explorer.transfer(dragEvent.altKey ? "copy" : "move", sources, destination);
-      if (folderPath !== "") explorer.setExpanded(folderPath, true);
+      if (folderPath !== rootPath) explorer.setExpanded(folderPath, true);
       return;
     }
     const { files, skippedFolders } = readDroppedFiles(dragEvent.dataTransfer);
@@ -392,7 +405,7 @@ export function FileTree() {
       <div
         ref={scrollRef}
         role="tree"
-        aria-label={`Files in ${storage.label}`}
+        aria-label={`Files in ${memoryRoot?.memory.name ?? storage.label}`}
         aria-multiselectable="true"
         aria-activedescendant={activeRowId && visiblePaths.includes(activePath) ? activeRowId : undefined}
         tabIndex={0}
@@ -410,7 +423,7 @@ export function FileTree() {
         onDrop={(dragEvent) => handleDrop(undefined, dragEvent)}
         className={mergeClassNames(
           "relative min-h-0 flex-1 overflow-auto py-1 outline-none focus-visible:ring-1 focus-visible:ring-brand/50",
-          dropTargetPath === "" && "bg-brand/10",
+          dropTargetPath === rootPath && "bg-brand/10",
         )}
       >
         {rootError ? (
@@ -505,7 +518,9 @@ export function FileTree() {
           </div>
         )}
         {listingQueries[0]?.data?.entries.length === 0 && !draft && (
-          <p className="px-4 py-3 text-sm text-foreground-subtle">This storage is empty.</p>
+          <p className="px-4 py-3 text-sm text-foreground-subtle">
+            {memoryRoot ? "This memory is empty." : "This storage is empty."}
+          </p>
         )}
       </div>
       <ConfirmDialog

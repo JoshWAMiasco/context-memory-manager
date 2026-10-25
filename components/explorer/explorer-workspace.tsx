@@ -1,15 +1,22 @@
 "use client";
 
-import { FolderTree, PanelLeftOpen } from "lucide-react";
+import Link from "next/link";
+import { FolderTree, HardDrive, PanelLeftOpen } from "lucide-react";
 import { useCallback, useState, useSyncExternalStore } from "react";
 import { Group, Panel, Separator, usePanelRef, type Layout } from "react-resizable-panels";
 import { Slideover } from "@/components/interactive/slideover";
 import { Tooltip } from "@/components/interactive/tooltip";
 import { Button } from "@/components/primitives/button";
 import { ExplorerContextMenu } from "@/components/explorer/explorer-context-menu";
-import { ExplorerProvider, type ApplicationMode } from "@/components/explorer/explorer-context";
+import {
+  ExplorerProvider,
+  useExplorer,
+  type ApplicationMode,
+  type MemoryRoot,
+} from "@/components/explorer/explorer-context";
 import { ExplorerDialogs } from "@/components/explorer/explorer-dialogs";
 import { FileTree } from "@/components/explorer/file-tree";
+import { MemoryIcon } from "@/components/explorer/memory-icon";
 import { TreeToolbar } from "@/components/explorer/tree-toolbar";
 import {
   TREE_TOGGLE_SHORTCUT,
@@ -20,6 +27,7 @@ import { FilePane } from "@/components/viewer/file-pane";
 import type { UserRole } from "@/lib/auth/policy";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import type { StorageSummary } from "@/lib/api-types";
+import { buildStorageHref } from "@/lib/client/routes";
 import { formatShortcut } from "@/lib/client/shortcuts";
 
 /** `localStorage` key of the tree/pane split. */
@@ -51,9 +59,40 @@ function saveLayout(layout: Layout): void {
 
 const subscribeToNothing = () => () => undefined;
 
+/** Above a memory's own tree: the memory's icon and name, and a way back to the whole storage. */
+function MemoryTreeHeader({ memoryRoot }: { memoryRoot: MemoryRoot }) {
+  const { storage, selectedPath } = useExplorer();
+  const { memory } = memoryRoot;
+  return (
+    <div className="flex items-center gap-2.5 border-b border-line/60 px-3 py-2" data-testid="memory-tree-header">
+      <span className="flex h-8 w-8 flex-none items-center justify-center rounded-md border border-line bg-surface-subtle">
+        <MemoryIcon icon={memory.icon} color={memory.color} className="h-5 w-5" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-medium" title={memory.name}>
+          {memory.name}
+        </div>
+        <div className="truncate text-xs text-foreground-subtle">Memory in {storage.label}</div>
+      </div>
+      <Tooltip content={`Open in ${storage.label}`}>
+        <Link
+          href={buildStorageHref(storage.id, selectedPath)}
+          aria-label={`Open in ${storage.label}`}
+          data-testid="memory-exit"
+          className="flex h-8 w-8 flex-none items-center justify-center rounded-md text-foreground-muted transition-colors hover:bg-surface-muted hover:text-brand"
+        >
+          <HardDrive className="h-4 w-4 stroke-[1.5]" />
+        </Link>
+      </Tooltip>
+    </div>
+  );
+}
+
 function TreeColumn() {
+  const { memoryRoot } = useExplorer();
   return (
     <div className="flex h-full min-h-0 flex-col">
+      {memoryRoot && <MemoryTreeHeader memoryRoot={memoryRoot} />}
       <TreeToolbar />
       <FileTree />
     </div>
@@ -162,7 +201,8 @@ function StackedView() {
 }
 
 /**
- * The storage page: the file tree and the file pane side by side, with a resizable split
+ * The storage page, or a memory's own explorer when `memoryRoot` is given (its tree starts at the
+ * memory folder, under a header with the memory's name): the file tree and the file pane side by side, with a resizable split
  * (tree 24% by default, 16–45%) remembered in `localStorage` under `cmm.split`. The tree can be
  * hidden to give the file pane the whole width (its toolbar button, dragging the split to the
  * left, or ⌘\); a slim rail brings it back. Narrow screens stack them, with the tree in a "Files"
@@ -173,11 +213,13 @@ function StackedView() {
  */
 export function ExplorerWorkspace({
   storage,
+  memoryRoot,
   mode,
   userRole,
   initialPath,
 }: {
   storage: StorageSummary;
+  memoryRoot?: MemoryRoot;
   mode: ApplicationMode;
   userRole: UserRole;
   initialPath: string;
@@ -189,8 +231,14 @@ export function ExplorerWorkspace({
   );
   const isNarrow = useMediaQuery("(max-width: 767px)");
   return (
-    <ExplorerProvider storage={storage} mode={mode} userRole={userRole} initialPath={initialPath}>
-      <h1 className="sr-only">{storage.label}</h1>
+    <ExplorerProvider
+      storage={storage}
+      memoryRoot={memoryRoot}
+      mode={mode}
+      userRole={userRole}
+      initialPath={initialPath}
+    >
+      <h1 className="sr-only">{memoryRoot?.memory.name ?? storage.label}</h1>
       <div className="box h-[calc(100dvh-9rem)] min-h-[420px] overflow-hidden" data-testid="explorer" data-full-width>
         {isClient ? isNarrow ? <StackedView /> : <SplitView /> : null}
       </div>
