@@ -34,7 +34,7 @@ async function postSessionRequest(requestPath: string): Promise<number> {
  * Locks the session after `autoLockSeconds` without real user activity (pointer, keyboard, wheel,
  * touch, or the tab becoming visible). Activity is pinged to `/api/auth/activity` at most once a
  * minute and only after real activity. Tabs share activity and lock state over
- * `BroadcastChannel("ccm-session")`. With unsaved edits open, a toast warns 30 seconds before the
+ * `BroadcastChannel("cmm-session")`. With unsaved edits open, a toast warns 30 seconds before the
  * lock that they will be lost ("Unsaved changes in encrypted file will be lost" for a file in an
  * encrypted folder).
  *
@@ -116,7 +116,7 @@ export function IdleLockProvider({ autoLockSeconds, children }: { autoLockSecond
       if (isNearLock && !hasWarned && hasUnsavedChanges()) {
         hasWarned = true;
         showToastNotification({
-          title: "CCM locks in 30 seconds",
+          title: "CMM locks in 30 seconds",
           tone: "warning",
           description: hasUnsavedEncryptedChanges()
             ? "Unsaved changes in encrypted file will be lost. Save now, or move the mouse to stay."

@@ -11,7 +11,7 @@
  *   4. Runs electron-builder with electron-builder.yml.
  *
  * Usage: npm run build:desktop -- [--dir] [--skip-build] [--arch arm64|x64] [--targets dmg,AppImage,…]
- *   --dir         unpacked app only (dist/desktop/<platform>-unpacked or mac-arm64/CCM.app), for tests
+ *   --dir         unpacked app only (dist/desktop/<platform>-unpacked or mac-arm64/CMM.app), for tests
  *   --skip-build  reuse dist/app and dist/electron from an earlier `npm run build`
  */
 import { spawnSync } from "node:child_process";

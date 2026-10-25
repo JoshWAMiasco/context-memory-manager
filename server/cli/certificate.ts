@@ -90,7 +90,7 @@ export interface CertificateFiles {
   serviceGroupId?: number;
 }
 
-/** Writes `cert.pem` (0644) and `key.pem` (0640, root:ccm) into `/etc/ccm/tls` (0750, root:ccm). */
+/** Writes `cert.pem` (0644) and `key.pem` (0640, root:cmm) into `/etc/cmm/tls` (0750, root:cmm). */
 export function writeCertificateFiles(files: CertificateFiles, certificatePair: CertificatePair): void {
   mkdirSync(files.tlsDirectory, { recursive: true, mode: 0o750 });
   chmodSync(files.tlsDirectory, 0o750);

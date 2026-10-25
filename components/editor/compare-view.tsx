@@ -4,7 +4,7 @@ import { MergeView } from "@codemirror/merge";
 import { EditorState } from "@codemirror/state";
 import { EditorView, lineNumbers } from "@codemirror/view";
 import { useEffect, useRef, useState } from "react";
-import { ccmTheme } from "@/lib/editor/ccm-theme";
+import { cmmTheme } from "@/lib/editor/cmm-theme";
 import { loadLanguage } from "@/lib/editor/languages";
 
 /**
@@ -41,7 +41,7 @@ export function CompareView({
     let isCurrent = true;
     void loadLanguage(language, fileName).then((languageSupport) => {
       if (!isCurrent) return;
-      const sharedExtensions = [lineNumbers(), ccmTheme, languageSupport ?? []];
+      const sharedExtensions = [lineNumbers(), cmmTheme, languageSupport ?? []];
       mergeView = new MergeView({
         parent: hostElement,
         a: {

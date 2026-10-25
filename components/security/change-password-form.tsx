@@ -47,7 +47,7 @@ export interface ChangePasswordFormProps {
 }
 
 /**
- * Current, new and confirmed password, checked against the CCM policy (at least 10 characters,
+ * Current, new and confirmed password, checked against the CMM policy (at least 10 characters,
  * not the username) before posting to `/api/users/me/password`. Used for the forced change after
  * sign-in and in Security settings.
  *

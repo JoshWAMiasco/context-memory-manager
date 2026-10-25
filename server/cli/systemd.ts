@@ -20,13 +20,13 @@ function formatReadWritePath(directoryPath: string): string {
 /**
  * The drop-in that opens the storage roots to the hardened unit (`ProtectSystem=strict` and
  * `ProtectHome=read-only` make everything else read-only). Regenerated from `storageRoots` by
- * `ccm add-storage`, `ccm remove-storage` and `install.sh`.
+ * `cmm add-storage`, `cmm remove-storage` and `install.sh`.
  */
 export function buildStorageDropIn(storageRoots: readonly string[]): string {
   const writablePaths = [...new Set([...storageRoots, ...DRIVE_MOUNT_PATHS])];
   return [
-    "# Written by `ccm` from storageRoots in /etc/ccm/config.json. Don't edit it by hand:",
-    "# use `sudo ccm add-storage <path>` and `sudo ccm remove-storage <path>`.",
+    "# Written by `cmm` from storageRoots in /etc/cmm/config.json. Don't edit it by hand:",
+    "# use `sudo cmm add-storage <path>` and `sudo cmm remove-storage <path>`.",
     "[Service]",
     ...writablePaths.map((writablePath) => `ReadWritePaths=${formatReadWritePath(writablePath)}`),
     "",
@@ -41,7 +41,7 @@ export function writeStorageDropIn(context: CliContext, storageRoots: readonly s
 }
 
 /**
- * Applies changed unit files and restarts CCM when it is running (`try-restart`). With
+ * Applies changed unit files and restarts CMM when it is running (`try-restart`). With
  * `shouldRestart` false (install.sh starts the service itself), or in a sandbox, it only says so.
  */
 export async function reloadAndRestart(context: CliContext, shouldRestart: boolean): Promise<void> {
@@ -51,20 +51,20 @@ export async function reloadAndRestart(context: CliContext, shouldRestart: boole
   }
   const reloadResult = await context.runCommand("systemctl", ["daemon-reload"]);
   if (reloadResult.isMissing) {
-    context.warn("systemctl is not available; restart CCM yourself to apply the change.");
+    context.warn("systemctl is not available; restart CMM yourself to apply the change.");
     return;
   }
   if (reloadResult.exitCode !== 0) context.warn(`systemctl daemon-reload failed: ${reloadResult.stderr.trim()}`);
   if (!shouldRestart) {
-    context.print(`Restart CCM to apply the change: sudo systemctl restart ${SERVICE_NAME}`);
+    context.print(`Restart CMM to apply the change: sudo systemctl restart ${SERVICE_NAME}`);
     return;
   }
   const restartResult = await context.runCommand("systemctl", ["try-restart", SERVICE_NAME]);
-  if (restartResult.exitCode === 0) context.print("Restarted CCM (if it was running).");
-  else context.warn(`Could not restart CCM: ${restartResult.stderr.trim() || "systemctl try-restart failed"}`);
+  if (restartResult.exitCode === 0) context.print("Restarted CMM (if it was running).");
+  else context.warn(`Could not restart CMM: ${restartResult.stderr.trim() || "systemctl try-restart failed"}`);
 }
 
-/** `systemctl is-active ccm`: "active", "inactive", "failed", … or "unavailable" without systemd. */
+/** `systemctl is-active cmm`: "active", "inactive", "failed", … or "unavailable" without systemd. */
 export async function readServiceState(context: CliContext): Promise<string> {
   if (isSandbox(context)) return "unavailable (sandbox)";
   const result = await context.runCommand("systemctl", ["is-active", SERVICE_NAME]);

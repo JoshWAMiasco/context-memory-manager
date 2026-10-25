@@ -143,8 +143,8 @@ async function touchesManagedGit(operation: FileOperation): Promise<boolean> {
 }
 
 /**
- * Keeps hands off a versioned folder's `.git`: CCM manages it, so changing, moving or deleting
- * anything in it through CCM is refused (reading is allowed).
+ * Keeps hands off a versioned folder's `.git`: CMM manages it, so changing, moving or deleting
+ * anything in it through CMM is refused (reading is allowed).
  */
 export async function versioningGuard(operation: FileOperation): Promise<void> {
   if (["read", "list", "stat"].includes(operation.type)) return;
@@ -152,14 +152,14 @@ export async function versioningGuard(operation: FileOperation): Promise<void> {
   throw new ApiRouteError(
     403,
     "FORBIDDEN",
-    "CCM keeps this folder's history in .git. Change it from Folder settings → Versioning instead.",
+    "CMM keeps this folder's history in .git. Change it from Folder settings → Versioning instead.",
   );
 }
 
 /**
  * The versioning service: registers the `.git` guard, the guard that keeps versioned and
  * encrypted folders apart, and the auto-commit after-hook, and
- * watches versioned folders for changes made outside CCM. Pending commits are made on shutdown.
+ * watches versioned folders for changes made outside CMM. Pending commits are made on shutdown.
  *
  * @example
  * const BACKGROUND_SERVICES = [createVersioningService(), …];

@@ -14,7 +14,7 @@ import type {
   UserStorageAccess,
 } from "@/lib/api-types";
 import type { UserRole } from "@/lib/auth/policy";
-import { getConfig, type CcmConfig } from "@/server/config";
+import { getConfig, type CmmConfig } from "@/server/config";
 import { getDatabase } from "@/server/db/client";
 import { storageAccess, storages, users } from "@/server/db/schema";
 import { ApiRouteError, forbidden, notFound, validationFailed } from "@/server/http/api-error";
@@ -31,7 +31,7 @@ export interface StorageActor {
   role: UserRole;
 }
 
-/** A storage CCM can currently offer: an internal root, or an external drive that is plugged in. */
+/** A storage CMM can currently offer: an internal root, or an external drive that is plugged in. */
 export interface ActiveStorage {
   id: string;
   kind: StorageKind;
@@ -48,7 +48,7 @@ export interface ActiveStorage {
  * config file on a server. A root an admin removed later is not added back, because each seeded
  * path is remembered.
  */
-export function ensureSeededStorages(config: CcmConfig = getConfig()): void {
+export function ensureSeededStorages(config: CmmConfig = getConfig()): void {
   const seedRoots = config.mode === "desktop" ? [{ path: homedir(), label: "Home" }] : config.storageRoots;
   const { orm } = getDatabase();
   const seededRoots = new Set(readSeededRoots(orm));
@@ -182,7 +182,7 @@ export function requireStorageAccess(actor: StorageActor, storageId: string, lev
 
 /**
  * Adds a folder as an internal storage (admin only). The path must be absolute, exist, be
- * a directory and be readable; it may not already be registered or sit inside CCM's data folder.
+ * a directory and be readable; it may not already be registered or sit inside CMM's data folder.
  */
 export async function addInternalRoot(rootInput: string, label: string, createdBy: string): Promise<StorageRow> {
   if (!path.isAbsolute(rootInput)) throw validationFailed("Enter an absolute folder path.");
@@ -192,12 +192,12 @@ export async function addInternalRoot(rootInput: string, label: string, createdB
     rootStats = await stat(rootPath);
     await access(rootPath, constants.R_OK);
   } catch {
-    throw validationFailed("That folder does not exist or CCM can't read it.");
+    throw validationFailed("That folder does not exist or CMM can't read it.");
   }
   if (!rootStats.isDirectory()) throw validationFailed("That path is not a folder.");
   const dataDirectory = getConfig().dataDir;
   if (rootPath === dataDirectory || rootPath.startsWith(`${dataDirectory}${path.sep}`)) {
-    throw validationFailed("CCM's own data folder can't be a storage.");
+    throw validationFailed("CMM's own data folder can't be a storage.");
   }
   const { orm } = getDatabase();
   const existingRoot = orm

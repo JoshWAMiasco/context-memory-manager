@@ -102,7 +102,7 @@ export function GitRequiredDialog({ path: folderPath, onClose }: { path: string;
       <ModalBody>
         <div className="grid gap-4 text-sm leading-relaxed" data-testid="git-required-dialog">
           <p>
-            Versioning uses <strong>Git</strong>. Git must be installed on this computer (or on the server) for CCM to
+            Versioning uses <strong>Git</strong>. Git must be installed on this computer (or on the server) for CMM to
             keep history.
           </p>
           <GitCheck
@@ -147,7 +147,7 @@ export function GitRequiredDialog({ path: folderPath, onClose }: { path: string;
           )}
           {needsAdopt && (
             <div className="rounded-md border border-warning/40 bg-warning/10 p-3" data-testid="adopt-confirm">
-              This folder already has its own Git history (a <code>.git</code> folder). CCM can keep it and add its own
+              This folder already has its own Git history (a <code>.git</code> folder). CMM can keep it and add its own
               commits on top. Nothing in the existing history is changed.
             </div>
           )}

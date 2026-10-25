@@ -2,7 +2,7 @@ import "server-only";
 import systemInformation from "systeminformation";
 import type { Drive, DriveProvider } from "@/server/storage/drives/provider";
 
-/** The `systeminformation.blockDevices()` fields CCM reads. */
+/** The `systeminformation.blockDevices()` fields CMM reads. */
 export interface BlockDeviceInfo {
   name: string;
   identifier?: string;
@@ -19,7 +19,7 @@ export interface BlockDeviceInfo {
   device?: string;
 }
 
-/** The `systeminformation.fsSize()` fields CCM reads. */
+/** The `systeminformation.fsSize()` fields CMM reads. */
 export interface FileSystemSizeInfo {
   fs: string;
   type: string;
@@ -100,7 +100,7 @@ interface DriveCandidate {
 }
 
 /**
- * Picks the drives CCM offers as external storages from what `systeminformation` reports
+ * Picks the drives CMM offers as external storages from what `systeminformation` reports
  *. Kept in one pure function so each OS is covered by recorded fixtures.
  *
  * - A volume counts when it is removable, on a USB/Thunderbolt/SD bus, or mounted where the OS

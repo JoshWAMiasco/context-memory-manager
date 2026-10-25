@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 
-const WORD_WRAP_STORAGE_KEY = "ccm.wordWrap";
+const WORD_WRAP_STORAGE_KEY = "cmm.wordWrap";
 
 function readStoredWordWrap(): boolean {
   try {

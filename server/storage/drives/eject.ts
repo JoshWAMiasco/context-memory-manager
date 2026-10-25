@@ -54,7 +54,7 @@ export function buildEjectCommands(platform: NodeJS.Platform, drive: Drive): Dri
 /** The command that mounts an unmounted drive: Linux with udisks2 only. */
 export function buildMountCommand(platform: NodeJS.Platform, drive: Drive): DriveCommand {
   if (drive.mountPath) throw driveCommandFailed("This drive is already mounted.");
-  if (platform !== "linux") throw driveCommandFailed("Mounting drives from CCM is only supported on Linux.");
+  if (platform !== "linux") throw driveCommandFailed("Mounting drives from CMM is only supported on Linux.");
   return { file: "udisksctl", args: ["mount", "--no-user-interaction", "-b", drive.device] };
 }
 
@@ -93,6 +93,6 @@ export async function mountDrive(drive: Drive): Promise<void> {
     () => false,
   );
   if (!hasUdisks)
-    throw driveCommandFailed("udisks2 is not installed, so CCM can't mount drives. See the server guide.");
+    throw driveCommandFailed("udisks2 is not installed, so CMM can't mount drives. See the server guide.");
   await runDriveCommands([command]);
 }

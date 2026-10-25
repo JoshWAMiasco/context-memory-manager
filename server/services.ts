@@ -3,6 +3,7 @@ import { createBackupService } from "@/server/backup";
 import { createEncryptionService } from "@/server/crypto";
 import { createJobService } from "@/server/jobs/job-service";
 import { createProtectionService } from "@/server/protection/tamper";
+import { createLegacyNamesService } from "@/server/storage/legacy-service";
 import { createStorageService } from "@/server/storage/storage-service";
 import { createUploadCleanupService } from "@/server/storage/upload";
 import { createTrashAutoPurgeService } from "@/server/trash";
@@ -17,6 +18,7 @@ export interface BackgroundService {
 
 /** Every background service, in start order. */
 const BACKGROUND_SERVICES: BackgroundService[] = [
+  createLegacyNamesService(),
   createProtectionService(),
   createEncryptionService(),
   createVersioningService(),
@@ -47,7 +49,7 @@ export async function stopBackgroundServices(): Promise<void> {
     try {
       await service.stop();
     } catch (stopError) {
-      console.error(`[ccm] background service "${service.name}" failed to stop`, stopError);
+      console.error(`[cmm] background service "${service.name}" failed to stop`, stopError);
     }
   }
 }

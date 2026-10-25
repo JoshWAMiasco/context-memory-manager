@@ -5,7 +5,7 @@ import { getEventBus } from "@/server/events/bus";
 import { effectiveState } from "@/server/meta/effective";
 import { getGlobalSingleton } from "@/server/runtime/global-singleton";
 import { areTestHooksEnabled } from "@/server/runtime/test-hooks";
-import { isHiddenCcmName } from "@/server/security/path-jail";
+import { isHiddenCmmName } from "@/server/security/path-jail";
 import { findActiveStorage } from "@/server/storage/roots";
 import { joinStoragePath } from "@/server/storage/storage-path";
 import { commitScopeChanges, hasPendingAutocommit, wasWrittenByApp } from "@/server/versioning/autocommit";
@@ -52,7 +52,7 @@ export function setExternalSnapshotDebounce(milliseconds: number): void {
 
 /**
  * Commits changes another program made in a versioned folder, as author "External":
- * "External changes (N files)". Changes CCM made itself are left to the auto-commit, and nothing
+ * "External changes (N files)". Changes CMM made itself are left to the auto-commit, and nothing
  * happens while the folder is protected.
  *
  * @example
@@ -85,7 +85,7 @@ function scheduleSnapshot(scopeWatch: ScopeWatch): void {
   scopeWatch.timer = setTimeout(() => {
     scopeWatch.timer = undefined;
     void snapshotExternalChanges(scopeWatch.row.storageId, scopeWatch.rootPath, scopeWatch.row.path).catch(
-      (snapshotError: unknown) => console.warn("[ccm] versioning: couldn't record outside changes", snapshotError),
+      (snapshotError: unknown) => console.warn("[cmm] versioning: couldn't record outside changes", snapshotError),
     );
   }, getState().debounceMilliseconds);
 }
@@ -97,12 +97,12 @@ function watchScope(row: VersionedScopeRow, rootPath: string, absolutePath: stri
     ignored: (watchedPath: string) => {
       if (watchedPath === absolutePath) return false;
       const name = path.basename(watchedPath);
-      return name === ".git" || isHiddenCcmName(name);
+      return name === ".git" || isHiddenCmmName(name);
     },
   });
   const scopeWatch: ScopeWatch = { row, absolutePath, rootPath, watcher };
   watcher.on("all", () => scheduleSnapshot(scopeWatch));
-  watcher.on("error", (watchError) => console.warn("[ccm] versioning watcher error", watchError));
+  watcher.on("error", (watchError) => console.warn("[cmm] versioning watcher error", watchError));
   return scopeWatch;
 }
 
@@ -150,7 +150,7 @@ export async function closeVersioningWatches(): Promise<void> {
 export function followVersionedScopes(): () => void {
   const resync = () => {
     void syncVersioningWatches().catch((syncError: unknown) =>
-      console.warn("[ccm] could not refresh the versioning watchers", syncError),
+      console.warn("[cmm] could not refresh the versioning watchers", syncError),
     );
   };
   const unsubscribers = [onVersionedScopesChanged(resync)];

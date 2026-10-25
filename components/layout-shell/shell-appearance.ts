@@ -4,7 +4,7 @@
  *   menu starts below it.
  * - `side-menu-with-brand`: a full-height side menu holds the logo; the top bar floats beside it.
  * - `top-bar-only`: no side menu; a full-width top bar holds the logo, quick search and the page
- *   links (CCM's variant: the drives live on the home page and in quick search).
+ *   links (CMM's variant: the drives live on the home page and in quick search).
  */
 export type ShellLayoutVariant = "top-bar-with-brand" | "side-menu-with-brand" | "top-bar-only";
 

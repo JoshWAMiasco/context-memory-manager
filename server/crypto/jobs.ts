@@ -1,4 +1,5 @@
 import "server-only";
+import { LEGACY_RESERVED_NAMES } from "@/lib/fs/legacy-names";
 import { randomUUID } from "node:crypto";
 import { createReadStream, createWriteStream } from "node:fs";
 import { chmod, copyFile, lstat, mkdir, readdir, readFile, rename, rm } from "node:fs/promises";
@@ -43,7 +44,7 @@ export const JOURNAL_FILE = "crypto-journal.json";
 const IN_FILE_REPORT_MILLISECONDS = 100;
 
 /** Folders the walk never enters. */
-const SKIPPED_NAMES = new Set([META_DIRECTORY, ".ccm-trash", TEMPORARY_DIRECTORY, ".git"]);
+const SKIPPED_NAMES = new Set([META_DIRECTORY, ".cmm-trash", TEMPORARY_DIRECTORY, ".git", ...LEGACY_RESERVED_NAMES]);
 
 const ACTIVITY: Record<CryptoJobKind, CryptoFile["state"]> = {
   encrypt: "encrypting",
@@ -82,7 +83,7 @@ function wrongState(message: string): ApiRouteError {
   return new ApiRouteError(409, "ENCRYPTION_IN_PROGRESS", message);
 }
 
-/** Every file in the folder, sorted, skipping CCM's folders and `.git`; symlinks are left alone. */
+/** Every file in the folder, sorted, skipping CMM's folders and `.git`; symlinks are left alone. */
 async function listScopeFiles(
   scopeAbsolutePath: string,
   signal: AbortSignal,
@@ -153,7 +154,7 @@ async function planFile(
 }
 
 /**
- * Rewrites one file through `transforms` into `<root>/.ccm-tmp/<uuid>` (fsync), checks new
+ * Rewrites one file through `transforms` into `<root>/.cmm-tmp/<uuid>` (fsync), checks new
  * ciphertext, then renames it over the original with the original mode bits. A crash leaves the
  * original or the finished file, never a mix.
  */
@@ -162,7 +163,7 @@ const testSlowdown = getGlobalSingleton("crypto.testSlowdown", () => ({ chunkDel
 
 /**
  * Slows every crypto job down by `chunkDelayMilliseconds` per 64 KiB chunk (0 turns it off). Does
- * nothing unless test hooks are on (`CCM_TEST_HOOKS=1`).
+ * nothing unless test hooks are on (`CMM_TEST_HOOKS=1`).
  *
  * @example
  * setCryptoTestSlowdown(150);
@@ -266,7 +267,7 @@ async function finishJob(
 
 /**
  * Encrypts, decrypts or re-keys every file of an encrypted folder. The file list is
- * written once to `.ccm/crypto-journal.json` and the cursor is checkpointed after every file;
+ * written once to `.cmm/crypto-journal.json` and the cursor is checkpointed after every file;
  * each file is skipped when it is already in the target state, so a resumed or repeated job never
  * encrypts twice. Progress counts bytes and files, and moves inside a large file as it is read.
  */

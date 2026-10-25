@@ -9,7 +9,7 @@ import { collectTransforms, runGuards, type FileActor } from "@/server/storage/p
 import type { ActiveStorage } from "@/server/storage/roots";
 
 /**
- * Streams a folder as a zip. `.ccm/`, `.ccm-trash/`, `.ccm-tmp/` and `.git` are left
+ * Streams a folder as a zip. `.cmm/`, `.cmm-trash/`, `.cmm-tmp/` and `.git` are left
  * out, symlinks are skipped, and file content passes the read transforms (decrypting encrypted files). Entries
  * are added one at a time, so only one file is open however big the folder is, and a slow
  * download slows the walk instead of buffering.
@@ -54,7 +54,7 @@ export async function createFolderZipStream(
     await archive.finalize();
   };
   addEntries().catch((zipError: unknown) => {
-    console.error("[ccm] zip download failed", zipError);
+    console.error("[cmm] zip download failed", zipError);
     archive.abort();
     archive.destroy(zipError as Error);
   });

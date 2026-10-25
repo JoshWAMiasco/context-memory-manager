@@ -11,7 +11,7 @@ export function createJobService(): BackgroundService {
       registerAllJobTypes();
       const interruptedCount = getJobQueue().recoverInterrupted();
       if (interruptedCount > 0)
-        console.log(`[ccm] ${interruptedCount} interrupted job(s) are paused; resume them from Jobs`);
+        console.log(`[cmm] ${interruptedCount} interrupted job(s) are paused; resume them from Jobs`);
     },
     stop: () => getJobQueue().pauseAll(),
   };

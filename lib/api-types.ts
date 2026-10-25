@@ -261,7 +261,7 @@ export interface StorageSummary {
   used?: number;
   /** Absolute root path; sent to admins only. */
   rootPath?: string;
-  /** For external drives: whether CCM can mount it (Linux with udisks2) or eject it. */
+  /** For external drives: whether CMM can mount it (Linux with udisks2) or eject it. */
   canMount?: boolean;
   canEject?: boolean;
   /** The drive's file system ("exfat", "vfat", "apfs"…), for external drives. */
@@ -344,7 +344,7 @@ export interface EncryptionStatus {
   /** A short fingerprint of the key id, to tell key files apart. */
   keyFingerprint?: string;
   /**
-   * The folder's key is all zeros: early development builds of CCM stored the
+   * The folder's key is all zeros: early development builds of CMM stored the
    * wizard's key after wiping it. Anyone can decrypt such a folder until it is re-keyed.
    */
   weakKey?: boolean;

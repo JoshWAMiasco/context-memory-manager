@@ -1,6 +1,6 @@
 import type { SVGProps } from "react";
 
-export type CcmIconProps = SVGProps<SVGSVGElement>;
+export type CmmIconProps = SVGProps<SVGSVGElement>;
 
 /**
  * USB flash drive, from MingCute Icon ("usb-flash-disk-line") by MingCute Design, Apache License 2.0.
@@ -8,7 +8,7 @@ export type CcmIconProps = SVGProps<SVGSVGElement>;
  * @example
  * <UsbFlashDiskIcon className="h-5 w-5" />
  */
-export function UsbFlashDiskIcon(iconProps: CcmIconProps) {
+export function UsbFlashDiskIcon(iconProps: CmmIconProps) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" {...iconProps}>
       <path
@@ -21,12 +21,12 @@ export function UsbFlashDiskIcon(iconProps: CcmIconProps) {
 
 /**
  * An external hard disk drive: a drive case with its platter, spindle arm and status light. Drawn
- * for CCM.
+ * for CMM.
  *
  * @example
  * <ExternalDriveIcon className="h-5 w-5" />
  */
-export function ExternalDriveIcon(iconProps: CcmIconProps) {
+export function ExternalDriveIcon(iconProps: CmmIconProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -51,12 +51,12 @@ export function ExternalDriveIcon(iconProps: CcmIconProps) {
 
 /**
  * Safe eject: a shield with an arrow leaving it, so ejecting reads as "unplug safely". Drawn for
- * CCM.
+ * CMM.
  *
  * @example
  * <EjectShieldIcon className="h-4 w-4" />
  */
-export function EjectShieldIcon(iconProps: CcmIconProps) {
+export function EjectShieldIcon(iconProps: CmmIconProps) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" {...iconProps}>
       <path
@@ -81,7 +81,7 @@ export function EjectShieldIcon(iconProps: CcmIconProps) {
  * @example
  * <BrainIcon className="h-4 w-4" style={{ color: memoryColor }} />
  */
-export function BrainIcon(iconProps: CcmIconProps) {
+export function BrainIcon(iconProps: CmmIconProps) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" {...iconProps}>
       <g fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5">

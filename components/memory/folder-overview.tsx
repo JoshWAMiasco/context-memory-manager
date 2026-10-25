@@ -17,7 +17,7 @@ import { useState, type ReactNode } from "react";
 import { Tooltip } from "@/components/interactive/tooltip";
 import { Button } from "@/components/primitives/button";
 import { StatisticCard } from "@/components/primitives/statistic-card";
-import { BrainIcon } from "@/components/icons/ccm-icons";
+import { BrainIcon } from "@/components/icons/cmm-icons";
 import { EncryptionActivityBanner } from "@/components/encryption/encryption-activity-banner";
 import { UnlockPanel } from "@/components/encryption/unlock-panel";
 import { announce, announceError, useExplorer } from "@/components/explorer/explorer-context";
@@ -78,7 +78,7 @@ function TamperBanner({ folderPath }: { folderPath: string }) {
       <span className="flex-1">
         An external process modified a protected folder:{" "}
         <span className="font-medium">{protection.violation.path}</span>, {dayjs(protection.violation.at).fromNow()}.
-        CCM made it read-only again.
+        CMM made it read-only again.
       </span>
       <Button
         variant="outline-secondary"

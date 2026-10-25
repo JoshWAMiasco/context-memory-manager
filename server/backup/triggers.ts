@@ -62,7 +62,7 @@ export function resumeWaitingBackups(storageId: string): string[] {
       queue.resume(SYSTEM_JOB_ACTOR, jobRow.id);
       resumed.push(jobRow.id);
     } catch (resumeError) {
-      console.error(`[ccm] backup ${jobRow.id} could not resume`, resumeError);
+      console.error(`[cmm] backup ${jobRow.id} could not resume`, resumeError);
     }
   }
   return resumed;
@@ -101,7 +101,7 @@ export async function runAutoProfiles(storageId: string, now = Date.now()): Prom
         storageId,
       });
     } catch (startError) {
-      console.error(`[ccm] backup profile "${profileRow.name}" could not start`, startError);
+      console.error(`[cmm] backup profile "${profileRow.name}" could not start`, startError);
     }
   }
   return started;
@@ -123,7 +123,7 @@ export function registerBackupTriggers(): () => void {
       if (!findActiveStorage(storageId)?.available) return;
       resumeWaitingBackups(storageId);
       runAutoProfiles(storageId).catch((triggerError: unknown) =>
-        console.error(`[ccm] backup triggers for ${storageId} failed`, triggerError),
+        console.error(`[cmm] backup triggers for ${storageId} failed`, triggerError),
       );
     }, readTriggerSettings().settleMilliseconds);
     timer.unref();

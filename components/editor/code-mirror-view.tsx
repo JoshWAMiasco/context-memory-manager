@@ -15,7 +15,7 @@ import {
   lineNumbers,
 } from "@codemirror/view";
 import { useEffect, useRef, useState } from "react";
-import { ccmTheme } from "@/lib/editor/ccm-theme";
+import { cmmTheme } from "@/lib/editor/cmm-theme";
 import { detectIndentation } from "@/lib/editor/indentation";
 import { loadLanguage } from "@/lib/editor/languages";
 import { mergeClassNames } from "@/utilities/merge-class-names";
@@ -107,7 +107,7 @@ export function CodeMirrorView({
         ...foldKeymap,
         indentWithTab,
       ]),
-      ccmTheme,
+      cmmTheme,
       compartments.language.of([]),
       compartments.readOnly.of(EditorState.readOnly.of(false)),
       compartments.wrap.of([]),

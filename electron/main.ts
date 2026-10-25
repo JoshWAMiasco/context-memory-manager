@@ -1,12 +1,13 @@
 /*
- * The CCM desktop app's main process. It runs the CCM server in a utility
+ * The CMM desktop app's main process. It runs the CMM server in a utility
  * process on a random `127.0.0.1` port with a per-launch token, shows a splash until the server is
  * healthy, then opens one hardened window on it. Nothing here talks to the network: no updater,
  * no spellchecker downloads, no background networking.
  */
-import { existsSync, rmSync } from "node:fs";
+import { existsSync, renameSync, rmSync } from "node:fs";
 import path from "node:path";
 import { app, BrowserWindow, dialog, Menu, screen, session, shell, type WebContents } from "electron";
+import { adoptLegacyEnvironment } from "@/lib/fs/legacy-names";
 import { registerDesktopIpc, confirmAndOpenExternal } from "./ipc";
 import { formatLogLine, RotatingLogFile } from "./log-file";
 import { buildApplicationMenu } from "./menu";
@@ -15,22 +16,40 @@ import { buildServerEnvironment, createLaunchToken, findFreePort, waitForHealth 
 import { DesktopServer } from "./server-process";
 import { MINIMUM_WINDOW_SIZE, readWindowState, writeWindowState } from "./window-state";
 
-const PRODUCT_NAME = "CCM";
-const DESKTOP_GUIDE_FILE = "CCM-Desktop-Guide.pdf";
-/** The server's SQLite file in userData (server/db/client.ts); Reset CCM deletes it. */
-const DATABASE_FILE_NAME = "ccm.db";
+// Settings named CCM_… (before the rename to CMM) still apply.
+adoptLegacyEnvironment(process.env);
+
+const PRODUCT_NAME = "CMM";
+const DESKTOP_GUIDE_FILE = "CMM-Desktop-Guide.pdf";
+/** The server's SQLite file in userData (server/db/client.ts); Reset CMM deletes it. */
+const DATABASE_FILE_NAME = "cmm.db";
 const CANVAS_COLOR = "#04101a";
 const isMac = process.platform === "darwin";
-const isDebug = process.env.CCM_DEBUG === "1";
+const isDebug = process.env.CMM_DEBUG === "1";
 const launchStartedAt = Date.now();
 
+/** The app was called CCM before; its userData folder moves to CMM's on the first launch. */
+const LEGACY_PRODUCT_NAME = "CCM";
+
+function adoptLegacyUserData(userDataDirectory: string): void {
+  const legacyUserData = path.join(path.dirname(userDataDirectory), LEGACY_PRODUCT_NAME);
+  if (existsSync(userDataDirectory) || !existsSync(legacyUserData)) return;
+  try {
+    renameSync(legacyUserData, userDataDirectory);
+  } catch (renameError) {
+    console.error(`[cmm] could not move ${legacyUserData} to ${userDataDirectory}`, renameError);
+  }
+}
+
 /*
- * userData is always "<appData>/CCM", whatever the executable is called. `CCM_DESKTOP_USER_DATA`
+ * userData is always "<appData>/CMM", whatever the executable is called. `CMM_DESKTOP_USER_DATA`
  * moves it (tests use a throwaway folder). It must be set before the single-instance lock, which
  * is held per userData folder.
  */
 app.setName(PRODUCT_NAME);
-app.setPath("userData", process.env.CCM_DESKTOP_USER_DATA || path.join(app.getPath("appData"), PRODUCT_NAME));
+const defaultUserData = path.join(app.getPath("appData"), PRODUCT_NAME);
+if (!process.env.CMM_DESKTOP_USER_DATA) adoptLegacyUserData(defaultUserData);
+app.setPath("userData", process.env.CMM_DESKTOP_USER_DATA || defaultUserData);
 app.commandLine.appendSwitch("disable-background-networking");
 app.commandLine.appendSwitch("disable-component-update");
 
@@ -43,7 +62,7 @@ const serverLog = new RotatingLogFile(path.join(logsDirectory, "server.log"));
 /** `resources/` in an installed app; in a dev run (`electron dist/electron`) the sibling `dist/` folders. */
 const resourcesDirectory = app.isPackaged
   ? process.resourcesPath
-  : process.env.CCM_DESKTOP_RESOURCES_DIR || path.resolve(__dirname, "..", "resources");
+  : process.env.CMM_DESKTOP_RESOURCES_DIR || path.resolve(__dirname, "..", "resources");
 const serverEntryPath = app.isPackaged
   ? path.join(process.resourcesPath, "app-server", "entry.js")
   : path.resolve(__dirname, "..", "app", "entry.js");
@@ -81,19 +100,19 @@ function openDesktopGuide(): void {
 }
 
 /**
- * Help › Reset CCM… (the desktop's answer to a forgotten password, documented in the guide): after
+ * Help › Reset CMM… (the desktop's answer to a forgotten password, documented in the guide): after
  * a confirmation, stops the server, deletes the database (accounts, settings, storages, backup
- * profiles) and starts again at the setup page. Files, folders and their `.ccm` settings stay.
+ * profiles) and starts again at the setup page. Files, folders and their `.cmm` settings stay.
  */
-async function resetCcm(): Promise<void> {
+async function resetCmm(): Promise<void> {
   const { response } = await dialog.showMessageBox({
     type: "warning",
-    buttons: ["Cancel", "Reset CCM"],
+    buttons: ["Cancel", "Reset CMM"],
     defaultId: 0,
     cancelId: 0,
-    message: "Reset CCM?",
+    message: "Reset CMM?",
     detail:
-      "This deletes CCM's accounts, settings, storage list and backup profiles and history, then starts again " +
+      "This deletes CMM's accounts, settings, storage list and backup profiles and history, then starts again " +
       "at the first-run setup, where you create a new account.\n\n" +
       "Your files and folders are not touched. Encrypted folders stay encrypted: unlock them with their key " +
       "file and the new account's password. Let running encryption and backup jobs finish first.",
@@ -230,7 +249,7 @@ function createMainWindow(origin: string): BrowserWindow {
       webSecurity: true,
       spellcheck: false,
       preload: path.join(__dirname, "preload.js"),
-      additionalArguments: [`--ccm-app-version=${app.getVersion()}`],
+      additionalArguments: [`--cmm-app-version=${app.getVersion()}`],
     },
   });
   state.mainWindow = mainWindow;
@@ -275,7 +294,7 @@ async function startServer(): Promise<string> {
   isHealthy = true;
   await session.defaultSession.cookies.set({
     url: origin,
-    name: "ccm_launch",
+    name: "cmm_launch",
     value: launchToken,
     httpOnly: true,
     sameSite: "strict",
@@ -292,11 +311,11 @@ async function handleServerCrash(exitCode: number): Promise<void> {
   for (;;) {
     const { response } = await dialog.showMessageBox({
       type: "error",
-      buttons: ["Restart CCM", "Open Logs", "Quit"],
+      buttons: ["Restart CMM", "Open Logs", "Quit"],
       defaultId: 0,
       cancelId: 2,
-      message: "CCM stopped unexpectedly.",
-      detail: `The CCM server exited with code ${exitCode}. Running jobs resume where they stopped after a restart.`,
+      message: "CMM stopped unexpectedly.",
+      detail: `The CMM server exited with code ${exitCode}. Running jobs resume where they stopped after a restart.`,
     });
     if (response === 1) {
       openLogsFolder();
@@ -326,7 +345,7 @@ async function showStartupError(startupError: unknown): Promise<void> {
     buttons: ["Open Logs", "Quit"],
     defaultId: 1,
     cancelId: 1,
-    message: "CCM could not start.",
+    message: "CMM could not start.",
     detail: `${message}\n\nThe logs folder has the details.`,
   });
   if (response === 0) openLogsFolder();
@@ -336,7 +355,7 @@ async function showStartupError(startupError: unknown): Promise<void> {
 }
 
 async function launch(): Promise<void> {
-  log(`CCM ${app.getVersion()} starting (Electron ${process.versions.electron}, ${process.platform}-${process.arch})`);
+  log(`CMM ${app.getVersion()} starting (Electron ${process.versions.electron}, ${process.platform}-${process.arch})`);
   hardenSession();
   registerDesktopIpc(() => state.origin);
   Menu.setApplicationMenu(
@@ -346,7 +365,7 @@ async function launch(): Promise<void> {
         isDebug,
         onOpenGuide: openDesktopGuide,
         onOpenLogs: openLogsFolder,
-        onResetCcm: () => void resetCcm(),
+        onResetCmm: () => void resetCmm(),
         onAbout: showAbout,
       }),
     ),

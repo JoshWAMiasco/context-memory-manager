@@ -11,8 +11,9 @@ import https from "node:https";
 import { createRequire } from "node:module";
 import type { AddressInfo } from "node:net";
 import path from "node:path";
+import { adoptLegacyEnvironment } from "@/lib/fs/legacy-names";
 import { ensureSetupCode } from "@/server/auth/setup";
-import { getConfig, type CcmConfig } from "@/server/config";
+import { getConfig, type CmmConfig } from "@/server/config";
 import { closeDatabase, getDatabase } from "@/server/db/client";
 import { runMigrations } from "@/server/db/migrate";
 import {
@@ -24,6 +25,9 @@ import { findRootRefusal } from "@/server/runtime/root-refusal";
 import { installOfflineGuardFromEnvironment } from "@/server/security/offline-guard";
 import { applyTrustedHeaders } from "@/server/security/trusted-headers";
 import { startBackgroundServices, stopBackgroundServices } from "@/server/services";
+
+// Settings named CCM_… (before the rename to CMM) still apply.
+adoptLegacyEnvironment(process.env);
 
 type RequestHandler = (request: http.IncomingMessage, response: http.ServerResponse) => Promise<void>;
 interface NextServer {
@@ -39,12 +43,12 @@ const isDevelopment = process.argv.includes("--dev");
 
 /** Where the Next app lives: next to this file in a packaged build, the project root in dev. */
 function resolveApplicationDirectory(): string {
-  if (process.env.CCM_APP_DIR) return path.resolve(process.env.CCM_APP_DIR);
+  if (process.env.CMM_APP_DIR) return path.resolve(process.env.CMM_APP_DIR);
   return isDevelopment ? path.resolve(__dirname, "..", "..") : __dirname;
 }
 
 function log(message: string): void {
-  console.log(`[ccm] ${message}`);
+  console.log(`[cmm] ${message}`);
 }
 
 /**
@@ -55,7 +59,7 @@ function log(message: string): void {
  */
 function createNextApplication(
   applicationDirectory: string,
-  config: CcmConfig,
+  config: CmmConfig,
   port: number,
   upgradeRelay: EventEmitter,
 ): NextServer {
@@ -116,12 +120,12 @@ async function main(): Promise<void> {
 
   const applicationDirectory = resolveApplicationDirectory();
   process.chdir(applicationDirectory);
-  process.env.CCM_MIGRATIONS_DIR ??= isDevelopment
+  process.env.CMM_MIGRATIONS_DIR ??= isDevelopment
     ? path.join(applicationDirectory, "server", "db", "migrations")
     : path.join(applicationDirectory, "migrations");
-  process.env.CCM_CONTENT_DIR ??= path.join(applicationDirectory, "content");
-  // The PDF guides sit next to the app: dist/docs, resources/docs (desktop), /opt/ccm/<version>/docs (server).
-  process.env.CCM_DOCS_DIR ??= isDevelopment
+  process.env.CMM_CONTENT_DIR ??= path.join(applicationDirectory, "content");
+  // The PDF guides sit next to the app: dist/docs, resources/docs (desktop), /opt/cmm/<version>/docs (server).
+  process.env.CMM_DOCS_DIR ??= isDevelopment
     ? path.join(applicationDirectory, "dist", "docs")
     : path.join(applicationDirectory, "..", "docs");
 
@@ -130,7 +134,7 @@ async function main(): Promise<void> {
   if (rootRefusal) throw new Error(rootRefusal);
   const expectedLaunchToken = readExpectedLaunchToken();
   if (config.mode === "desktop" && !expectedLaunchToken) {
-    throw new Error(`Desktop mode needs ${LAUNCH_TOKEN_ENVIRONMENT_VARIABLE}; the CCM desktop app sets it on launch.`);
+    throw new Error(`Desktop mode needs ${LAUNCH_TOKEN_ENVIRONMENT_VARIABLE}; the CMM desktop app sets it on launch.`);
   }
   runMigrations(getDatabase().orm);
   ensureSetupCode();
@@ -143,18 +147,18 @@ async function main(): Promise<void> {
       response.writeHead(403, { "content-type": "application/json", "cache-control": "no-store" });
       response.end(
         JSON.stringify({
-          error: { code: "FORBIDDEN", message: "This request did not come from the CCM desktop app." },
+          error: { code: "FORBIDDEN", message: "This request did not come from the CMM desktop app." },
         }),
       );
       return;
     }
     if (!nextHandlers.handleRequest) {
       response.writeHead(503, { "content-type": "text/plain", "retry-after": "1" });
-      response.end("CCM is starting.");
+      response.end("CMM is starting.");
       return;
     }
     nextHandlers.handleRequest(request, response).catch((requestError: unknown) => {
-      console.error("[ccm] unhandled request error", requestError);
+      console.error("[cmm] unhandled request error", requestError);
       if (!response.headersSent) response.writeHead(500);
       response.end();
     });
@@ -201,7 +205,7 @@ async function main(): Promise<void> {
     isShuttingDown = true;
     log(`${signal} received, shutting down`);
     const forceExitTimer = setTimeout(() => {
-      console.error("[ccm] shutdown timed out, exiting");
+      console.error("[cmm] shutdown timed out, exiting");
       process.exit(1);
     }, SHUTDOWN_TIMEOUT_MILLISECONDS);
     forceExitTimer.unref();
@@ -224,6 +228,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((startupError: unknown) => {
-  console.error("[ccm] failed to start", startupError);
+  console.error("[cmm] failed to start", startupError);
   process.exit(1);
 });

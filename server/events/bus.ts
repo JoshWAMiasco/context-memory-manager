@@ -40,7 +40,7 @@ export interface SessionDestroyedEvent {
   reason: "logout" | "expired" | "revoked";
 }
 
-/** A change was made inside a protected folder by something other than CCM. */
+/** A change was made inside a protected folder by something other than CMM. */
 export interface ProtectionViolationEvent {
   storageId: string;
   /** The protected folder (or file). */
@@ -86,7 +86,7 @@ export interface BackupTriggeredEvent {
 }
 
 /** Every event the bus carries, keyed by the SSE event name. */
-export interface CcmEventMap {
+export interface CmmEventMap {
   "fs.changed": [FileSystemChangedEvent];
   "drive.added": [DriveEvent];
   "drive.removed": [DriveEvent];
@@ -101,7 +101,7 @@ export interface CcmEventMap {
   "backup.triggered": [BackupTriggeredEvent];
 }
 
-export type CcmEventName = keyof CcmEventMap;
+export type CmmEventName = keyof CmmEventMap;
 
 /** The SSE topics a client subscribes to (`/api/events?topics=fs,drives`) and the events in each. */
 export const EVENT_TOPICS = {
@@ -109,11 +109,11 @@ export const EVENT_TOPICS = {
   drives: ["drive.added", "drive.removed", "drive.updated"],
   jobs: ["job.progress", "job.state", "backup.triggered"],
   session: ["session.locked", "session.destroyed"],
-} as const satisfies Record<string, readonly CcmEventName[]>;
+} as const satisfies Record<string, readonly CmmEventName[]>;
 
 export type EventTopic = keyof typeof EVENT_TOPICS;
 
-export class CcmEventBus extends EventEmitter<CcmEventMap> {
+export class CmmEventBus extends EventEmitter<CmmEventMap> {
   constructor() {
     super();
     this.setMaxListeners(0);
@@ -121,6 +121,6 @@ export class CcmEventBus extends EventEmitter<CcmEventMap> {
 }
 
 /** The process-wide event bus, shared by background services and the SSE route. */
-export function getEventBus(): CcmEventBus {
-  return getGlobalSingleton("event-bus", () => new CcmEventBus());
+export function getEventBus(): CmmEventBus {
+  return getGlobalSingleton("event-bus", () => new CmmEventBus());
 }

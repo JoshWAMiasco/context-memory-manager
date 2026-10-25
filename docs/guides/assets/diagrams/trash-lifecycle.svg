@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 430" font-family="Oxanium, sans-serif" role="img" aria-labelledby="trash-lifecycle-title">
-  <title id="trash-lifecycle-title">What happens when you delete: the item goes to CCM Trash, kept on the same drive in .ccm-trash. From there you can restore it to its place, delete it permanently after confirming, or, in the desktop app only, move it to the computer's trash.</title>
+  <title id="trash-lifecycle-title">What happens when you delete: the item goes to CMM Trash, kept on the same drive in .cmm-trash. From there you can restore it to its place, delete it permanently after confirming, or, in the desktop app only, move it to the computer's trash.</title>
   <defs>
     <marker id="trash-lifecycle-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
       <path d="M0 0 L10 5 L0 10 Z" fill="#275070"/>
@@ -13,7 +13,7 @@
   </defs>
 
   <text x="24" y="40" font-size="24" font-weight="700" fill="#0b1f2e">What happens when you delete</text>
-  <text x="24" y="66" font-size="15" fill="#31506a">Deleted items wait in CCM Trash until you decide what to do with them.</text>
+  <text x="24" y="66" font-size="15" fill="#31506a">Deleted items wait in CMM Trash until you decide what to do with them.</text>
 
   <!-- your file -->
   <rect x="24" y="178" width="160" height="104" rx="12" fill="#ffffff" stroke="#275070" stroke-width="1.5"/>
@@ -30,11 +30,11 @@
   <path d="M188 230 H290" fill="none" stroke="#275070" stroke-width="2.5" marker-end="url(#trash-lifecycle-arrow)"/>
   <text x="238" y="220" text-anchor="middle" font-size="16" font-weight="700" fill="#0b1f2e">Delete</text>
 
-  <!-- CCM Trash -->
+  <!-- CMM Trash -->
   <rect x="294" y="128" width="200" height="204" rx="14" fill="#f0e8ff" stroke="#153049" stroke-width="2"/>
   <use href="#trash-lifecycle-can" x="370" y="144" width="48" height="55"/>
-  <text x="394" y="230" text-anchor="middle" font-size="19" font-weight="700" fill="#0b1f2e">CCM Trash</text>
-  <text x="394" y="254" text-anchor="middle" font-family="'Martian Mono', monospace" font-size="12" fill="#153049">.ccm-trash</text>
+  <text x="394" y="230" text-anchor="middle" font-size="19" font-weight="700" fill="#0b1f2e">CMM Trash</text>
+  <text x="394" y="254" text-anchor="middle" font-family="'Martian Mono', monospace" font-size="12" fill="#153049">.cmm-trash</text>
   <text x="394" y="280" text-anchor="middle" font-size="13" fill="#31506a">kept on the same drive,</text>
   <text x="394" y="297" text-anchor="middle" font-size="13" fill="#31506a">nothing is lost yet</text>
 
@@ -58,7 +58,7 @@
   <circle cx="628" cy="232" r="20" fill="#ffffff" stroke="#153049" stroke-width="2"/>
   <path d="M620 224 l16 16 M636 224 l-16 16" stroke="#153049" stroke-width="2.6" stroke-linecap="round"/>
   <text x="662" y="227" font-size="17" font-weight="700" fill="#0b1f2e">Delete permanently</text>
-  <text x="662" y="248" font-size="13" fill="#31506a">gone for good; CCM asks you to confirm</text>
+  <text x="662" y="248" font-size="13" fill="#31506a">gone for good; CMM asks you to confirm</text>
 
   <!-- move to computer's trash -->
   <rect x="590" y="286" width="346" height="80" rx="12" fill="#edf2ff" stroke="#275070" stroke-width="1.5" stroke-dasharray="6 4"/>

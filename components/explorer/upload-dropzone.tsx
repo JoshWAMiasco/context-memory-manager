@@ -8,7 +8,7 @@ import { mergeClassNames } from "@/utilities/merge-class-names";
 
 /**
  * Wraps the file pane: while files from the computer are dragged over it, an overlay says where
- * they will go, and dropping them queues the uploads. Entries dragged inside CCM are
+ * they will go, and dropping them queues the uploads. Entries dragged inside CMM are
  * ignored here; the tree handles those.
  *
  * @example
@@ -31,7 +31,7 @@ export function UploadDropzone({
   const isFileDrag = (dragEvent: DragEvent<HTMLDivElement>) =>
     isEnabled &&
     dragEvent.dataTransfer.types.includes("Files") &&
-    !dragEvent.dataTransfer.types.includes("application/x-ccm-entries");
+    !dragEvent.dataTransfer.types.includes("application/x-cmm-entries");
 
   return (
     <div

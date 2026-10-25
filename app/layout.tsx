@@ -7,7 +7,7 @@ import "@/styles/globals.css";
 export const metadata: Metadata = {
   title: { template: `%s · ${THEME_IDENTITY.themeDisplayName}`, default: THEME_IDENTITY.themeDisplayName },
   description: THEME_IDENTITY.productName,
-  icons: { icon: { url: "/icons/ccm/logo.svg", type: "image/svg+xml" } },
+  icons: { icon: { url: "/icons/cmm/logo.svg", type: "image/svg+xml" } },
 };
 
 /** Every page renders per request: the CSP nonce from `proxy.ts` only reaches dynamically rendered pages. */

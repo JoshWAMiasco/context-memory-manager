@@ -1,4 +1,5 @@
 import "server-only";
+import { LEGACY_MANAGED_BLOCK_END, LEGACY_MANAGED_BLOCK_START } from "@/lib/fs/legacy-names";
 import { chmod, readdir, rm } from "node:fs/promises";
 import { devNull } from "node:os";
 import path from "node:path";
@@ -8,48 +9,48 @@ import { getGlobalSingleton } from "@/server/runtime/global-singleton";
 import { requireGit } from "@/server/versioning/git-detect";
 import { joinStoragePath } from "@/server/storage/storage-path";
 
-/** Commits are made by CCM; the author is the user, or "External" for changes made outside CCM. */
-export const COMMITTER = { name: "CCM", email: "ccm@local" } as const;
-export const EXTERNAL_AUTHOR = { name: "External", email: "external@ccm.local" } as const;
+/** Commits are made by CMM; the author is the user, or "External" for changes made outside CMM. */
+export const COMMITTER = { name: "CMM", email: "cmm@local" } as const;
+export const EXTERNAL_AUTHOR = { name: "External", email: "external@cmm.local" } as const;
 
 export interface CommitAuthor {
   name: string;
   email: string;
 }
 
-/** The author for a user's change: `<username> <username@ccm.local>`. */
+/** The author for a user's change: `<username> <username@cmm.local>`. */
 export function userAuthor(username: string | undefined): CommitAuthor {
-  const name = username?.trim() || "CCM user";
-  return { name, email: `${name.replaceAll(/[^\w.-]/g, "_")}@ccm.local` };
+  const name = username?.trim() || "CMM user";
+  return { name, email: `${name.replaceAll(/[^\w.-]/g, "_")}@cmm.local` };
 }
 
 /** Git can take a while on large folders; nothing should hang forever. */
 const COMMAND_TIMEOUT_MILLISECONDS = 120_000;
 
 export const GITIGNORE_FILE = ".gitignore";
-export const MANAGED_BLOCK_START = "# >>> CCM managed";
-export const MANAGED_BLOCK_END = "# <<< CCM managed";
+export const MANAGED_BLOCK_START = "# >>> CMM managed";
+export const MANAGED_BLOCK_END = "# <<< CMM managed";
 
 /**
- * What CCM keeps out of history: its trash and staging areas, and its own `.ccm/` settings except
+ * What CMM keeps out of history: its trash and staging areas, and its own `.cmm/` settings except
  * the memory manifest. Protection, encryption state and the versioning stacks change on their own
  * and must never come back through an undo or restore.
  */
 export const MANAGED_IGNORE_LINES = [
-  ".ccm-trash/",
-  ".ccm-tmp/",
-  ".ccm-tmp*",
-  "*.ccm-tmp",
-  ".ccm/*",
-  "!.ccm/manifest.json",
+  ".cmm-trash/",
+  ".cmm-tmp/",
+  ".cmm-tmp*",
+  "*.cmm-tmp",
+  ".cmm/*",
+  "!.cmm/manifest.json",
 ] as const;
 
 /**
- * Adds CCM's block to a `.gitignore`, or replaces an older copy of it; the user's own
+ * Adds CMM's block to a `.gitignore`, or replaces an older copy of it; the user's own
  * lines stay as they are.
  *
  * @example
- * mergeManagedBlock("node_modules/\n"); // "node_modules/\n\n# >>> CCM managed\n…\n# <<< CCM managed\n"
+ * mergeManagedBlock("node_modules/\n"); // "node_modules/\n\n# >>> CMM managed\n…\n# <<< CMM managed\n"
  */
 export function mergeManagedBlock(existing: string): string {
   const block = [MANAGED_BLOCK_START, ...MANAGED_IGNORE_LINES, MANAGED_BLOCK_END].join("\n");
@@ -57,20 +58,28 @@ export function mergeManagedBlock(existing: string): string {
   return withoutBlock === "" ? `${block}\n` : `${withoutBlock}\n\n${block}\n`;
 }
 
-/** Removes CCM's block from a `.gitignore`, keeping everything else. */
+/** Removes CMM's block from a `.gitignore`, and the one CCM wrote before the rename, keeping everything else. */
 export function removeManagedBlock(existing: string): string {
-  const lines = existing.split(/\r?\n/);
-  const start = lines.indexOf(MANAGED_BLOCK_START);
-  const end = lines.indexOf(MANAGED_BLOCK_END, start);
-  if (start === -1 || end === -1) return existing;
-  const kept = [...lines.slice(0, start), ...lines.slice(end + 1)];
-  const text = kept.join("\n").replaceAll(/\n{3,}/g, "\n\n");
+  let lines = existing.split(/\r?\n/);
+  let isChanged = false;
+  for (const [blockStart, blockEnd] of [
+    [MANAGED_BLOCK_START, MANAGED_BLOCK_END],
+    [LEGACY_MANAGED_BLOCK_START, LEGACY_MANAGED_BLOCK_END],
+  ] as const) {
+    const start = lines.indexOf(blockStart);
+    const end = lines.indexOf(blockEnd, start);
+    if (start === -1 || end === -1) continue;
+    lines = [...lines.slice(0, start), ...lines.slice(end + 1)];
+    isChanged = true;
+  }
+  if (!isChanged) return existing;
+  const text = lines.join("\n").replaceAll(/\n{3,}/g, "\n\n");
   return text.trim() === "" ? "" : `${text.replace(/\s*$/, "")}\n`;
 }
 
 /**
  * The environment git runs with: no prompts, no system or user config (so a personal
- * `commit.gpgsign`, hook path or ignore file can't change what CCM records), CCM as committer.
+ * `commit.gpgsign`, hook path or ignore file can't change what CMM records), CMM as committer.
  */
 function buildEnvironment(): Record<string, string> {
   const environment: Record<string, string> = {
@@ -105,7 +114,7 @@ function buildEnvironment(): Record<string, string> {
 /**
  * `-c` settings for every command: exact bytes (no line-ending conversion, which matters
  * for ciphertext), no signing, unquoted UTF-8 paths, and no hooks or fsmonitor, so a repository
- * CCM adopts can't run its own programs.
+ * CMM adopts can't run its own programs.
  */
 function buildConfig(scopeAbsolutePath: string): string[] {
   return [
@@ -145,7 +154,7 @@ export async function openGit(scopeAbsolutePath: string): Promise<SimpleGit> {
       allowUnsafeFsMonitor: true,
       allowUnsafeConfigPaths: true,
     },
-    // simple-git 4 refuses GIT_* variables it isn't told about; these are CCM's own, listed above.
+    // simple-git 4 refuses GIT_* variables it isn't told about; these are CMM's own, listed above.
     allowEnvironment: Object.keys(environment).filter((name) => name.startsWith("GIT_")),
   }).env(environment);
 }
@@ -176,7 +185,7 @@ export async function withRepo<Result>(
   return run;
 }
 
-/** 500 `GIT_COMMAND_FAILED` with git's own message, for failures CCM can't explain better. */
+/** 500 `GIT_COMMAND_FAILED` with git's own message, for failures CMM can't explain better. */
 export function gitFailed(action: string, gitError: unknown): ApiRouteError {
   const detail = gitError instanceof Error ? gitError.message.trim().split("\n").slice(0, 3).join(" ") : "";
   return new ApiRouteError(500, "GIT_COMMAND_FAILED", `Git couldn't ${action}.${detail ? ` ${detail}` : ""}`);

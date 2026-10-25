@@ -46,7 +46,7 @@ export const STALE_UPLOAD_MILLISECONDS = 24 * 60 * 60 * 1000;
 
 const UPLOAD_ID_PATTERN = /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/;
 
-/** `<root>/.ccm-tmp/uploads/<id>.json`, next to the `<id>.part` data. */
+/** `<root>/.cmm-tmp/uploads/<id>.json`, next to the `<id>.part` data. */
 interface UploadRecord {
   v: 1;
   uploadId: string;
@@ -310,7 +310,7 @@ export async function appendUploadChunk(
           else await readReceivedBytes(partPath, record);
           throw chunkError;
         }
-        console.warn(`[ccm] upload ${uploadId} chunk interrupted`, (chunkError as Error).message);
+        console.warn(`[cmm] upload ${uploadId} chunk interrupted`, (chunkError as Error).message);
       }
     }
     return toSession(record, await readReceivedBytes(partPath, record));
@@ -435,7 +435,7 @@ export async function cancelUpload(actor: FileActor, uploadId: string): Promise<
 
 /**
  * Deletes upload parts and atomic-write leftovers older than 24 hours from every available
- * storage's `.ccm-tmp/`. Returns how many files went.
+ * storage's `.cmm-tmp/`. Returns how many files went.
  */
 export async function removeStaleTemporaryFiles(now = Date.now()): Promise<number> {
   let removedCount = 0;
@@ -461,7 +461,7 @@ export function createUploadCleanupService(): BackgroundService {
   const timers: { hourly?: NodeJS.Timeout } = {};
   const cleanSafely = () => {
     removeStaleTemporaryFiles().catch((cleanupError: unknown) =>
-      console.error("[ccm] temporary file cleanup failed", cleanupError),
+      console.error("[cmm] temporary file cleanup failed", cleanupError),
     );
   };
   return {

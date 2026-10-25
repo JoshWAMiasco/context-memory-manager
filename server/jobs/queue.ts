@@ -11,12 +11,12 @@ import type { StorageActor } from "@/server/storage/roots";
 
 export const MAX_RUNNING_JOBS = 3;
 export const PROGRESS_THROTTLE_MILLISECONDS = 250;
-export const INTERRUPTED_MESSAGE = "Interrupted when CCM stopped. Resume it to continue.";
+export const INTERRUPTED_MESSAGE = "Interrupted when CMM stopped. Resume it to continue.";
 
 export type JobRow = typeof jobs.$inferSelect;
 
 /** Marks pause requests with a registry symbol, so every copy of this module recognises them. */
-const JOB_PAUSE_REQUEST_BRAND = Symbol.for("ccm.job-pause-request");
+const JOB_PAUSE_REQUEST_BRAND = Symbol.for("cmm.job-pause-request");
 
 /**
  * Thrown by a job handler to stop as "paused" with a reason people can read (a backup whose drive
@@ -32,7 +32,7 @@ export class JobPauseRequest extends Error {
   }
 }
 
-/** Who resumes a job that CCM resumes on its own (a backup whose drive came back). */
+/** Who resumes a job that CMM resumes on its own (a backup whose drive came back). */
 export const SYSTEM_JOB_ACTOR: StorageActor = { id: "system", role: "admin" };
 
 /** What a job handler gets. `signal` aborts on pause and cancel; save a checkpoint to resume from. */
@@ -55,7 +55,7 @@ export interface JobDefinition<Payload, Checkpoint> {
   readTarget?: (payload: Payload) => JobTarget;
   /** Where a backup reads and writes, for the Backup page's topology. */
   readTransfer?: (payload: Payload) => JobTransfer;
-  /** Restart automatically after CCM was stopped mid-run. Off by default: the job waits, paused. */
+  /** Restart automatically after CMM was stopped mid-run. Off by default: the job waits, paused. */
   autoResume?: boolean;
   /** Why a paused job can't simply be resumed (an encryption job needs its key file again). */
   readResumeBlocker?: (jobId: string) => string | undefined;
@@ -327,7 +327,7 @@ export class JobQueue {
         errorMessage =
           jobError instanceof ApiRouteError || jobError instanceof Error ? jobError.message : "The job failed.";
         if (!(jobError instanceof ApiRouteError))
-          console.error(`[ccm] job ${jobRow.id} (${jobRow.type}) failed`, jobError);
+          console.error(`[cmm] job ${jobRow.id} (${jobRow.type}) failed`, jobError);
       }
     }
     clearTimeout(runningJob.progressTimer);

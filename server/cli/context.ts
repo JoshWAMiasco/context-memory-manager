@@ -43,7 +43,7 @@ export function isSandbox(context: CliContext): boolean {
   return context.paths.sandboxRoot !== undefined;
 }
 
-/** The service account's user and group ids, read from the data folder `install.sh` gives it (0750 ccm:ccm). */
+/** The service account's user and group ids, read from the data folder `install.sh` gives it (0750 cmm:cmm). */
 export function readServiceOwner(paths: SystemPaths): { userId: number; groupId: number } | undefined {
   try {
     const dataStats = statSync(paths.dataDir);
@@ -64,10 +64,10 @@ export function requireRoot(context: CliContext, commandLine: string): void {
   throw new CliError(`This needs root. Run: sudo ${commandLine}`);
 }
 
-/** Commands that only touch CCM's data folder run as root or as the service account that owns it. */
+/** Commands that only touch CMM's data folder run as root or as the service account that owns it. */
 export function requireRootOrServiceAccount(context: CliContext, commandLine: string): void {
   if (isSandbox(context) || context.userId === 0) return;
   const serviceOwner = readServiceOwner(context.paths);
   if (serviceOwner && context.userId === serviceOwner.userId) return;
-  throw new CliError(`This needs root or the ccm user. Run: sudo ${commandLine}`);
+  throw new CliError(`This needs root or the cmm user. Run: sudo ${commandLine}`);
 }

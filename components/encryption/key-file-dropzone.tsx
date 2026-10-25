@@ -3,10 +3,14 @@
 import { CheckCircle2, FileKey2 } from "lucide-react";
 import { useId, useRef, useState } from "react";
 import { Button } from "@/components/primitives/button";
+import { LEGACY_KEY_FILE_EXTENSION } from "@/lib/fs/legacy-names";
 import { mergeClassNames } from "@/utilities/merge-class-names";
 
+/** Key files CMM writes; the CCM-era extension is accepted too. */
+const KEY_FILE_EXTENSION = ".cmmkey";
+
 /**
- * Drop or choose a `.ccmkey` key file. The file is read by the server only; the
+ * Drop or choose a `.cmmkey` key file. The file is read by the server only; the
  * browser just passes it on.
  *
  * @example
@@ -65,7 +69,7 @@ export function KeyFileDropzone({
               {file.name}
             </span>
           ) : (
-            <span className="text-foreground-muted">Drop the .ccmkey file here, or choose it.</span>
+            <span className="text-foreground-muted">Drop the .cmmkey file here, or choose it.</span>
           )}
         </div>
         <Button
@@ -80,7 +84,7 @@ export function KeyFileDropzone({
           ref={inputRef}
           id={inputId}
           type="file"
-          accept=".ccmkey,application/json"
+          accept={`${KEY_FILE_EXTENSION},${LEGACY_KEY_FILE_EXTENSION},application/json`}
           className="sr-only"
           data-testid={`${testId}-input`}
           disabled={isDisabled}

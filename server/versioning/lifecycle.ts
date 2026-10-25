@@ -36,10 +36,10 @@ import {
   type VersionedScope,
 } from "@/server/versioning/scope";
 
-export const ENABLE_MESSAGE = "CCM: enable versioning";
+export const ENABLE_MESSAGE = "CMM: enable versioning";
 export const DELETE_CONFIRM_TEXT = "DELETE HISTORY";
 
-/** Archived histories live here, ignored by git and hidden like the rest of `.ccm/`. */
+/** Archived histories live here, ignored by git and hidden like the rest of `.cmm/`. */
 const ARCHIVE_DIRECTORY = "git-archive";
 
 export interface VersioningRequest {
@@ -198,8 +198,8 @@ export type EnableResult = { enabled: true; scope: VersionedScope } | { needsAdo
 
 /**
  * Turns versioning on: `git init -b main` (or keeps an existing `.git` when `adopt` is
- * confirmed, or brings back an archived history), adds CCM's `.gitignore` block, commits
- * everything as "CCM: enable versioning" and writes `.ccm/versioning.json`. Refused when git is
+ * confirmed, or brings back an archived history), adds CMM's `.gitignore` block, commits
+ * everything as "CMM: enable versioning" and writes `.cmm/versioning.json`. Refused when git is
  * missing, the folder is protected or busy, or it would nest with another repository.
  *
  * @example
@@ -262,9 +262,9 @@ function toArchiveName(date: Date): string {
 }
 
 /**
- * Turns versioning off. "archive" moves `.git` to `.ccm/git-archive/<time>.git`, where
+ * Turns versioning off. "archive" moves `.git` to `.cmm/git-archive/<time>.git`, where
  * enabling again offers it back; "delete" removes `.git` for good and needs the typed
- * `DELETE HISTORY`. Either way CCM's `.gitignore` block goes, and the file too when CCM created it
+ * `DELETE HISTORY`. Either way CMM's `.gitignore` block goes, and the file too when CMM created it
  * and nothing else is left.
  *
  * @example

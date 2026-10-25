@@ -11,7 +11,7 @@ function reconcileSafely(storageId: string): void {
   const activeStorage = findActiveStorage(storageId);
   if (!activeStorage?.available) return;
   reconcileTrash(activeStorage).catch((reconcileError: unknown) =>
-    console.error(`[ccm] trash reconcile failed for ${storageId}`, reconcileError),
+    console.error(`[cmm] trash reconcile failed for ${storageId}`, reconcileError),
   );
 }
 
@@ -24,7 +24,7 @@ export function createStorageService(): BackgroundService {
   const handleDriveAdded = (driveEvent: DriveEvent) => reconcileSafely(driveEvent.storageId);
   const handleDriveRemoved = (driveEvent: DriveEvent) => {
     closeStorageWatchers(driveEvent.storageId).catch((closeError: unknown) =>
-      console.error(`[ccm] closing watchers of ${driveEvent.storageId} failed`, closeError),
+      console.error(`[cmm] closing watchers of ${driveEvent.storageId} failed`, closeError),
     );
   };
   return {

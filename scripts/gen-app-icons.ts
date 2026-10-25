@@ -1,5 +1,5 @@
 /*
- * Generates the desktop app's icons from public/icons/ccm/logo.svg:
+ * Generates the desktop app's icons from public/icons/cmm/logo.svg:
  *
  *   build/icon.icns            macOS (PNG entries 16 … 1024, including the @2x sizes)
  *   build/icon.ico             Windows (PNG entries 16 … 256)
@@ -15,7 +15,7 @@ import path from "node:path";
 import { chromium } from "@playwright/test";
 
 const projectRoot = path.resolve(__dirname, "..");
-const logoPath = path.join(projectRoot, "public", "icons", "ccm", "logo.svg");
+const logoPath = path.join(projectRoot, "public", "icons", "cmm", "logo.svg");
 const buildDirectory = path.join(projectRoot, "build");
 const PNG_SIZES = [16, 24, 32, 48, 64, 128, 256, 512, 1024];
 const ICO_SIZES = [16, 24, 32, 48, 64, 128, 256];

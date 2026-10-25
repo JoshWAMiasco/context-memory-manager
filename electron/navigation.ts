@@ -54,7 +54,7 @@ export function isPermissionAllowed(permission: string): boolean {
 }
 
 /**
- * The text of the "this link leaves CCM" confirmation: the host, so the user sees where it goes.
+ * The text of the "this link leaves CMM" confirmation: the host, so the user sees where it goes.
  *
  * @example
  * describeExternalLink("https://docs.example.com/a?b=c"); // "docs.example.com"

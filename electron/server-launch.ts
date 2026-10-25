@@ -1,5 +1,5 @@
 /*
- * What the main process needs to start the CCM server, without Electron: a free loopback
+ * What the main process needs to start the CMM server, without Electron: a free loopback
  * port, the launch token, the server's environment and the health poll. Unit tested on their own;
  * `server-process.ts` does the forking.
  */
@@ -14,7 +14,7 @@ export const HEALTH_TIMEOUT_MILLISECONDS = 30_000;
 const MACOS_EXTRA_PATHS = ["/opt/homebrew/bin", "/usr/local/bin", "/usr/local/git/bin"];
 
 /** Variables of the main process that must not reach the server. */
-const STRIPPED_VARIABLES = ["ELECTRON_RUN_AS_NODE", "NODE_OPTIONS", "CCM_CONFIG", "CCM_APP_DIR"];
+const STRIPPED_VARIABLES = ["ELECTRON_RUN_AS_NODE", "NODE_OPTIONS", "CMM_CONFIG", "CMM_APP_DIR"];
 
 export interface ServerEnvironmentOptions {
   port: number;
@@ -73,11 +73,11 @@ export function buildServerEnvironment(
   }
   return {
     ...environment,
-    CCM_MODE: "desktop",
-    CCM_DATA_DIR: dataDirectory,
+    CMM_MODE: "desktop",
+    CMM_DATA_DIR: dataDirectory,
     PORT: String(port),
     HOSTNAME: "127.0.0.1",
-    CCM_LAUNCH_TOKEN: launchToken,
+    CMM_LAUNCH_TOKEN: launchToken,
     NODE_ENV: "production",
     NEXT_TELEMETRY_DISABLED: "1",
   };
@@ -110,10 +110,10 @@ export async function waitForHealth(
 ): Promise<void> {
   const deadline = Date.now() + timeoutMilliseconds;
   while (Date.now() < deadline) {
-    if (signal?.aborted) throw new Error("The CCM server stopped while starting.");
+    if (signal?.aborted) throw new Error("The CMM server stopped while starting.");
     try {
       const response = await fetchFunction(`${origin}/api/health`, {
-        headers: { cookie: `ccm_launch=${launchToken}` },
+        headers: { cookie: `cmm_launch=${launchToken}` },
         signal: AbortSignal.timeout(Math.max(intervalMilliseconds, 2000)),
       });
       if (response.ok) return;
@@ -122,5 +122,5 @@ export async function waitForHealth(
     }
     await new Promise((resolve) => setTimeout(resolve, intervalMilliseconds));
   }
-  throw new Error(`CCM did not start within ${Math.round(timeoutMilliseconds / 1000)} seconds.`);
+  throw new Error(`CMM did not start within ${Math.round(timeoutMilliseconds / 1000)} seconds.`);
 }

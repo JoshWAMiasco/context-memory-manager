@@ -38,7 +38,7 @@ export function useEncryptedFolders() {
   });
 }
 
-/** The URL that downloads a pending key's `.ccmkey` file (wizard step 3). */
+/** The URL that downloads a pending key's `.cmmkey` file (wizard step 3). */
 export function buildKeyFileUrl(pendingId: string): string {
   return `/api/crypto/keyfile/${encodeURIComponent(pendingId)}`;
 }

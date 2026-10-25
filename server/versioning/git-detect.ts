@@ -81,10 +81,10 @@ async function findOnPath(environment: Record<string, string | undefined>): Prom
   return undefined;
 }
 
-/** Where to look for git: `CCM_GIT_PATH`, then `PATH`, then (Windows) Git for Windows' usual folders. */
+/** Where to look for git: `CMM_GIT_PATH`, then `PATH`, then (Windows) Git for Windows' usual folders. */
 async function listCandidates(environment: Record<string, string | undefined>): Promise<string[]> {
   const candidates: string[] = [];
-  if (environment.CCM_GIT_PATH) candidates.push(environment.CCM_GIT_PATH);
+  if (environment.CMM_GIT_PATH) candidates.push(environment.CMM_GIT_PATH);
   const onPath = await findOnPath(environment);
   if (onPath) candidates.push(onPath);
   if (process.platform === "win32") {

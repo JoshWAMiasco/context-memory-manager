@@ -65,7 +65,7 @@ export function useProtection(storageId: string, entryPath: string, isEnabled = 
   });
 }
 
-/** The memory templates (they never change while CCM runs). */
+/** The memory templates (they never change while CMM runs). */
 export function useMemoryTemplates() {
   return useQuery({
     queryKey: QUERY_KEYS.memoryTemplates(),

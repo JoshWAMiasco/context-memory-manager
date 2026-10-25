@@ -72,9 +72,9 @@ export const storageAccess = sqliteTable(
 );
 
 /**
- * Where protection is set: an index of the `.ccm/protection.json` settings CCM made, so the
+ * Where protection is set: an index of the `.cmm/protection.json` settings CMM made, so the
  * tamper watcher and the "contains a protected folder" check don't have to scan storages. The
- * `.ccm/` files stay the source of truth.
+ * `.cmm/` files stay the source of truth.
  */
 export const protectedScopes = sqliteTable(
   "protected_scopes",
@@ -126,7 +126,7 @@ export const encryptedScopes = sqliteTable(
 
 /**
  * Versioned folders, so the external-change watcher knows what to watch. Each folder's
- * `.ccm/versioning.json` stays the source of truth.
+ * `.cmm/versioning.json` stays the source of truth.
  */
 export const versionedScopes = sqliteTable(
   "versioned_scopes",

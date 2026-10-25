@@ -12,7 +12,7 @@ export default function SetupPage() {
   if (isSetupComplete()) redirect("/login");
   return (
     <>
-      <AuthenticationFrame title="Set up CCM" prompt="First run: create the admin account.">
+      <AuthenticationFrame title="Set up CMM" prompt="First run: create the admin account.">
         <SetupWizard mode={getConfig().mode} needsSetupCode={needsSetupCode()} />
       </AuthenticationFrame>
       <ToastViewport />

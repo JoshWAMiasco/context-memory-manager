@@ -36,14 +36,14 @@ async function buildElectron(): Promise<void> {
     logLevel: "warning",
   });
   copyFileSync(path.join(projectRoot, "electron", "splash.html"), path.join(outputDirectory, "splash.html"));
-  copyFileSync(path.join(projectRoot, "public", "icons", "ccm", "logo.svg"), path.join(outputDirectory, "logo.svg"));
+  copyFileSync(path.join(projectRoot, "public", "icons", "cmm", "logo.svg"), path.join(outputDirectory, "logo.svg"));
   const rootPackage = JSON.parse(readFileSync(path.join(projectRoot, "package.json"), "utf8")) as RootPackage;
   const desktopPackage = {
-    name: "ccm",
-    productName: "CCM",
+    name: "cmm",
+    productName: "CMM",
     version: rootPackage.version,
     description: rootPackage.description,
-    author: "CCM",
+    author: "CMM",
     main: "main.js",
     private: true,
   };

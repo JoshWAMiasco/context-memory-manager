@@ -9,11 +9,11 @@ export class OfflineViolationError extends Error {
   override name = "OfflineViolationError";
 
   constructor(readonly host: string) {
-    super(`Offline guard blocked an outbound connection to "${host}". CCM must not use the network at runtime.`);
+    super(`Offline guard blocked an outbound connection to "${host}". CMM must not use the network at runtime.`);
   }
 }
 
-const INSTALLED_MARKER = Symbol.for("ccm.offline-guard");
+const INSTALLED_MARKER = Symbol.for("cmm.offline-guard");
 
 /** True for names and addresses that stay on this machine: localhost, 127.0.0.0/8, ::1 and 0.0.0.0. */
 export function isLoopbackHost(host: string): boolean {
@@ -135,11 +135,11 @@ export function installOfflineGuard(): () => void {
   return restore;
 }
 
-/** Installs the guard when `CCM_OFFLINE_GUARD=1` (always set in tests and e2e). */
+/** Installs the guard when `CMM_OFFLINE_GUARD=1` (always set in tests and e2e). */
 export function installOfflineGuardFromEnvironment(
   environment: Record<string, string | undefined> = process.env,
 ): boolean {
-  if (environment.CCM_OFFLINE_GUARD !== "1") return false;
+  if (environment.CMM_OFFLINE_GUARD !== "1") return false;
   installOfflineGuard();
   return true;
 }

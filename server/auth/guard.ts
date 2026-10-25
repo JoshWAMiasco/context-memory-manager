@@ -12,7 +12,7 @@ import {
   type ResolvedSession,
   type SessionNetworkClass,
 } from "@/server/auth/session";
-import { getConfig, type CcmConfig } from "@/server/config";
+import { getConfig, type CmmConfig } from "@/server/config";
 import { ApiRouteError, forbidden, unauthenticated } from "@/server/http/api-error";
 import { isSecureRequest, isTrustedProxy, normalizeIp, resolveClientIp } from "@/server/security/client-ip";
 import { hasValidLaunchToken, readExpectedLaunchToken } from "@/server/security/launch-token";
@@ -38,7 +38,7 @@ export interface RequestClient {
   userAgent: string | null;
 }
 
-export function readRequestClient(requestHeaders: Headers, config: CcmConfig = getConfig()): RequestClient {
+export function readRequestClient(requestHeaders: Headers, config: CmmConfig = getConfig()): RequestClient {
   const clientIp = resolveClientIp(requestHeaders, config.trustedProxies);
   return {
     ip: clientIp,
@@ -53,7 +53,7 @@ export function readRequestClient(requestHeaders: Headers, config: CcmConfig = g
  * it on cross-site POSTs; non-browser clients (CLI, scripts) send none and can't ride a session
  * cookie anyway, because the cookie is SameSite=Strict.
  */
-export function isSameOriginRequest(requestHeaders: Headers, config: CcmConfig = getConfig()): boolean {
+export function isSameOriginRequest(requestHeaders: Headers, config: CmmConfig = getConfig()): boolean {
   const origin = requestHeaders.get("origin");
   if (origin === null) {
     const fetchSite = requestHeaders.get("sec-fetch-site");
@@ -111,7 +111,7 @@ export interface PublicApiContext<Body, Query> {
   query: Query;
   params: RouteParams;
   client: RequestClient;
-  config: CcmConfig;
+  config: CmmConfig;
   requestId: string;
 }
 
@@ -173,7 +173,7 @@ function toErrorResponse(thrownError: unknown, requestId: string): NextResponse 
       },
     });
   }
-  console.error(`[ccm] request ${requestId} failed`, caughtError);
+  console.error(`[cmm] request ${requestId} failed`, caughtError);
   return apiError(500, {
     error: {
       code: "INTERNAL_ERROR",
@@ -218,7 +218,7 @@ export function withApi<Body, Query>(
       const config = getConfig();
       const isMutating = MUTATING_METHODS.has(request.method);
       if (config.mode === "desktop" && !hasValidLaunchToken(request.headers.get("cookie"), readExpectedLaunchToken())) {
-        throw forbidden("This request did not come from the CCM desktop app.");
+        throw forbidden("This request did not come from the CMM desktop app.");
       }
       if (isMutating && !isSameOriginRequest(request.headers, config))
         throw forbidden("Cross-origin requests are not allowed.");

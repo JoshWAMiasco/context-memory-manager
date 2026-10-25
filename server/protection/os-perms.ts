@@ -2,7 +2,7 @@ import "server-only";
 import { execFile } from "node:child_process";
 import { chmod, lstat, readdir, readFile, rm } from "node:fs/promises";
 import { promisify } from "node:util";
-import { isHiddenCcmName } from "@/server/security/path-jail";
+import { isHiddenCmmName } from "@/server/security/path-jail";
 import { META_FILES, parseModesChunk, type ProtectionModesFile } from "@/server/meta/schemas";
 import {
   deleteMeta,
@@ -63,7 +63,7 @@ export interface ProtectableEntry {
 
 /**
  * Every entry of a folder protection applies to, parents first: the folder itself, its files and
- * subfolders. CCM's `.ccm*` entries and symlinks (which could point outside) are skipped.
+ * subfolders. CMM's `.cmm*` entries and symlinks (which could point outside) are skipped.
  */
 export async function* walkProtectable(
   folderAbsolutePath: string,
@@ -83,7 +83,7 @@ export async function* walkProtectable(
     const childNames = (await readdir(absolutePath).catch(() => [] as string[])).toSorted();
     pending.unshift(
       ...childNames
-        .filter((childName) => !isHiddenCcmName(childName))
+        .filter((childName) => !isHiddenCmmName(childName))
         .map((childName) => (relativePath === "" ? childName : `${relativePath}/${childName}`)),
     );
   }

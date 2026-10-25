@@ -1,4 +1,5 @@
 import "server-only";
+import { LEGACY_META_DIRECTORY } from "@/lib/fs/legacy-names";
 import path from "node:path";
 import { readOperationRoot, registerAfter, type FileOperation } from "@/server/storage/pipeline";
 import { getGlobalSingleton } from "@/server/runtime/global-singleton";
@@ -19,7 +20,7 @@ export const AUTOCOMMIT_HOOK_NAME = "versioning";
 
 /** Changes within this window go into one commit. */
 const DEFAULT_BATCH_MILLISECONDS = 2000;
-/** How long a path CCM wrote counts as "ours" for the external-change watcher. */
+/** How long a path CMM wrote counts as "ours" for the external-change watcher. */
 const APP_WRITE_MEMORY_MILLISECONDS = 30_000;
 
 type ChangeKind = "write" | "create" | "mkdir" | "rename" | "move" | "copy" | "delete" | "restore" | "upload";
@@ -42,7 +43,7 @@ interface AutocommitState {
   batches: Map<string, PendingBatch>;
   /** Folders whose changes are being committed by a restore, undo or redo itself. */
   suppressed: Set<string>;
-  /** Per folder: storage-relative paths CCM changed recently, with when. */
+  /** Per folder: storage-relative paths CMM changed recently, with when. */
   appWrites: Map<string, Map<string, number>>;
   batchMilliseconds: number;
 }
@@ -65,7 +66,7 @@ export function setAutocommitBatchMilliseconds(milliseconds: number): void {
   getState().batchMilliseconds = milliseconds;
 }
 
-/** Remembers that CCM changed `relativePaths` (storage-relative) in the folder at `scopeAbsolutePath`. */
+/** Remembers that CMM changed `relativePaths` (storage-relative) in the folder at `scopeAbsolutePath`. */
 export function rememberAppWrites(scopeAbsolutePath: string, relativePaths: string[]): void {
   const appWrites = getState().appWrites;
   const folderWrites = appWrites.get(scopeAbsolutePath) ?? new Map<string, number>();
@@ -78,7 +79,7 @@ export function rememberAppWrites(scopeAbsolutePath: string, relativePaths: stri
 }
 
 /**
- * Whether CCM itself changed `scopeRelativePath` (or a folder around it) in the last 30 seconds,
+ * Whether CMM itself changed `scopeRelativePath` (or a folder around it) in the last 30 seconds,
  * so the external-change watcher doesn't call it an outside change.
  */
 export function wasWrittenByApp(scopeAbsolutePath: string, scopeRelativePath: string): boolean {
@@ -215,7 +216,7 @@ async function flushBatch(key: string): Promise<void> {
       author,
     );
   } catch (commitError) {
-    console.warn(`[ccm] versioning: couldn't commit changes in "${batch.scopePath}"`, commitError);
+    console.warn(`[cmm] versioning: couldn't commit changes in "${batch.scopePath}"`, commitError);
   }
 }
 
@@ -272,7 +273,7 @@ async function updateIndex(operation: FileOperation): Promise<void> {
  */
 export async function autocommitAfterHook(operation: FileOperation): Promise<void> {
   if (["read", "list", "stat"].includes(operation.type)) return;
-  if (operation.path.split("/").includes(".ccm")) return;
+  if (operation.path.split("/").some((segment) => segment === ".cmm" || segment === LEGACY_META_DIRECTORY)) return;
   await updateIndex(operation);
   const isDirectory = operation.isDirectory === true;
   const targets: { storageId: string; scope: VersionedScope }[] = [];

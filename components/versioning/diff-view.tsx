@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { formatFileSize } from "@/components/page-sections/applications/file-manager/format-file-size";
 import type { FileDiff } from "@/lib/api-types";
 import { describeFileKind } from "@/lib/file-kinds";
-import { ccmTheme } from "@/lib/editor/ccm-theme";
+import { cmmTheme } from "@/lib/editor/cmm-theme";
 import { loadLanguage } from "@/lib/editor/languages";
 
 export type DiffLayout = "split" | "unified";
@@ -38,7 +38,7 @@ export function DiffView({ diff, fileName, layout }: { diff: FileDiff; fileName:
       if (!isCurrent) return;
       const shared = [
         lineNumbers(),
-        ccmTheme,
+        cmmTheme,
         languageSupport ?? [],
         EditorState.readOnly.of(true),
         EditorView.editable.of(false),

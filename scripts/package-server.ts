@@ -1,16 +1,16 @@
 /*
  * Builds the offline server package for Ubuntu:
  *
- *   dist/ccm-server-<version>-linux-<arch>/   and   dist/ccm-server-<version>-linux-<arch>.tar.gz (+ .sha256)
+ *   dist/cmm-server-<version>-linux-<arch>/   and   dist/cmm-server-<version>-linux-<arch>.tar.gz (+ .sha256)
  *
  *   app/        dist/app (entry.js, cli.js, the Next standalone server, static files, migrations)
  *               with the target's native modules only
  *   node/       the Node 22 runtime for the target (bin/node), from vendor/node, checked against the
  *               pinned vendor/node/SHASUMS256.txt
- *   bin/ccm     starts app/cli.js with node/bin/node
- *   deploy/     ccm.service, the udisks2 polkit rules, config.example.json, Caddyfile.example
+ *   bin/cmm     starts app/cli.js with node/bin/node
+ *   deploy/     cmm.service, the udisks2 polkit rules, config.example.json, Caddyfile.example
  *   install.sh  uninstall.sh  README-INSTALL.txt  VERSION  ARCH  BUILD-INFO.txt
- *   docs/       CCM-Server-Guide.pdf, when `npm run docs:pdf` has built it (dist/docs)
+ *   docs/       CMM-Server-Guide.pdf, when `npm run docs:pdf` has built it (dist/docs)
  *
  * Native modules: better-sqlite3 and @node-rs/argon2 are N-API prebuilds, so nothing is compiled.
  * better-sqlite3 ships `prebuilds/linux-<arch>.node` in its npm package; the argon2 package for
@@ -287,7 +287,7 @@ function packageServer(): void {
       throw new Error(`dist/app/${requiredFile} is missing; run without --skip-build.`);
   }
 
-  const packageName = `ccm-server-${version}-linux-${options.arch}`;
+  const packageName = `cmm-server-${version}-linux-${options.arch}`;
   const packageDirectory = path.join(projectRoot, "dist", packageName);
   rmSync(packageDirectory, { recursive: true, force: true });
   rmSync(`${packageDirectory}.tar.gz`, { force: true });
@@ -303,7 +303,7 @@ function packageServer(): void {
   const strippedCount = stripInstallScripts(applicationDirectory);
   log(`app/ ready (${strippedCount} install scripts removed from package.json files)`);
 
-  const extractDirectory = mkdtempSync(path.join(tmpdir(), "ccm-node-"));
+  const extractDirectory = mkdtempSync(path.join(tmpdir(), "cmm-node-"));
   try {
     run("tar", ["-xJf", nodeTarball, "-C", extractDirectory]);
     const nodeRoot = path.join(extractDirectory, `node-v${NODE_VERSION}-linux-${options.arch}`);
@@ -315,14 +315,14 @@ function packageServer(): void {
   log(`node/ ready (Node ${NODE_VERSION} linux-${options.arch}; npm and corepack left out)`);
 
   const deploySource = path.join(projectRoot, "deploy", "linux");
-  copyExecutable(path.join(deploySource, "ccm"), path.join(packageDirectory, "bin", "ccm"));
+  copyExecutable(path.join(deploySource, "cmm"), path.join(packageDirectory, "bin", "cmm"));
   copyExecutable(path.join(deploySource, "install.sh"), path.join(packageDirectory, "install.sh"));
   copyExecutable(path.join(deploySource, "uninstall.sh"), path.join(packageDirectory, "uninstall.sh"));
   mkdirSync(path.join(packageDirectory, "deploy"));
   for (const deployFile of [
-    "ccm.service",
-    "50-ccm-udisks.rules",
-    "50-ccm-udisks.pkla",
+    "cmm.service",
+    "50-cmm-udisks.rules",
+    "50-cmm-udisks.pkla",
     "config.example.json",
     "Caddyfile.example",
   ]) {
@@ -332,12 +332,12 @@ function packageServer(): void {
   writeFileSync(path.join(packageDirectory, "VERSION"), `${version}\n`);
   writeFileSync(path.join(packageDirectory, "ARCH"), `${options.arch}\n`);
 
-  const guidePath = path.join(projectRoot, "dist", "docs", "CCM-Server-Guide.pdf");
+  const guidePath = path.join(projectRoot, "dist", "docs", "CMM-Server-Guide.pdf");
   if (existsSync(guidePath)) {
     mkdirSync(path.join(packageDirectory, "docs"));
-    copyFileSync(guidePath, path.join(packageDirectory, "docs", "CCM-Server-Guide.pdf"));
+    copyFileSync(guidePath, path.join(packageDirectory, "docs", "CMM-Server-Guide.pdf"));
   } else {
-    log("no dist/docs/CCM-Server-Guide.pdf yet (`npm run docs:pdf` builds it); the package ships without docs/");
+    log("no dist/docs/CMM-Server-Guide.pdf yet (`npm run docs:pdf` builds it); the package ships without docs/");
   }
 
   const gitCommit = spawnSync("git", ["rev-parse", "--short", "HEAD"], {
@@ -347,7 +347,7 @@ function packageServer(): void {
   writeFileSync(
     path.join(packageDirectory, "BUILD-INFO.txt"),
     [
-      `CCM server ${version} for linux-${options.arch}`,
+      `CMM server ${version} for linux-${options.arch}`,
       `Built: ${new Date().toISOString()} on ${process.platform}-${process.arch}${gitCommit ? ` from commit ${gitCommit}` : ""}`,
       `Node runtime: ${path.basename(nodeTarball)} (SHA-256 ${hashFile(nodeTarball, "sha256", "hex")})`,
       "Native modules: N-API prebuilds, nothing compiled.",

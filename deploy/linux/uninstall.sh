@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Removes the CCM server.
+# Removes the CMM server.
 #
 #   sudo ./uninstall.sh            removes the service and the program; keeps config, data and storages
-#   sudo ./uninstall.sh --purge    also removes /etc/ccm, /var/lib/ccm and the ccm user
+#   sudo ./uninstall.sh --purge    also removes /etc/cmm, /var/lib/cmm and the cmm user
 #
 # Storage roots are never deleted, not even with --purge.
 set -euo pipefail
@@ -11,21 +11,21 @@ usage() {
   cat <<'USAGE'
 Usage: sudo ./uninstall.sh [--purge] [--yes]
 
-  --purge     Also delete /etc/ccm (config, TLS key), /var/lib/ccm (database, setup code) and the
-              ccm user. Your storage folders are never deleted.
+  --purge     Also delete /etc/cmm (config, TLS key), /var/lib/cmm (database, setup code) and the
+              cmm user. Your storage folders are never deleted.
   --yes, -y   Don't ask for confirmation
 USAGE
 }
 
-say() { printf '%s\n' "ccm-uninstall: $*"; }
-warn() { printf '%s\n' "ccm-uninstall: warning: $*" >&2; }
+say() { printf '%s\n' "cmm-uninstall: $*"; }
+warn() { printf '%s\n' "cmm-uninstall: warning: $*" >&2; }
 die() {
-  printf '%s\n' "ccm-uninstall: error: $*" >&2
+  printf '%s\n' "cmm-uninstall: error: $*" >&2
   exit 1
 }
 
 # Test-only: a folder standing in for / (see server/cli/paths.ts).
-SANDBOX="${CCM_SANDBOX_ROOT:-}"
+SANDBOX="${CMM_SANDBOX_ROOT:-}"
 is_sandbox() { [ -n "$SANDBOX" ]; }
 system() {
   if is_sandbox; then say "sandbox: skipped $*"; else "$@"; fi
@@ -46,9 +46,9 @@ if ! is_sandbox; then
   [ "$(id -u)" -eq 0 ] || die "run as root: sudo ./uninstall.sh"
 fi
 
-INSTALL_ROOT="$SANDBOX/opt/ccm"
-ETC_DIR="$SANDBOX/etc/ccm"
-DATA_DIR="$SANDBOX/var/lib/ccm"
+INSTALL_ROOT="$SANDBOX/opt/cmm"
+ETC_DIR="$SANDBOX/etc/cmm"
+DATA_DIR="$SANDBOX/var/lib/cmm"
 SYSTEMD_DIR="$SANDBOX/etc/systemd/system"
 NODE="$INSTALL_ROOT/current/node/bin/node"
 
@@ -64,26 +64,26 @@ fi
 if [ "$ASSUME_YES" -ne 1 ]; then
   [ -t 0 ] || die "no terminal to confirm on; add --yes"
   if [ "$PURGE" -eq 1 ]; then
-    printf 'Remove CCM with its config (%s), database (%s) and the ccm user? Storage folders are kept.\nType "purge" to confirm: ' "$ETC_DIR" "$DATA_DIR"
+    printf 'Remove CMM with its config (%s), database (%s) and the cmm user? Storage folders are kept.\nType "purge" to confirm: ' "$ETC_DIR" "$DATA_DIR"
     read -r answer
     [ "$answer" = "purge" ] || die "cancelled"
   else
-    printf 'Remove the CCM service and program? Config, database and storages are kept. [y/N] '
+    printf 'Remove the CMM service and program? Config, database and storages are kept. [y/N] '
     read -r answer
     case "$answer" in y | Y | yes | YES) ;; *) die "cancelled" ;; esac
   fi
 fi
 
-system systemctl disable --now ccm || warn "could not stop ccm (it may not be installed)"
-rm -f "$SYSTEMD_DIR/ccm.service"
-rm -rf "$SYSTEMD_DIR/ccm.service.d"
-rm -f "$SANDBOX/etc/polkit-1/rules.d/50-ccm-udisks.rules"
-rm -f "$SANDBOX/etc/polkit-1/localauthority/50-local.d/50-ccm-udisks.pkla"
-if [ -L "$SANDBOX/usr/local/bin/ccm" ]; then rm -f "$SANDBOX/usr/local/bin/ccm"; fi
+system systemctl disable --now cmm || warn "could not stop cmm (it may not be installed)"
+rm -f "$SYSTEMD_DIR/cmm.service"
+rm -rf "$SYSTEMD_DIR/cmm.service.d"
+rm -f "$SANDBOX/etc/polkit-1/rules.d/50-cmm-udisks.rules"
+rm -f "$SANDBOX/etc/polkit-1/localauthority/50-local.d/50-cmm-udisks.pkla"
+if [ -L "$SANDBOX/usr/local/bin/cmm" ]; then rm -f "$SANDBOX/usr/local/bin/cmm"; fi
 rm -rf "$INSTALL_ROOT"
 system systemctl daemon-reload
-system systemctl reset-failed ccm 2>/dev/null || true
-say "removed the service, the polkit rule, /usr/local/bin/ccm and $INSTALL_ROOT"
+system systemctl reset-failed cmm 2>/dev/null || true
+say "removed the service, the polkit rule, /usr/local/bin/cmm and $INSTALL_ROOT"
 
 # True when the folder $1 is, or contains, one of the storage roots.
 holds_storage() {
@@ -105,16 +105,16 @@ if [ "$PURGE" -eq 1 ]; then
     fi
   done
   if is_sandbox; then
-    say "sandbox: skipped removing the ccm user"
-  elif id ccm >/dev/null 2>&1; then
-    userdel ccm || warn "could not remove the user ccm"
-    if getent group ccm >/dev/null 2>&1; then groupdel ccm || true; fi
-    say "removed the user ccm"
+    say "sandbox: skipped removing the cmm user"
+  elif id cmm >/dev/null 2>&1; then
+    userdel cmm || warn "could not remove the user cmm"
+    if getent group cmm >/dev/null 2>&1; then groupdel cmm || true; fi
+    say "removed the user cmm"
   fi
   if [ -n "$storage_roots" ]; then
     say "storage folders were not touched:"
     printf '%s\n' "$storage_roots" | sed 's/^/  /'
   fi
 else
-  say "kept $ETC_DIR, $DATA_DIR, the storages and the ccm user (run with --purge to remove config and data)"
+  say "kept $ETC_DIR, $DATA_DIR, the storages and the cmm user (run with --purge to remove config and data)"
 fi

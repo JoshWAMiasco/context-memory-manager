@@ -148,7 +148,7 @@ function describeError(copyError: unknown): string {
  * checkpoint is saved about every second; a resumed run plans again, so files copied before the
  * pause count as unchanged, and continues at the saved index when the plan is the same. A
  * removed drive pauses the job ("Drive disconnected"); a cancelled or interrupted copy removes
- * its `.ccm-part` file. Encrypted folders are copied byte for byte, so they stay ciphertext.
+ * its `.cmm-part` file. Encrypted folders are copied byte for byte, so they stay ciphertext.
  */
 async function runBackup({
   jobId,

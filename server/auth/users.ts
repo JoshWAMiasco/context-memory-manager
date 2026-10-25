@@ -57,7 +57,7 @@ function assertNotLastAdmin(userId: string): void {
     .from(users)
     .where(and(eq(users.role, "admin"), eq(users.disabled, false), ne(users.id, userId)))
     .get();
-  if ((otherAdminCount?.adminCount ?? 0) === 0) throw conflict("LAST_ADMIN", "CCM needs at least one enabled admin.");
+  if ((otherAdminCount?.adminCount ?? 0) === 0) throw conflict("LAST_ADMIN", "CMM needs at least one enabled admin.");
 }
 
 export interface CreateUserRequest {

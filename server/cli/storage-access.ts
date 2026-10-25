@@ -16,11 +16,11 @@ function isInside(childPath: string, parentPath: string): boolean {
 
 /**
  * Checks a folder before it becomes a storage root and returns its real path (symlinks resolved):
- * absolute, existing, a folder, not a system folder, not CCM's own data or program folder, and free
+ * absolute, existing, a folder, not a system folder, not CMM's own data or program folder, and free
  * of characters that systemd or the config can't carry (quotes, backslashes, line breaks).
  */
 export function validateStorageRoot(rootInput: string, paths: SystemPaths): string {
-  if (!path.isAbsolute(rootInput)) throw new CliError(`Give an absolute path, such as /srv/ccm (got "${rootInput}").`);
+  if (!path.isAbsolute(rootInput)) throw new CliError(`Give an absolute path, such as /srv/cmm (got "${rootInput}").`);
   if (/["\\\n\r]/.test(rootInput)) throw new CliError("The path can't contain quotes, backslashes or line breaks.");
   let rootPath: string;
   try {
@@ -37,11 +37,11 @@ export function validateStorageRoot(rootInput: string, paths: SystemPaths): stri
     SYSTEM_FOLDERS.includes(candidatePath) || SYSTEM_TREES.some((systemTree) => isInside(candidatePath, systemTree));
   /* Both as given and with symlinks resolved: /etc is a link to /private/etc on macOS. */
   if (isSystemFolder(toSystemPath(path.resolve(rootInput))) || isSystemFolder(toSystemPath(rootPath))) {
-    throw new CliError(`${rootPath} is a system folder. Use a folder of its own, such as /srv/ccm.`);
+    throw new CliError(`${rootPath} is a system folder. Use a folder of its own, such as /srv/cmm.`);
   }
   for (const ownFolder of [paths.dataDir, paths.installRoot, path.dirname(paths.configFile)]) {
     if (isInside(rootPath, ownFolder) || isInside(ownFolder, rootPath)) {
-      throw new CliError(`${rootPath} overlaps CCM's own folder ${ownFolder}.`);
+      throw new CliError(`${rootPath} overlaps CMM's own folder ${ownFolder}.`);
     }
   }
   return rootPath;
@@ -62,14 +62,14 @@ function printManualAccessSteps(
   rootPath: string | undefined,
   closedAncestors: readonly string[],
 ): void {
-  context.warn("setfacl is not installed (package `acl`), so CCM could not grant itself access. Either install it");
+  context.warn("setfacl is not installed (package `acl`), so CMM could not grant itself access. Either install it");
   context.warn(`and run this command again, or give the ${SERVICE_ACCOUNT} group access yourself:`);
   if (rootPath) {
     context.warn(`  sudo chgrp -R ${SERVICE_ACCOUNT} '${rootPath}'`);
     context.warn(`  sudo chmod -R g+rwX '${rootPath}'`);
     context.warn(`  sudo find '${rootPath}' -type d -exec chmod g+s {} +`);
   }
-  for (const ancestor of closedAncestors) context.warn(`  sudo chmod o+x '${ancestor}'   # lets CCM pass through`);
+  for (const ancestor of closedAncestors) context.warn(`  sudo chmod o+x '${ancestor}'   # lets CMM pass through`);
 }
 
 /**

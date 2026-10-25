@@ -37,7 +37,7 @@ export function ThirdPartyLicenses() {
   }, []);
   if (!licenses) return <LoadingSkeleton rows={4} label="Loading licenses…" />;
   if (licenses.length === 0)
-    return <p className="text-foreground-subtle">The license list is created when CCM is built.</p>;
+    return <p className="text-foreground-subtle">The license list is created when CMM is built.</p>;
   const visibleLicenses = licenses.filter((entry) =>
     entry.name.toLowerCase().includes(filterText.trim().toLowerCase()),
   );

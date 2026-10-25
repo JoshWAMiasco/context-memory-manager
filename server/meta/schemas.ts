@@ -3,7 +3,7 @@ import { z } from "zod";
 import { MEMORY_COLORS, MEMORY_ICONS } from "@/lib/memory";
 
 /*
- * The `.ccm/` metadata files . Every file has a version `v`; readers parse
+ * The `.cmm/` metadata files . Every file has a version `v`; readers parse
  * older versions through `MIGRATIONS` and refuse newer ones.
  */
 
@@ -101,7 +101,7 @@ export const versioningSchema = z.object({
   enabledBy: z.string().optional(),
   /** The folder already had a `.git` with history, kept as it was. */
   adopted: z.boolean().default(false),
-  /** CCM created `.gitignore`, so disabling may delete it again once its managed block is gone. */
+  /** CMM created `.gitignore`, so disabling may delete it again once its managed block is gone. */
   createdGitignore: z.boolean().default(false),
   undoStack: z.array(shaSchema).default([]),
   redoStack: z.array(z.object({ original: shaSchema, revert: shaSchema })).default([]),
@@ -134,8 +134,8 @@ const MIGRATIONS: Record<
 const CURRENT_VERSION = 1;
 
 /**
- * Validates a parsed `.ccm/` document, upgrading older versions first. Throws when it is invalid
- * or newer than this CCM understands.
+ * Validates a parsed `.cmm/` document, upgrading older versions first. Throws when it is invalid
+ * or newer than this CMM understands.
  *
  * @example
  * const manifest = parseMetaDocument("manifest.json", JSON.parse(text));
@@ -146,7 +146,7 @@ export function parseMetaDocument<FileName extends MetaFileName>(
 ): MetaData<FileName> {
   let current = (typeof document === "object" && document !== null ? document : {}) as Record<string, unknown>;
   let version = typeof current.v === "number" ? current.v : CURRENT_VERSION;
-  if (version > CURRENT_VERSION) throw new Error(`${fileName} is version ${version}, newer than this CCM supports.`);
+  if (version > CURRENT_VERSION) throw new Error(`${fileName} is version ${version}, newer than this CMM supports.`);
   while (version < CURRENT_VERSION) {
     const migrate = MIGRATIONS[fileName][version];
     if (!migrate) throw new Error(`${fileName} version ${version} can't be upgraded.`);

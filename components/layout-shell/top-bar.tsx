@@ -24,7 +24,7 @@ export interface TopBarProps {
 /**
  * The fixed 65px top bar: breadcrumb, background jobs, unlocked encrypted folders, full
  * screen and the account menu, plus the logo and collapse toggle in `top-bar-with-brand` themes.
- * In `top-bar-only` themes (CCM) it also holds the logo, quick search (⌘K) and the page links
+ * In `top-bar-only` themes (CMM) it also holds the logo, quick search (⌘K) and the page links
  * that the side menu used to have. Server component; each control is a small client island. Its
  * look comes from `appearance`.
  *

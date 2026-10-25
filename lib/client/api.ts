@@ -74,7 +74,7 @@ export function handleSessionError(apiError: ApiError): void {
 }
 
 /**
- * Calls a CCM API route and returns its JSON body. Sends `body` as JSON. A non-2xx response throws
+ * Calls a CMM API route and returns its JSON body. Sends `body` as JSON. A non-2xx response throws
  * an `ApiError` carrying the server's error code; a network failure throws one with code
  * `NETWORK_ERROR` and status 0. Session errors and step-up are handled as described in the options.
  *
@@ -97,7 +97,7 @@ export async function requestJson<ResponseBody>(url: string, options: ApiRequest
     });
   } catch (networkError) {
     if (networkError instanceof DOMException && networkError.name === "AbortError") throw networkError;
-    throw new ApiError(0, "NETWORK_ERROR", "The CCM server could not be reached.");
+    throw new ApiError(0, "NETWORK_ERROR", "The CMM server could not be reached.");
   }
 
   const responseBody = await readJsonSafely(response);
@@ -144,7 +144,7 @@ export async function requestForm<ResponseBody>(
     });
   } catch (networkError) {
     if (networkError instanceof DOMException && networkError.name === "AbortError") throw networkError;
-    throw new ApiError(0, "NETWORK_ERROR", "The CCM server could not be reached.");
+    throw new ApiError(0, "NETWORK_ERROR", "The CMM server could not be reached.");
   }
   const responseBody = await readJsonSafely(response);
   if (response.ok) return responseBody as ResponseBody;

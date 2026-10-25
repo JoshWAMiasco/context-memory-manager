@@ -2,31 +2,31 @@
 
 import { useSyncExternalStore } from "react";
 import { requestJson } from "@/lib/client/api";
-import type { CcmDesktopBridge } from "@/lib/desktop-bridge";
+import type { CmmDesktopBridge } from "@/lib/desktop-bridge";
 
 declare global {
   interface Window {
     /** Set by the desktop app's preload; undefined in a browser. */
-    ccmDesktop?: CcmDesktopBridge;
+    cmmDesktop?: CmmDesktopBridge;
   }
 }
 
 /**
- * The desktop app's bridge when CCM runs inside it, else undefined (a browser, or server-side
+ * The desktop app's bridge when CMM runs inside it, else undefined (a browser, or server-side
  * rendering).
  *
  * @example
  * const bridge = readDesktopBridge();
  * if (bridge) await bridge.pickFolder();
  */
-export function readDesktopBridge(): CcmDesktopBridge | undefined {
+export function readDesktopBridge(): CmmDesktopBridge | undefined {
   if (typeof window === "undefined") return undefined;
-  const bridge = window.ccmDesktop;
+  const bridge = window.cmmDesktop;
   return bridge?.isDesktop === true ? bridge : undefined;
 }
 
 /**
- * True inside the CCM desktop app.
+ * True inside the CMM desktop app.
  *
  * @example
  * {isDesktopApp() && <Button onClick={browse}>Browse…</Button>}

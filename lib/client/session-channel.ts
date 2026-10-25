@@ -1,11 +1,11 @@
 /*
- * Cross-tab session messages over BroadcastChannel("ccm-session"): activity in one tab keeps the
+ * Cross-tab session messages over BroadcastChannel("cmm-session"): activity in one tab keeps the
  * others awake, and locking or signing out in one tab sends every tab to the right page.
  */
 
 export type SessionChannelMessage = { type: "activity" } | { type: "locked" } | { type: "signed-out" };
 
-const CHANNEL_NAME = "ccm-session";
+const CHANNEL_NAME = "cmm-session";
 
 /** Opens the channel, or returns undefined where BroadcastChannel isn't available. */
 export function openSessionChannel(): BroadcastChannel | undefined {

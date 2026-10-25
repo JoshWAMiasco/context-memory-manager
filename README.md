@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="public/icons/ccm/logo.svg" alt="CCM logo: a brain wired into a hard drive" width="120" height="120">
+  <img src="public/icons/cmm/logo.svg" alt="CMM logo: a brain wired into a hard drive" width="120" height="120">
 </p>
 
-<h1 align="center">CCM — Context Memory Manager</h1>
+<h1 align="center">CMM — Context Memory Manager</h1>
 
 <p align="center">
   A self-hosted file manager for the memory folders, prompts and private files of your LLM tools.<br>
@@ -19,11 +19,11 @@
 ![The Drives page: every storage and USB drive as a card, with free space.](docs/guides/assets/screens/drives-dashboard.png)
 
 AI agents and chat tools keep their memory in plain folders: personas, project knowledge, scratchpads, notes,
-datasets. CCM gives those folders a proper home. Browse and edit them in one app, mark folders as memories, lock or
+datasets. CMM gives those folders a proper home. Browse and edit them in one app, mark folders as memories, lock or
 encrypt the sensitive ones, keep a history of every change, and back everything up to a USB stick or external drive.
 Nothing leaves your machine: there is no account, no cloud and no telemetry.
 
-CCM runs two ways:
+CMM runs two ways:
 
 - **Desktop app** for macOS, Windows and Linux (Electron). Your files stay where they are on your computer.
 - **Server** on an Ubuntu machine on your network (systemd service), opened from any browser on the LAN, with user
@@ -65,7 +65,7 @@ Folders can be made **view-only** or **locked**, so an agent or a slip of the mo
 ### Encryption
 
 Encrypt a folder with AES-256-GCM. Its key lives in a key file that you keep, for example on a USB stick. Files stay
-encrypted on disk and in every backup; unlock the folder with its key file to read and edit them inside CCM, and it
+encrypted on disk and in every backup; unlock the folder with its key file to read and edit them inside CMM, and it
 locks again on its own.
 
 | Encryption wizard | Unlocking a folder |
@@ -74,7 +74,7 @@ locks again on its own.
 
 ### Version history
 
-Turn on versioning for a folder and CCM keeps a Git history of it: every save is a version you can compare and restore,
+Turn on versioning for a folder and CMM keeps a Git history of it: every save is a version you can compare and restore,
 with undo and redo, named snapshots, and nothing to learn about Git.
 
 ![The history of a file with a diff.](docs/guides/assets/screens/versioning-history.png)
@@ -93,7 +93,7 @@ transfer.
 
 Admin, editor and viewer accounts with per-storage access, sign-in lockout, auto-lock, a password check before
 sensitive actions, and HTTPS on the server. Drives (internal folders, external disks and USB sticks) appear and
-disappear live, and can be ejected from CCM.
+disappear live, and can be ejected from CMM.
 
 | Users | Security |
 |---|---|
@@ -101,7 +101,7 @@ disappear live, and can be ejected from CCM.
 
 ## Guides
 
-Two illustrated guides cover installing and using CCM, written for non-technical users:
+Two illustrated guides cover installing and using CMM, written for non-technical users:
 
 - [Desktop Guide](docs/guides/desktop-guide.md): install the app, storages, memories, encryption, versions, backups.
 - [Server Guide](docs/guides/server-guide.md): install on Ubuntu, HTTPS, users, drives, updates and troubleshooting.
@@ -120,12 +120,12 @@ npx playwright install chromium   # once: used to build the PDF guides and the a
 ### Run from source
 
 ```bash
-npm run dev      # http://127.0.0.1:7420, data in .ccm-dev-data/
+npm run dev      # http://127.0.0.1:7420, data in .cmm-dev-data/
 ```
 
 The first visit opens the setup wizard. In this (server) mode it asks for a one-time setup code, which the terminal
-prints (`[ccm] first-run setup code: …`) and `.ccm-dev-data/setup-code` holds. To browse a folder, list it in
-`.ccm-dev-data/config.json` and restart:
+prints (`[cmm] first-run setup code: …`) and `.cmm-dev-data/setup-code` holds. To browse a folder, list it in
+`.cmm-dev-data/config.json` and restart:
 
 ```json
 { "storageRoots": [{ "path": "/absolute/path/to/a/folder", "label": "My files" }] }
@@ -157,8 +157,8 @@ on macOS).
 npm run package:server -- --arch x64     # or arm64
 ```
 
-This makes an offline tarball with its own Node.js runtime and `install.sh`, which sets CCM up as a hardened systemd
-service with the `ccm` admin command. The [Server Guide](docs/guides/server-guide.md) walks through the install.
+This makes an offline tarball with its own Node.js runtime and `install.sh`, which sets CMM up as a hardened systemd
+service with the `cmm` admin command. The [Server Guide](docs/guides/server-guide.md) walks through the install.
 
 ### Other commands
 
@@ -167,7 +167,7 @@ service with the `ccm` admin command. The [Server Guide](docs/guides/server-guid
 | `npm run lint` / `npm run typecheck` | ESLint and TypeScript |
 | `npm run check:offline` | Builds and fails if the output contains a fetchable external URL |
 | `npm run docs:pdf` | Builds the PDF guides from `docs/guides/` |
-| `npm run icons:app` | Regenerates the desktop app icons from `public/icons/ccm/logo.svg` |
+| `npm run icons:app` | Regenerates the desktop app icons from `public/icons/cmm/logo.svg` |
 | `npm run db:generate` | Creates a database migration after a schema change |
 
 ## Built with
@@ -178,7 +178,7 @@ dependency's license is listed in the app under **Settings › About**.
 
 ## Contributing
 
-CCM is shared as is, and this repository does not take contributions: pull requests and feature requests won't be
+CMM is shared as is, and this repository does not take contributions: pull requests and feature requests won't be
 reviewed or merged. If you want to change something or fix a bug, **fork it** and make it your own version; the MIT
 license lets you use, change and publish your fork freely.
 

@@ -58,7 +58,7 @@ interface ViewPlan {
   viewKind: ViewKind;
   /** The editor language id. */
   language?: string;
-  /** Whether the content is text CCM can load (markdown, code, text, CSV, SVG source). */
+  /** Whether the content is text CMM can load (markdown, code, text, CSV, SVG source). */
   isText: boolean;
   /** Why the placeholder is shown instead of a preview, when it isn't the file type. */
   placeholderMessage?: string;

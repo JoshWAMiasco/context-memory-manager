@@ -16,7 +16,7 @@ import { META_FILES, type Manifest } from "@/server/meta/schemas";
 import { deleteMeta, metaDirectoryOf, writeMeta } from "@/server/meta/store";
 import { findMemoryTemplate } from "@/server/memory/templates";
 import { getGlobalSingleton } from "@/server/runtime/global-singleton";
-import { assertValidName, isHiddenCcmName, joinRelativePath, resolveInStorage } from "@/server/security/path-jail";
+import { assertValidName, isHiddenCmmName, joinRelativePath, resolveInStorage } from "@/server/security/path-jail";
 import { createDirectory, createFile } from "@/server/storage/fs-ops";
 import { readEntryBadges } from "@/server/storage/meta-badges";
 import type { FileActor } from "@/server/storage/pipeline";
@@ -165,7 +165,7 @@ export async function convertToMemory(
 
 /**
  * Turns a memory back into a plain folder: the manifest is removed, or kept with
- * `kind: "folder"` when other `.ccm/` files (protection, encryption…) are there.
+ * `kind: "folder"` when other `.cmm/` files (protection, encryption…) are there.
  */
 export async function convertToFolder(storage: ActiveStorage, relativePath: string): Promise<void> {
   const resolvedPath = await requireFolder(storage, relativePath);
@@ -217,7 +217,7 @@ const MARKDOWN_PATTERN = /\.(md|markdown|mdx)$/i;
 
 /**
  * File count, total size, Markdown count, last change and the 10 most recently changed files of a
- * folder, not counting `.ccm*`. Counting stops at 50,000 files (`isPartial`). Results are
+ * folder, not counting `.cmm*`. Counting stops at 50,000 files (`isPartial`). Results are
  * cached for 30 seconds.
  *
  * @example
@@ -240,7 +240,7 @@ export async function memoryStats(storage: ActiveStorage, relativePath: string):
         : joinStoragePath(resolvedPath.absolutePath, ...folderPath.split("/"));
     const children = await readdir(folderAbsolutePath, { withFileTypes: true }).catch(() => []);
     for (const child of children) {
-      if (isHiddenCcmName(child.name) || child.isSymbolicLink()) continue;
+      if (isHiddenCmmName(child.name) || child.isSymbolicLink()) continue;
       const childPath = folderPath === "" ? child.name : `${folderPath}/${child.name}`;
       if (child.isDirectory()) {
         pending.push(childPath);

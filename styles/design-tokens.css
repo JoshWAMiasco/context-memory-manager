@@ -1,5 +1,5 @@
 /*
- * CCM's design tokens. Every component and page reads its colours, corner radii, shadows
+ * CMM's design tokens. Every component and page reads its colours, corner radii, shadows
  * and fonts from these variables, so restyling the theme means editing this file only.
  *
  * Use them as Tailwind classes: `bg-surface`, `text-foreground-muted`, `border-line`,

@@ -7,7 +7,7 @@ import { notFound } from "@/server/http/api-error";
 import { areTestHooksEnabled } from "@/server/runtime/test-hooks";
 
 /**
- * Test runs only (`CCM_TEST_HOOKS=1`): how many keys the keyring holds in total and for the calling
+ * Test runs only (`CMM_TEST_HOOKS=1`): how many keys the keyring holds in total and for the calling
  * session (`thisSession`), so tests can check that locking wipes them. POST slows crypto jobs down.
  */
 export const GET = withApi(({ actor }) => {

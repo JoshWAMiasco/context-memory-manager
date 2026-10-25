@@ -12,7 +12,7 @@ const disableBodySchema = z.object({
   confirmText: z.string().max(100).optional(),
 });
 
-/** Turns versioning off, keeping the history in `.ccm/git-archive/` or deleting it. */
+/** Turns versioning off, keeping the history in `.cmm/git-archive/` or deleting it. */
 export const POST = withApi(
   async ({ body, actor, storage }) =>
     NextResponse.json(

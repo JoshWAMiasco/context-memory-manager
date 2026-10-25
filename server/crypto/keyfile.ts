@@ -6,7 +6,7 @@ import { KEY_BYTES, KEY_ID_BYTES } from "@/server/crypto/format";
 
 /** Key files are under 1 KB; anything over 4 KB is refused before parsing. */
 export const MAX_KEY_FILE_BYTES = 4096;
-export const KEY_FILE_EXTENSION = ".ccmkey";
+export const KEY_FILE_EXTENSION = ".cmmkey";
 
 const KEY_CHECK_LABEL = Buffer.from("ccm/keycheck/v1", "utf8");
 
@@ -49,7 +49,7 @@ function computeChecksum(dek: Buffer, keyId: Buffer): string {
 }
 
 /**
- * The `keyCheck` stored in `.ccm/crypto.json`: base64 HMAC-SHA256(DEK, "ccm/keycheck/v1" || keyId).
+ * The `keyCheck` stored in `.cmm/crypto.json`: base64 HMAC-SHA256(DEK, "ccm/keycheck/v1" || keyId).
  * It proves an uploaded key is the folder's key without decrypting a file, and reveals nothing
  * about the key.
  */
@@ -58,7 +58,7 @@ export function computeKeyCheck(dek: Buffer, keyId: Buffer): string {
 }
 
 /**
- * The `.ccmkey` file for a folder key, as JSON bytes.
+ * The `.cmmkey` file for a folder key, as JSON bytes.
  *
  * @example
  * const keyFileBytes = buildKeyFile({ folderId, folderName: "persona", createdAt, ...generateFolderKey() });
@@ -82,22 +82,22 @@ function invalidKeyFile(message: string): ApiRouteError {
 }
 
 /**
- * Reads an uploaded `.ccmkey` file: at most 4 KB, valid JSON in the v1 shape, and a checksum that
+ * Reads an uploaded `.cmmkey` file: at most 4 KB, valid JSON in the v1 shape, and a checksum that
  * matches the key. Throws 400 `WRONG_KEY_FILE` otherwise.
  *
  * @example
  * const keyFile = parseKeyFile(await uploadedFile.arrayBuffer().then(Buffer.from));
  */
 export function parseKeyFile(bytes: Buffer): ParsedKeyFile {
-  if (bytes.length > MAX_KEY_FILE_BYTES) throw invalidKeyFile("That file is too large to be a CCM key file.");
+  if (bytes.length > MAX_KEY_FILE_BYTES) throw invalidKeyFile("That file is too large to be a CMM key file.");
   let document: unknown;
   try {
     document = JSON.parse(bytes.toString("utf8"));
   } catch {
-    throw invalidKeyFile("That file is not a CCM key file.");
+    throw invalidKeyFile("That file is not a CMM key file.");
   }
   const parsed = keyFileSchema.safeParse(document);
-  if (!parsed.success) throw invalidKeyFile("That file is not a CCM key file.");
+  if (!parsed.success) throw invalidKeyFile("That file is not a CMM key file.");
   const dek = Buffer.from(parsed.data.key, "base64");
   const keyId = Buffer.from(parsed.data.keyId, "base64");
   const expectedChecksum = Buffer.from(computeChecksum(dek, keyId), "hex");

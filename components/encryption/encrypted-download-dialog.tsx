@@ -69,7 +69,7 @@ export function EncryptedDownloadDialog({
         <div className="grid gap-3" data-testid="encrypted-download-dialog">
           <Choice
             title="Decrypted"
-            description="The file as you see it in CCM. It will be plaintext on the computer you download it to."
+            description="The file as you see it in CMM. It will be plaintext on the computer you download it to."
             icon={FileKey2}
             isDisabled={!isUnlocked}
             disabledReason="Unlock the folder first to download the decrypted file."
@@ -78,7 +78,7 @@ export function EncryptedDownloadDialog({
           />
           <Choice
             title="Encrypted (raw)"
-            description="The bytes as stored, still encrypted. Only CCM with the key file can open it."
+            description="The bytes as stored, still encrypted. Only CMM with the key file can open it."
             icon={FileLock2}
             onChoose={() => choose(true)}
             testId="download-raw"

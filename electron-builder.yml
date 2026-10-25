@@ -1,8 +1,8 @@
 # Desktop installers. Built by `npm run build:desktop` (scripts/build-desktop.ts), which
-# prepares dist/electron (main process, the app.asar contents) and dist/app (the CCM server) first.
+# prepares dist/electron (main process, the app.asar contents) and dist/app (the CMM server) first.
 # Nothing here publishes or updates over the network.
-appId: app.ccm.desktop # Changing it moves the app's userData folder.
-productName: CCM
+appId: app.cmm.desktop # Changing it moves the app's userData folder.
+productName: CMM
 copyright: Copyright © 2026 Joshua Miasco
 electronVersion: 45.0.0
 
@@ -67,8 +67,8 @@ mac:
   notarize: false
 
 dmg:
-  title: CCM ${version}
-  artifactName: CCM-${version}-${arch}.dmg
+  title: CMM ${version}
+  artifactName: CMM-${version}-${arch}.dmg
 
 win:
   target:
@@ -81,8 +81,8 @@ nsis:
   allowToChangeInstallationDirectory: true
   createStartMenuShortcut: true
   createDesktopShortcut: true
-  shortcutName: CCM
-  artifactName: CCM-Setup-${version}-${arch}.exe
+  shortcutName: CMM
+  artifactName: CMM-Setup-${version}-${arch}.exe
 
 linux:
   target:
@@ -91,5 +91,5 @@ linux:
   category: Utility
   icon: build/icons
   synopsis: Offline file manager for LLM context, memories and private files
-  maintainer: CCM <ccm@localhost>
-  artifactName: CCM-${version}-${arch}.${ext}
+  maintainer: CMM <cmm@localhost>
+  artifactName: CMM-${version}-${arch}.${ext}

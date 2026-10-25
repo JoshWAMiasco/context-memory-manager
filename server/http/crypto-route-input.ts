@@ -40,7 +40,7 @@ export async function readCryptoForm(request: NextRequest): Promise<CryptoForm> 
       continue;
     }
     if (value.size > MAX_KEY_FILE_BYTES) {
-      throw new ApiRouteError(400, "WRONG_KEY_FILE", "That file is too large to be a CCM key file.");
+      throw new ApiRouteError(400, "WRONG_KEY_FILE", "That file is too large to be a CMM key file.");
     }
     form.files.set(fieldName, Buffer.from(await value.arrayBuffer()));
   }
@@ -50,7 +50,7 @@ export async function readCryptoForm(request: NextRequest): Promise<CryptoForm> 
 /** A required key file field. */
 export function requireKeyFile(form: CryptoForm, fieldName = "keyfile"): Buffer {
   const keyFile = form.files.get(fieldName);
-  if (!keyFile) throw validationFailed("Choose the folder's .ccmkey key file.");
+  if (!keyFile) throw validationFailed("Choose the folder's .cmmkey key file.");
   return keyFile;
 }
 

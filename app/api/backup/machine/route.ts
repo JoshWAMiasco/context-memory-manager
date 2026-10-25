@@ -6,7 +6,7 @@ import { withApi } from "@/server/auth/guard";
 import { findActiveStorage, listStoragesFor } from "@/server/storage/roots";
 
 /**
- * The computer in the middle of the Backup page's topology: its name, whether CCM runs as a
+ * The computer in the middle of the Backup page's topology: its name, whether CMM runs as a
  * desktop app or a server, and the capacity of the internal storages this user can open.
  */
 export const GET = withApi(async ({ config, actor }) => {

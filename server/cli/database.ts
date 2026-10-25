@@ -4,21 +4,28 @@ import { chownSync, existsSync } from "node:fs";
 import path from "node:path";
 import { and, asc, count, eq } from "drizzle-orm";
 import { findPasswordPolicyProblem } from "@/lib/auth/policy";
-import { DATABASE_FILE_NAME, openDatabase, type CcmDatabase, type CcmOrm } from "@/server/db/client";
+import {
+  adoptLegacyDatabaseFile,
+  DATABASE_FILE_NAME,
+  openDatabase,
+  type CmmDatabase,
+  type CmmOrm,
+} from "@/server/db/client";
 import { sessions, storages, users } from "@/server/db/schema";
 import { readSeededRoots, writeSeededRoots } from "@/server/storage/seeded-roots";
 
 /**
- * Opens the server's `ccm.db` while the service may be running (WAL and a busy timeout make that
+ * Opens the server's `cmm.db` while the service may be running (WAL and a busy timeout make that
  * safe). Returns undefined before the first start, so the CLI never creates the database itself.
  */
-export function openExistingDatabase(dataDirectory: string): CcmDatabase | undefined {
+export function openExistingDatabase(dataDirectory: string): CmmDatabase | undefined {
+  adoptLegacyDatabaseFile(dataDirectory);
   const databaseFile = path.join(dataDirectory, DATABASE_FILE_NAME);
   return existsSync(databaseFile) ? openDatabase(databaseFile) : undefined;
 }
 
 /**
- * Gives `ccm.db` and its WAL files back to the service account. SQLite creates `-wal` and `-shm`
+ * Gives `cmm.db` and its WAL files back to the service account. SQLite creates `-wal` and `-shm`
  * with the opener's owner, so a root CLI run would otherwise lock the service out of its database.
  */
 export function restoreDatabaseOwnership(dataDirectory: string, owner: { userId: number; groupId: number }): void {
@@ -34,7 +41,7 @@ export interface AdminListing {
   lastLoginAt: Date | null;
 }
 
-export function listAdmins(orm: CcmOrm): AdminListing[] {
+export function listAdmins(orm: CmmOrm): AdminListing[] {
   return orm
     .select({ username: users.username, disabled: users.disabled, lastLoginAt: users.lastLoginAt })
     .from(users)
@@ -44,11 +51,11 @@ export function listAdmins(orm: CcmOrm): AdminListing[] {
 }
 
 /** Setup is complete once an admin exists (as in `server/auth/setup.ts`). */
-export function hasAdmin(orm: CcmOrm): boolean {
+export function hasAdmin(orm: CmmOrm): boolean {
   return orm.select({ id: users.id }).from(users).where(eq(users.role, "admin")).limit(1).get() !== undefined;
 }
 
-export function countStorages(orm: CcmOrm): number {
+export function countStorages(orm: CmmOrm): number {
   return orm.select({ storageCount: count() }).from(storages).get()?.storageCount ?? 0;
 }
 
@@ -72,7 +79,7 @@ export function generateTemporaryPassword(): string {
  * the admin's sessions (the server checks the sessions table on every request). Throws when the
  * user doesn't exist or isn't an admin.
  */
-export function setTemporaryAdminPassword(orm: CcmOrm, username: string, passwordHash: string): AdminListing {
+export function setTemporaryAdminPassword(orm: CmmOrm, username: string, passwordHash: string): AdminListing {
   const admin = orm
     .select()
     .from(users)
@@ -95,7 +102,7 @@ export function findTemporaryPasswordProblem(username: string, password: string)
  * Registers `rootPath` as an internal storage right away, so it appears without waiting for the
  * service to seed it from the config, and remembers it as seeded. Returns false if it was already there.
  */
-export function registerInternalStorage(orm: CcmOrm, rootPath: string, label: string): boolean {
+export function registerInternalStorage(orm: CmmOrm, rootPath: string, label: string): boolean {
   return orm.transaction((transaction) => {
     const seededRoots = new Set(readSeededRoots(transaction));
     seededRoots.add(rootPath);
@@ -112,7 +119,7 @@ export function registerInternalStorage(orm: CcmOrm, rootPath: string, label: st
 }
 
 /** Unregisters the internal storage at `rootPath`. Files are never touched. Returns false if there was none. */
-export function unregisterInternalStorage(orm: CcmOrm, rootPath: string): boolean {
+export function unregisterInternalStorage(orm: CmmOrm, rootPath: string): boolean {
   const removedStorages = orm
     .delete(storages)
     .where(and(eq(storages.kind, "internal"), eq(storages.rootPath, rootPath)))

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { CcmLogoMark } from "@/components/icons/ccm-logo-mark";
+import { CmmLogoMark } from "@/components/icons/cmm-logo-mark";
 import { mergeClassNames } from "@/utilities/merge-class-names";
 
 export interface AuthenticationFrameProps {
@@ -14,7 +14,7 @@ export interface AuthenticationFrameProps {
 }
 
 function AuthenticationLogoMark() {
-  return <CcmLogoMark className="h-[56px] w-[56px]" />;
+  return <CmmLogoMark className="h-[56px] w-[56px]" />;
 }
 
 /**
@@ -40,7 +40,7 @@ export function AuthenticationFrame({
       kept private
     </>
   ),
-  pitch = "CCM keeps the memory folders, prompts and training data of your LLM tools on your own machine or homelab: encrypted, versioned and backed up, with no cloud in between.",
+  pitch = "CMM keeps the memory folders, prompts and training data of your LLM tools on your own machine or homelab: encrypted, versioned and backed up, with no cloud in between.",
   communityCaption = "Runs fully offline.",
   className,
   children,

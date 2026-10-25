@@ -8,6 +8,7 @@ import { readTestOverride } from "@/server/runtime/test-hooks";
 import { FakeDriveProvider } from "@/server/storage/drives/fake-provider";
 import type { Drive, DriveProvider } from "@/server/storage/drives/provider";
 import { SystemDriveProvider } from "@/server/storage/drives/system-provider";
+import { ensureLegacyNamesMigrated } from "@/server/storage/legacy-migration";
 
 export const DRIVE_POLL_MILLISECONDS = 2000;
 
@@ -102,6 +103,10 @@ export class DriveMonitor {
     try {
       const nextDrives = await this.provider.list();
       const changes = diffDrives(this.drives, nextDrives);
+      // A drive last used with CCM gets CMM's folder names before anything can read it.
+      for (const changedDrive of [...changes.added, ...changes.updated]) {
+        if (changedDrive.mountPath) await ensureLegacyNamesMigrated(changedDrive.mountPath);
+      }
       this.drives = new Map(nextDrives.map((drive) => [drive.id, drive]));
       const eventBus = getEventBus();
       for (const removedDrive of changes.removed) {
@@ -133,7 +138,7 @@ export class DriveMonitor {
   start(intervalMilliseconds = DRIVE_POLL_MILLISECONDS): void {
     if (this.pollTimer) return;
     const pollSafely = () => {
-      this.poll().catch((pollError: unknown) => console.error("[ccm] drive poll failed", pollError));
+      this.poll().catch((pollError: unknown) => console.error("[cmm] drive poll failed", pollError));
     };
     pollSafely();
     this.pollTimer = setInterval(pollSafely, intervalMilliseconds);
@@ -146,9 +151,9 @@ export class DriveMonitor {
   }
 }
 
-/** The fake provider when `CCM_TEST_FAKE_DRIVES_FILE` is set (test hooks only), else the real one. */
+/** The fake provider when `CMM_TEST_FAKE_DRIVES_FILE` is set (test hooks only), else the real one. */
 export function createDriveProvider(): DriveProvider {
-  const fakeDrivesFile = readTestOverride("CCM_TEST_FAKE_DRIVES_FILE");
+  const fakeDrivesFile = readTestOverride("CMM_TEST_FAKE_DRIVES_FILE");
   return fakeDrivesFile ? new FakeDriveProvider(fakeDrivesFile) : new SystemDriveProvider();
 }
 

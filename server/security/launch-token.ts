@@ -1,8 +1,8 @@
 import "server-only";
 import { createHash, timingSafeEqual } from "node:crypto";
 
-export const LAUNCH_COOKIE_NAME = "ccm_launch";
-export const LAUNCH_TOKEN_ENVIRONMENT_VARIABLE = "CCM_LAUNCH_TOKEN";
+export const LAUNCH_COOKIE_NAME = "cmm_launch";
+export const LAUNCH_TOKEN_ENVIRONMENT_VARIABLE = "CMM_LAUNCH_TOKEN";
 
 /** Reads one cookie from a raw `Cookie` header. */
 export function readCookie(cookieHeader: string | null | undefined, cookieName: string): string | undefined {
@@ -15,8 +15,8 @@ export function readCookie(cookieHeader: string | null | undefined, cookieName: 
 }
 
 /**
- * Desktop mode only: true when the request carries the `ccm_launch` cookie the Electron main process
- * set for this launch. Compared in constant time. Without it, other local processes can't use CCM.
+ * Desktop mode only: true when the request carries the `cmm_launch` cookie the Electron main process
+ * set for this launch. Compared in constant time. Without it, other local processes can't use CMM.
  */
 export function hasValidLaunchToken(
   cookieHeader: string | null | undefined,

@@ -77,7 +77,7 @@ export function FrontmatterCard({ yaml }: { yaml: string }) {
 /**
  * Rendered Markdown: GitHub-flavoured (tables, task lists, strikethrough) with
  * highlighted code. Raw HTML is never rendered. Headings get GitHub-style ids, so `#section`
- * links scroll there. Relative links open inside CCM; external links open a new tab, or in the
+ * links scroll there. Relative links open inside CMM; external links open a new tab, or in the
  * desktop app the default browser after a confirmation. Relative images load from the storage;
  * remote images are blocked.
  *

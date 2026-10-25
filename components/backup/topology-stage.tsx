@@ -4,7 +4,7 @@ import { Laptop, Server } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { EnergyFlow, type EnergyFlowStatus } from "@/components/backup/energy-flow";
-import { EjectShieldIcon, ExternalDriveIcon, UsbFlashDiskIcon } from "@/components/icons/ccm-icons";
+import { EjectShieldIcon, ExternalDriveIcon, UsbFlashDiskIcon } from "@/components/icons/cmm-icons";
 import { formatFileSize } from "@/components/page-sections/applications/file-manager/format-file-size";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useServerEvent } from "@/hooks/use-server-events";

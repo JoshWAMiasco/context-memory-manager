@@ -91,19 +91,19 @@ export function setSetting<Key extends SettingKey>(key: Key, value: unknown): Se
   return parsedValue;
 }
 
-/** How long a session may stay idle before it locks. `CCM_TEST_AUTO_LOCK_SECONDS` overrides it in tests. */
+/** How long a session may stay idle before it locks. `CMM_TEST_AUTO_LOCK_SECONDS` overrides it in tests. */
 export function getAutoLockSeconds(): number {
-  const overrideSeconds = Number(readTestOverride("CCM_TEST_AUTO_LOCK_SECONDS"));
+  const overrideSeconds = Number(readTestOverride("CMM_TEST_AUTO_LOCK_SECONDS"));
   if (Number.isInteger(overrideSeconds) && overrideSeconds > 0) return overrideSeconds;
   return getSetting("security.autoLockMinutes") * 60;
 }
 
 /**
  * How many wrong passwords in a row (per client address and username) lock sign-in, unlock and
- * step-up, and for how long. `CCM_TEST_SIGN_IN_LOCKOUT_SECONDS` shortens the lock in tests.
+ * step-up, and for how long. `CMM_TEST_SIGN_IN_LOCKOUT_SECONDS` shortens the lock in tests.
  */
 export function getSignInLockoutPolicy(): { maximumAttempts: number; lockoutMilliseconds: number } {
-  const overrideSeconds = Number(readTestOverride("CCM_TEST_SIGN_IN_LOCKOUT_SECONDS"));
+  const overrideSeconds = Number(readTestOverride("CMM_TEST_SIGN_IN_LOCKOUT_SECONDS"));
   const lockoutSeconds =
     Number.isInteger(overrideSeconds) && overrideSeconds > 0
       ? overrideSeconds

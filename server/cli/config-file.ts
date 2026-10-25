@@ -1,7 +1,7 @@
 import "server-only";
 import { chmodSync, chownSync, existsSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { ConfigError, loadConfig, type CcmConfig } from "@/server/config";
+import { ConfigError, loadConfig, type CmmConfig } from "@/server/config";
 import { CliError } from "@/server/cli/cli-error";
 import type { SystemPaths } from "@/server/cli/paths";
 
@@ -13,7 +13,7 @@ export interface StorageRootEntry {
   label: string;
 }
 
-/** Reads `/etc/ccm/config.json`; a missing file is an empty document. */
+/** Reads `/etc/cmm/config.json`; a missing file is an empty document. */
 export function readConfigDocument(configFile: string): ConfigDocument {
   if (!existsSync(configFile)) return {};
   let parsedDocument: unknown;
@@ -29,10 +29,10 @@ export function readConfigDocument(configFile: string): ConfigDocument {
 }
 
 /** The effective server config that `document` gives, exactly as the service will load it. Throws a `CliError` when invalid. */
-export function resolveServerConfig(document: ConfigDocument, paths: SystemPaths): CcmConfig {
+export function resolveServerConfig(document: ConfigDocument, paths: SystemPaths): CmmConfig {
   try {
     return loadConfig({
-      environment: { CCM_MODE: "server", CCM_CONFIG: paths.configFile, CCM_DATA_DIR: paths.dataDir },
+      environment: { CMM_MODE: "server", CMM_CONFIG: paths.configFile, CMM_DATA_DIR: paths.dataDir },
       readTextFile: () => JSON.stringify(document),
     });
   } catch (configError) {
@@ -43,7 +43,7 @@ export function resolveServerConfig(document: ConfigDocument, paths: SystemPaths
 
 /**
  * Validates `document`, then replaces the config file atomically (temporary file and rename). The
- * new file keeps the old one's mode and owner (0640 root:ccm after `install.sh`).
+ * new file keeps the old one's mode and owner (0640 root:cmm after `install.sh`).
  */
 export function writeConfigDocument(paths: SystemPaths, document: ConfigDocument): void {
   resolveServerConfig(document, paths);

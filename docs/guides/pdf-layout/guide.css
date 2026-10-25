@@ -1,5 +1,5 @@
 /*
- * Print stylesheet of the CCM PDF guides. A4 pages for paper: dark text on white, the
+ * Print stylesheet of the CMM PDF guides. A4 pages for paper: dark text on white, the
  * app's colours as accents only, and nothing that relies on colour alone, so a guide still reads
  * when printed in black and white. Fonts are embedded by the build (Oxanium for headings, Inter
  * for text, Martian Mono for commands).
@@ -14,7 +14,7 @@
   margin: 18mm 18mm 20mm 18mm;
 
   @bottom-left {
-    content: "CCM";
+    content: "CMM";
     font-family: "Inter", sans-serif;
     font-size: 7.5pt;
     color: #6b8296;

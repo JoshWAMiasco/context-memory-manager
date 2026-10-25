@@ -1,4 +1,5 @@
 import "server-only";
+import { LEGACY_RESERVED_NAMES } from "@/lib/fs/legacy-names";
 import { randomUUID } from "node:crypto";
 import { readdir, stat } from "node:fs/promises";
 import path from "node:path";
@@ -186,7 +187,7 @@ function toKeyFileName(folderName: string): string {
   return `${safeName}${KEY_FILE_EXTENSION}`;
 }
 
-/** Step 3: the pending key's `.ccmkey` file; it can be downloaded again while the slot lives. */
+/** Step 3: the pending key's `.cmmkey` file; it can be downloaded again while the slot lives. */
 export function readPendingKeyFile(actor: FileActor, pendingId: string): { fileName: string; bytes: Buffer } {
   const pendingKey = requirePending(actor, pendingId);
   return {
@@ -214,7 +215,7 @@ export function verifyPendingKeyFile(actor: FileActor, pendingId: string, keyFil
       throw new ApiRouteError(
         400,
         "WRONG_KEY_FILE",
-        "That isn't the key file you just downloaded. Choose the .ccmkey file from step 3.",
+        "That isn't the key file you just downloaded. Choose the .cmmkey file from step 3.",
       );
     }
     pendingKey.isVerified = true;
@@ -239,7 +240,7 @@ function enqueueCryptoJob(payload: CryptoJobPayload, keys: readonly { keyId: Buf
 }
 
 /**
- * Step 5: writes `.ccm/crypto.json` (state `encrypting`, or `rekeying` with the new key), starts
+ * Step 5: writes `.cmm/crypto.json` (state `encrypting`, or `rekeying` with the new key), starts
  * the job with its own copy of the key(s), and unlocks the folder for this session. Needs the key
  * file verified in step 4.
  */
@@ -539,7 +540,8 @@ async function countPlaintextFiles(scopeAbsolutePath: string): Promise<{ count: 
   while (pendingFolders.length > 0) {
     const folder = pendingFolders.shift() ?? scopeAbsolutePath;
     for (const child of await readdir(folder, { withFileTypes: true }).catch(() => [])) {
-      if ([".ccm", ".ccm-trash", ".ccm-tmp", ".git"].includes(child.name.toLowerCase())) continue;
+      if ([".cmm", ".cmm-trash", ".cmm-tmp", ".git", ...LEGACY_RESERVED_NAMES].includes(child.name.toLowerCase()))
+        continue;
       const childPath = joinStoragePath(folder, child.name);
       if (child.isDirectory()) pendingFolders.push(childPath);
       else if (child.isFile()) {
@@ -682,7 +684,7 @@ export function createEncryptionService(): BackgroundService {
     const row = getJobQueue().get(job.id);
     if (!row?.payloadJson) return;
     void settleCancelledJob(JSON.parse(row.payloadJson) as CryptoJobPayload, job.id).catch((settleError: unknown) =>
-      console.warn("[ccm] could not settle a cancelled encryption job", settleError),
+      console.warn("[cmm] could not settle a cancelled encryption job", settleError),
     );
   };
   return {

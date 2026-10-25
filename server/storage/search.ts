@@ -2,7 +2,7 @@ import "server-only";
 import { readdir } from "node:fs/promises";
 import type { SearchMatch, SearchResults } from "@/lib/api-types";
 import { isSystemMetadataName } from "@/lib/fs/system-files";
-import { isHiddenCcmName, resolveInStorage } from "@/server/security/path-jail";
+import { isHiddenCmmName, resolveInStorage } from "@/server/security/path-jail";
 import type { ActiveStorage } from "@/server/storage/roots";
 import { joinStoragePath } from "@/server/storage/storage-path";
 
@@ -13,13 +13,13 @@ const SEARCH_ENTRY_LIMIT = 50_000;
 const SEARCH_TIME_LIMIT_MILLISECONDS = 1500;
 
 function isSearchable(entryName: string): boolean {
-  return !isHiddenCcmName(entryName) && !isSystemMetadataName(entryName) && entryName !== ".git";
+  return !isHiddenCmmName(entryName) && !isSystemMetadataName(entryName) && entryName !== ".git";
 }
 
 /**
  * Finds files and folders in a storage whose name contains `query` (case-insensitive) for quick
  * search: breadth-first, so shallow matches come first, without following symlinks and skipping
- * CCM's folders, `.git` and the operating system's metadata. It stops at 50 matches, 50,000
+ * CMM's folders, `.git` and the operating system's metadata. It stops at 50 matches, 50,000
  * entries or 1.5 s and then says the results are incomplete.
  *
  * @example

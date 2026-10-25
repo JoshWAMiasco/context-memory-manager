@@ -1,18 +1,18 @@
 /*
- * Copies the vscode-icons SVGs that CCM's file tree can show into public/icons/vscode/,
+ * Copies the vscode-icons SVGs that CMM's file tree can show into public/icons/vscode/,
  * so the build needs no network. Run it again after upgrading vscode-icons-js:
  *
  *   npx tsx scripts/copy-vscode-icons.ts                     # from the installed VS Code extension
  *   npx tsx scripts/copy-vscode-icons.ts --from <icons dir>  # from an extracted vscode-icons release
  *
- * It copies every icon the vscode-icons-js mapping can return (plus the dark variants CCM prefers
+ * It copies every icon the vscode-icons-js mapping can return (plus the dark variants CMM prefers
  * and its own overrides), writes VERSION and LICENSE.md, and generates
  * lib/icons/vscode-icon-names.ts so the client knows which icons exist.
  */
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
-import { CCM_ICON_OVERRIDES } from "../lib/icons/vscode-icon-overrides";
+import { CMM_ICON_OVERRIDES } from "../lib/icons/vscode-icon-overrides";
 
 const projectRoot = path.resolve(__dirname, "..");
 const targetDirectory = path.join(projectRoot, "public", "icons", "vscode");
@@ -75,7 +75,7 @@ function copyIcons(): void {
       wantedNames.add(iconName.replace(/\.svg$/, "_opened.svg"));
     }
   }
-  for (const overrideName of Object.values(CCM_ICON_OVERRIDES)) wantedNames.add(overrideName);
+  for (const overrideName of Object.values(CMM_ICON_OVERRIDES)) wantedNames.add(overrideName);
 
   rmSync(targetDirectory, { recursive: true, force: true });
   mkdirSync(targetDirectory, { recursive: true });
@@ -114,8 +114,8 @@ function copyIcons(): void {
       `(${sourceVersion}), by Roberto Huertas and the vscode-icons contributors.`,
       "",
       "They are licensed under the Creative Commons Attribution-ShareAlike 4.0 International license",
-      "(CC BY-SA 4.0): https://creativecommons.org/licenses/by-sa/4.0/. CCM ships them unchanged. Each file",
-      "remains under CC BY-SA 4.0; the CCM About page carries the same attribution.",
+      "(CC BY-SA 4.0): https://creativecommons.org/licenses/by-sa/4.0/. CMM ships them unchanged. Each file",
+      "remains under CC BY-SA 4.0; the CMM About page carries the same attribution.",
       "",
       "The file-name-to-icon mapping is vscode-icons-js (MIT), by Dominik Eckelmann.",
       "",

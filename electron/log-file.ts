@@ -1,6 +1,6 @@
 /*
  * The desktop app's log files: `userData/logs/main.log` for the main process and
- * `server.log` for the CCM server's stdout and stderr. Each rotates at 5 MB and keeps 3 old files
+ * `server.log` for the CMM server's stdout and stderr. Each rotates at 5 MB and keeps 3 old files
  * (`main.log.1` newest … `main.log.3` oldest). Writes are synchronous so the last lines before a
  * crash are on disk.
  */

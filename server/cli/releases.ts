@@ -4,8 +4,8 @@ import path from "node:path";
 import { CliError } from "@/server/cli/cli-error";
 
 /**
- * `/opt/ccm` holds one folder per installed version plus two links that `install.sh` maintains:
- * `current` (what the unit runs) and `previous` (what `ccm rollback` returns to). Links are relative
+ * `/opt/cmm` holds one folder per installed version plus two links that `install.sh` maintains:
+ * `current` (what the unit runs) and `previous` (what `cmm rollback` returns to). Links are relative
  * (`current -> 0.2.0`), so the tree can move.
  */
 export interface InstalledReleases {

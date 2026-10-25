@@ -9,7 +9,7 @@ import { getEventBus, type SessionDestroyedEvent, type SessionLockedEvent } from
 import { requirePasswordConfirm } from "@/server/security/password-confirm";
 import { getAutoLockSeconds } from "@/server/settings/store";
 
-export const SESSION_COOKIE_NAME = "ccm_session";
+export const SESSION_COOKIE_NAME = "cmm_session";
 
 const DAY_MILLISECONDS = 24 * 60 * 60 * 1000;
 
@@ -163,7 +163,7 @@ export function revokeUserSessions(userId: string, keptSessionIdHash?: string): 
   for (const revokedSession of revokedSessions) destroySession(revokedSession.idHash, userId, "revoked");
 }
 
-/** The `ccm_session` cookie: httpOnly, SameSite=Strict, Path=/, Secure over TLS, expiring with the session. */
+/** The `cmm_session` cookie: httpOnly, SameSite=Strict, Path=/, Secure over TLS, expiring with the session. */
 export function buildSessionCookie(token: string, isSecure: boolean) {
   return {
     name: SESSION_COOKIE_NAME,

@@ -7,7 +7,7 @@ import { getDatabase } from "@/server/db/client";
 
 async function canHashWithArgon2(): Promise<boolean> {
   try {
-    const passwordHash = await hash("ccm-health-check", { memoryCost: 1024, timeCost: 1, parallelism: 1 });
+    const passwordHash = await hash("cmm-health-check", { memoryCost: 1024, timeCost: 1, parallelism: 1 });
     return passwordHash.startsWith("$argon2id$");
   } catch {
     return false;

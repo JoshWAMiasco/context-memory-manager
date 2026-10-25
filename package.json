@@ -2,7 +2,7 @@
   "name": "context-memory-manager",
   "version": "0.1.0",
   "private": true,
-  "description": "CCM (Context Memory Manager): a self-hosted file manager for LLM context, memories and private files.",
+  "description": "CMM (Context Memory Manager): a self-hosted file manager for LLM context, memories and private files.",
   "license": "MIT",
   "author": "Joshua Miasco",
   "repository": {
@@ -10,7 +10,7 @@
     "url": "https://github.com/JoshWAMiasco/context_memory_manager.git"
   },
   "scripts": {
-    "dev": "tsx scripts/clear-stale-dev-cache.ts && tsx scripts/copy-pdfjs-assets.ts && cross-env NEXT_TELEMETRY_DISABLED=1 tsx scripts/build-entry.ts && cross-env NEXT_TELEMETRY_DISABLED=1 CCM_MODE=server CCM_DATA_DIR=.ccm-dev-data CCM_CONFIG=.ccm-dev-data/config.json node dist/server/entry.js --dev",
+    "dev": "tsx scripts/clear-stale-dev-cache.ts && tsx scripts/copy-pdfjs-assets.ts && cross-env NEXT_TELEMETRY_DISABLED=1 tsx scripts/build-entry.ts && cross-env NEXT_TELEMETRY_DISABLED=1 CMM_MODE=server CMM_DATA_DIR=.cmm-dev-data CMM_CONFIG=.cmm-dev-data/config.json node dist/server/entry.js --dev",
     "build": "tsx scripts/clean-build-output.ts && tsx scripts/gen-licenses.ts && tsx scripts/copy-pdfjs-assets.ts && cross-env NEXT_TELEMETRY_DISABLED=1 next build && npm run build:entry && tsx scripts/assemble-app.ts && npm run build:electron && npm run docs:pdf",
     "build:entry": "cross-env NEXT_TELEMETRY_DISABLED=1 tsx scripts/build-entry.ts",
     "build:electron": "tsx scripts/build-electron.ts",

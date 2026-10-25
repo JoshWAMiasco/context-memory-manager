@@ -39,7 +39,7 @@ export function useServerEventInvalidation(): void {
         showToastNotification({
           title: "A protected folder was changed",
           tone: "warning",
-          description: `Another program modified "${path}". CCM made it read-only again.`,
+          description: `Another program modified "${path}". CMM made it read-only again.`,
           durationInMilliseconds: 8000,
         });
       }),
@@ -81,7 +81,7 @@ export function useServerEventInvalidation(): void {
 
 /**
  * Watches a folder while the component is mounted and `isEnabled` is true, so changes made
- * outside CCM refresh its listing.
+ * outside CMM refresh its listing.
  *
  * @example
  * useDirectoryWatch(storageId, "notes", isExpanded);

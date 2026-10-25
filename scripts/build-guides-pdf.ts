@@ -1,7 +1,7 @@
 /*
  * Builds the two PDF guides from docs/guides/*.md, offline and from local files only:
  *
- *   1. Markdown → HTML with `marked`, plus CCM's extras: numbered chapters (`#`) and sections
+ *   1. Markdown → HTML with `marked`, plus CMM's extras: numbered chapters (`#`) and sections
  *      (`##`), GitHub-style callouts (`> [!NOTE]`, `[!TIP]`, `[!WARNING]`, `[!DANGER]`), numbered
  *      lists as step badges, and an image alone in a paragraph as a numbered figure.
  *   2. The HTML goes into docs/guides/pdf-layout/guide.html with guide.css, the fonts (Oxanium, Inter,
@@ -11,7 +11,7 @@
  *      page each heading landed on, for the table of contents; the second is the guide, with links
  *      and a bookmark outline. The running title and page numbers are CSS page margin boxes.
  *
- * Output: dist/docs/CCM-Desktop-Guide.pdf and dist/docs/CCM-Server-Guide.pdf (and the HTML next to
+ * Output: dist/docs/CMM-Desktop-Guide.pdf and dist/docs/CMM-Server-Guide.pdf (and the HTML next to
  * them with `--html`). A missing screenshot or diagram fails the build unless `--allow-missing`.
  *
  * Usage: `npm run docs:pdf [-- --html] [-- --allow-missing] [-- desktop|server]`.
@@ -53,14 +53,14 @@ const GUIDES: GuideDefinition[] = [
   {
     key: "desktop",
     source: "desktop-guide.md",
-    output: "CCM-Desktop-Guide.pdf",
+    output: "CMM-Desktop-Guide.pdf",
     whereToOpen: "Help › Desktop Guide (PDF) in the app, or Settings › About",
   },
   {
     key: "server",
     source: "server-guide.md",
-    output: "CCM-Server-Guide.pdf",
-    whereToOpen: "Settings › About in CCM, or docs/CCM-Server-Guide.pdf in the server package",
+    output: "CMM-Server-Guide.pdf",
+    whereToOpen: "Settings › About in CMM, or docs/CMM-Server-Guide.pdf in the server package",
   },
 ];
 
@@ -191,7 +191,7 @@ function renderGuide(markdown: string): RenderedGuide {
             number: String(chapterNumber),
             title: plainTitle,
             id: uniqueId(plainTitle),
-            markerId: `ccmmark${headings.length}x`,
+            markerId: `cmmmark${headings.length}x`,
           };
           headings.push(heading);
           return `</section><section class="chapter"><header class="chapter-header"><div class="chapter-eyebrow">Chapter ${chapterNumber}</div><h1 id="${heading.id}"><span class="page-marker">${heading.markerId}</span>${titleHtml}</h1></header>`;
@@ -203,7 +203,7 @@ function renderGuide(markdown: string): RenderedGuide {
             number: `${chapterNumber}.${sectionNumber}`,
             title: plainTitle,
             id: uniqueId(`${chapterNumber}-${plainTitle}`),
-            markerId: `ccmmark${headings.length}x`,
+            markerId: `cmmmark${headings.length}x`,
           };
           headings.push(heading);
           return `<h2 id="${heading.id}"><span class="page-marker">${heading.markerId}</span><span class="section-number">${heading.number}</span>${titleHtml}</h2>`;
@@ -247,7 +247,7 @@ function renderGuide(markdown: string): RenderedGuide {
   });
   const html = `<section>${marked.parse(calloutSource, { async: false })}</section>`.replace("<section></section>", "");
   return {
-    title: fields.title ?? "CCM Guide",
+    title: fields.title ?? "CMM Guide",
     subtitle: fields.subtitle ?? "",
     html,
     headings,
@@ -295,9 +295,9 @@ function buildDocument(
   const version = (JSON.parse(readFileSync(path.join(projectRoot, "package.json"), "utf8")) as { version: string })
     .version;
   const buildDate = process.env.SOURCE_DATE_EPOCH ? new Date(Number(process.env.SOURCE_DATE_EPOCH) * 1000) : new Date();
-  const logo = readFileSync(path.join(projectRoot, "public", "icons", "ccm", "logo.svg"), "utf8")
+  const logo = readFileSync(path.join(projectRoot, "public", "icons", "cmm", "logo.svg"), "utf8")
     .replace(/ width="\d+" height="\d+"/, "")
-    .replaceAll("ccm-logo-fill", "cover-logo-fill");
+    .replaceAll("cmm-logo-fill", "cover-logo-fill");
   const content = keepMarkers
     ? rendered.html
     : rendered.html.replaceAll(/<span class="page-marker">[^<]*<\/span>/g, "");
@@ -362,7 +362,7 @@ async function findMarkerPages(pdfBytes: Buffer): Promise<Map<string, number>> {
   for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
     const textContent = await (await document.getPage(pageNumber)).getTextContent();
     const pageText = textContent.items.map((item) => ("str" in item ? item.str : "")).join("");
-    for (const match of pageText.matchAll(/ccmmark\d+x/g)) {
+    for (const match of pageText.matchAll(/cmmmark\d+x/g)) {
       if (!pages.has(match[0])) pages.set(match[0], pageNumber);
     }
   }

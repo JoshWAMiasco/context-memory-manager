@@ -196,7 +196,7 @@ export async function runAfterHooks(operation: FileOperation): Promise<void> {
     try {
       await afterHook(operation);
     } catch (hookError) {
-      console.error(`[ccm] after-hook "${hookName}" failed for ${operation.type} ${operation.path}`, hookError);
+      console.error(`[cmm] after-hook "${hookName}" failed for ${operation.type} ${operation.path}`, hookError);
     }
   }
 }

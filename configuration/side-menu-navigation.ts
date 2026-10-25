@@ -32,7 +32,7 @@ const link = (title: string, href: string, icon: LucideIcon, badge?: string): Si
 const divider = (title: string): SideMenuDividerEntry => ({ entryKind: "divider", title });
 
 /**
- * A side menu's entries, in display order, for layouts that have one (CCM's top-bar-only layout
+ * A side menu's entries, in display order, for layouts that have one (CMM's top-bar-only layout
  * doesn't show it). Server-only: icons are components, rendered on the server.
  */
 export const SIDE_MENU_NAVIGATION: readonly SideMenuEntry[] = [

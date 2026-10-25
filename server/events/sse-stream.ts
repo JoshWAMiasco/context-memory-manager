@@ -1,7 +1,7 @@
 import "server-only";
 import type { NextRequest } from "next/server";
 import { resolveSession, SESSION_COOKIE_NAME, type ResolvedSession } from "@/server/auth/session";
-import { getEventBus, type CcmEventMap, type CcmEventName, type EventTopic } from "@/server/events/bus";
+import { getEventBus, type CmmEventMap, type CmmEventName, type EventTopic } from "@/server/events/bus";
 import { validationFailed } from "@/server/http/api-error";
 import type { FileActor } from "@/server/storage/pipeline";
 import { canSeeStorage, requireStorageAccess } from "@/server/storage/roots";
@@ -81,7 +81,7 @@ export async function createEventStream({
     visibilityCache.set(storageId, { visible, checkedAt: Date.now() });
     return visible;
   };
-  const isWanted: { [EventName in CcmEventName]: (...eventArguments: CcmEventMap[EventName]) => boolean } = {
+  const isWanted: { [EventName in CmmEventName]: (...eventArguments: CmmEventMap[EventName]) => boolean } = {
     "fs.changed": (event) => topics.has("fs") && isStorageVisible(event.storageId),
     "protection.violation": (event) => topics.has("fs") && isStorageVisible(event.storageId),
     "versioning.changed": (event) => topics.has("fs") && isStorageVisible(event.storageId),
@@ -99,7 +99,7 @@ export async function createEventStream({
     "session.locked": (event) => event.sessionIdHash === auth.session.idHash,
     "session.destroyed": (event) => event.sessionIdHash === auth.session.idHash,
   };
-  const toClientPayload = (eventName: CcmEventName, eventValue: unknown): unknown => {
+  const toClientPayload = (eventName: CmmEventName, eventValue: unknown): unknown => {
     if (eventName === "job.progress" || eventName === "job.state" || eventName === "backup.triggered") {
       const clientValue: Record<string, unknown> = { ...(eventValue as Record<string, unknown>) };
       delete clientValue.ownerId;
@@ -120,7 +120,7 @@ export async function createEventStream({
   const eventBus = getEventBus();
   const cleanup: {
     done: boolean;
-    listeners: [CcmEventName, (...eventArguments: never[]) => void][];
+    listeners: [CmmEventName, (...eventArguments: never[]) => void][];
     heartbeat?: NodeJS.Timeout;
   } = {
     done: false,
@@ -132,7 +132,7 @@ export async function createEventStream({
     clearInterval(cleanup.heartbeat);
     for (const [eventName, listener] of cleanup.listeners) eventBus.off(eventName, listener as never);
     for (const unsubscribe of unsubscribers) {
-      unsubscribe().catch((closeError: unknown) => console.warn("[ccm] closing a watcher failed", closeError));
+      unsubscribe().catch((closeError: unknown) => console.warn("[cmm] closing a watcher failed", closeError));
     }
   };
 
@@ -156,7 +156,7 @@ export async function createEventStream({
         }
       };
       write("retry: 3000\n: connected\n\n");
-      const eventNames = Object.keys(isWanted) as CcmEventName[];
+      const eventNames = Object.keys(isWanted) as CmmEventName[];
       for (const eventName of eventNames) {
         const listener = (...eventArguments: never[]) => {
           const wants = isWanted[eventName] as (...values: unknown[]) => boolean;

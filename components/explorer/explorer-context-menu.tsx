@@ -30,7 +30,7 @@ import {
   Upload,
 } from "lucide-react";
 import { useRef, useState, type ComponentType } from "react";
-import { BrainIcon } from "@/components/icons/ccm-icons";
+import { BrainIcon } from "@/components/icons/cmm-icons";
 import { announce, announceError, useExplorer } from "@/components/explorer/explorer-context";
 import { useMemoryMutations } from "@/lib/client/memory";
 import { useFileClipboard } from "@/lib/client/clipboard";
@@ -201,7 +201,7 @@ export function ExplorerContextMenu() {
           (revealError: unknown) => announceError("Couldn't reveal it", revealError),
         );
       },
-      disabledReason: isDesktopApp() ? undefined : "Open CCM in its desktop app to reveal files.",
+      disabledReason: isDesktopApp() ? undefined : "Open CMM in its desktop app to reveal files.",
     });
   }
   if (entry?.type === "directory") {

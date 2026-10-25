@@ -14,8 +14,8 @@ import { directoryQueryOptions, loadMoreEntries, type StoragePath } from "@/lib/
 import { readParentPath } from "@/lib/client/query-keys";
 import { mergeClassNames } from "@/utilities/merge-class-names";
 
-/** The drag data type of entries dragged inside CCM (`{ storageId, paths }`). */
-export const ENTRY_DRAG_TYPE = "application/x-ccm-entries";
+/** The drag data type of entries dragged inside CMM (`{ storageId, paths }`). */
+export const ENTRY_DRAG_TYPE = "application/x-cmm-entries";
 
 const OVERSCAN_ROWS = 8;
 const TYPE_AHEAD_RESET_MILLISECONDS = 600;
@@ -101,7 +101,7 @@ function useDirectoryWatches(storageId: string, directoryPaths: readonly string[
 
 /**
  * The file tree. Folders load when expanded and are watched while open, so changes made
- * outside CCM show up. Rows are virtualised at 26px. A newly selected entry (from the URL, a link
+ * outside CMM show up. Rows are virtualised at 26px. A newly selected entry (from the URL, a link
  * or the pane) is scrolled into view once its row has loaded.
  *
  * - **Keyboard:** arrows move and select (Shift extends), Right/Left expand and collapse, Enter

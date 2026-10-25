@@ -84,7 +84,7 @@ export async function readOwnProtection(
 }
 
 /**
- * Creates a folder's `.ccm/` even when the folder is already read-only (it sits inside another
+ * Creates a folder's `.cmm/` even when the folder is already read-only (it sits inside another
  * protected folder): the folder gets its owner's write bit for a moment.
  */
 async function ensureMetaWritable(folderAbsolutePath: string): Promise<void> {

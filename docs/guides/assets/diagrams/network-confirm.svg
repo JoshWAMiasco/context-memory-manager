@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 500" font-family="Oxanium, sans-serif" role="img" aria-labelledby="network-confirm-title">
-  <title id="network-confirm-title">When CCM asks for your password again before uploads and downloads: the desktop app never asks; a server on the same network asks once per sign-in; a server reached from outside asks before every upload or download.</title>
+  <title id="network-confirm-title">When CMM asks for your password again before uploads and downloads: the desktop app never asks; a server on the same network asks once per sign-in; a server reached from outside asks before every upload or download.</title>
   <defs>
     <symbol id="network-confirm-prompt" viewBox="0 0 40 30">
       <path d="M5 1 H35 a4 4 0 0 1 4 4 V19 a4 4 0 0 1 -4 4 H24 L20 28 L16 23 H5 a4 4 0 0 1 -4 -4 V5 a4 4 0 0 1 4 -4 Z" fill="#fff3d1" stroke="#153049" stroke-width="2" stroke-linejoin="round"/>
@@ -25,15 +25,15 @@
     </symbol>
   </defs>
 
-  <text x="24" y="40" font-size="24" font-weight="700" fill="#0b1f2e">When CCM asks for your password again</text>
-  <text x="24" y="66" font-size="15" fill="#31506a">Before you upload files to CCM or download them to your device.</text>
+  <text x="24" y="40" font-size="24" font-weight="700" fill="#0b1f2e">When CMM asks for your password again</text>
+  <text x="24" y="66" font-size="15" fill="#31506a">Before you upload files to CMM or download them to your device.</text>
 
   <!-- card 1: desktop -->
   <g transform="translate(20 0)">
     <rect x="0" y="86" width="290" height="358" rx="14" fill="#f6fafc" stroke="#275070" stroke-width="1.5"/>
     <use href="#network-confirm-laptop" x="115" y="100" width="60" height="40"/>
     <text x="145" y="168" text-anchor="middle" font-size="17" font-weight="700" fill="#0b1f2e">Desktop app</text>
-    <text x="145" y="187" text-anchor="middle" font-size="13" fill="#31506a">CCM on your own computer</text>
+    <text x="145" y="187" text-anchor="middle" font-size="13" fill="#31506a">CMM on your own computer</text>
     <rect x="65" y="204" width="160" height="78" rx="12" fill="#ddfbef" stroke="#153049" stroke-width="2"/>
     <text x="145" y="250" text-anchor="middle" font-size="40" font-weight="700" fill="#0b1f2e">0</text>
     <text x="145" y="272" text-anchor="middle" font-size="13" fill="#0b1f2e">password prompts</text>
@@ -97,7 +97,7 @@
   <!-- legend -->
   <g font-size="13" fill="#0b1f2e">
     <use href="#network-confirm-prompt" x="250" y="462" width="30" height="23"/>
-    <text x="288" y="479">CCM asks for your password</text>
+    <text x="288" y="479">CMM asks for your password</text>
     <use href="#network-confirm-up" x="490" y="462" width="24" height="24"/>
     <text x="520" y="479">upload</text>
     <use href="#network-confirm-down" x="586" y="462" width="24" height="24"/>

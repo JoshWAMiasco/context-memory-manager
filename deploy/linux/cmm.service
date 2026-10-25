@@ -1,18 +1,18 @@
-# CCM (Context Memory Manager) server, installed by install.sh as /etc/systemd/system/ccm.service.
-# Storage roots are opened to the service by the drop-in ccm.service.d/storage.conf, which
-# `ccm add-storage` and `ccm remove-storage` regenerate. The ccm user is in plugdev (when that
+# CMM (Context Memory Manager) server, installed by install.sh as /etc/systemd/system/cmm.service.
+# Storage roots are opened to the service by the drop-in cmm.service.d/storage.conf, which
+# `cmm add-storage` and `cmm remove-storage` regenerate. The cmm user is in plugdev (when that
 # group exists) through its own group list, so no SupplementaryGroups= line is needed here.
 [Unit]
-Description=CCM Context Memory Manager
+Description=CMM Context Memory Manager
 After=network-online.target udisks2.service
 Wants=network-online.target
 
 [Service]
 Type=simple
-User=ccm
-Group=ccm
-Environment=CCM_MODE=server CCM_CONFIG=/etc/ccm/config.json CCM_DATA_DIR=/var/lib/ccm NODE_ENV=production NEXT_TELEMETRY_DISABLED=1
-ExecStart=/opt/ccm/current/node/bin/node /opt/ccm/current/app/entry.js
+User=cmm
+Group=cmm
+Environment=CMM_MODE=server CMM_CONFIG=/etc/cmm/config.json CMM_DATA_DIR=/var/lib/cmm NODE_ENV=production NEXT_TELEMETRY_DISABLED=1
+ExecStart=/opt/cmm/current/node/bin/node /opt/cmm/current/app/entry.js
 Restart=on-failure
 RestartSec=3
 TimeoutStopSec=20
@@ -22,7 +22,7 @@ ProtectHome=read-only
 PrivateTmp=yes
 # lsblk and udisks need to see the block devices.
 PrivateDevices=no
-ReadWritePaths=/var/lib/ccm
+ReadWritePaths=/var/lib/cmm
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectKernelLogs=yes

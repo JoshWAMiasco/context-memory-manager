@@ -2,7 +2,7 @@ import "server-only";
 import type { AuthUser, MeResponse, SessionSummary } from "@/lib/api-types";
 import type { RequestClient } from "@/server/auth/guard";
 import type { ResolvedSession, SessionRow, UserRow } from "@/server/auth/session";
-import type { CcmConfig } from "@/server/config";
+import type { CmmConfig } from "@/server/config";
 import { readStepUpMode } from "@/server/security/step-up";
 import { getAutoLockSeconds, getSetting } from "@/server/settings/store";
 
@@ -27,7 +27,7 @@ export function toSessionSummary(session: SessionRow, currentSessionIdHash: stri
 export function buildMeResponse(
   resolvedSession: ResolvedSession,
   client: RequestClient,
-  config: CcmConfig,
+  config: CmmConfig,
 ): MeResponse {
   const enabledActions = getSetting("security.stepUpActions");
   const stepUpMode =

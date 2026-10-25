@@ -1,5 +1,5 @@
 import "server-only";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
 import { z } from "zod";
@@ -9,8 +9,13 @@ export const APPLICATION_MODES = ["desktop", "server"] as const;
 export type ApplicationMode = (typeof APPLICATION_MODES)[number];
 
 export const SERVER_DEFAULT_PORT = 7420;
-export const SERVER_DEFAULT_CONFIG_FILE = "/etc/ccm/config.json";
-export const SERVER_DEFAULT_DATA_DIR = "/var/lib/ccm";
+export const SERVER_DEFAULT_CONFIG_FILE = "/etc/cmm/config.json";
+export const SERVER_DEFAULT_DATA_DIR = "/var/lib/cmm";
+/** Where a server installed as CCM kept them; used while the new paths don't exist yet. */
+export const LEGACY_SERVER_CONFIG_FILE = "/etc/ccm/config.json";
+export const LEGACY_SERVER_DATA_DIR = "/var/lib/ccm";
+/** The default data folder outside server mode used to be `~/.ccm`. */
+const LEGACY_DATA_DIR_NAME = ".ccm";
 
 const storageRootSchema = z.object({
   path: z.string().min(1),
@@ -37,7 +42,7 @@ export const configSchema = z
 
 type ParsedConfig = z.infer<typeof configSchema>;
 export type TlsConfig = NonNullable<ParsedConfig["tls"]>;
-export type CcmConfig = Omit<ParsedConfig, "tls"> & { tls?: TlsConfig };
+export type CmmConfig = Omit<ParsedConfig, "tls"> & { tls?: TlsConfig };
 
 export class ConfigError extends Error {
   override name = "ConfigError";
@@ -46,6 +51,7 @@ export class ConfigError extends Error {
 export interface ConfigSources {
   environment?: Record<string, string | undefined>;
   readTextFile?: (filePath: string) => string | undefined;
+  pathExists?: (filePath: string) => boolean;
 }
 
 function readTextFileIfPresent(filePath: string): string | undefined {
@@ -57,11 +63,27 @@ function readTextFileIfPresent(filePath: string): string | undefined {
   }
 }
 
-function createDefaults(mode: ApplicationMode): CcmConfig {
+/** `/etc/cmm/config.json`, or the CCM-era `/etc/ccm/config.json` while only that exists. */
+function resolveServerConfigFile(readTextFile: (filePath: string) => string | undefined): string {
+  return readTextFile(SERVER_DEFAULT_CONFIG_FILE) === undefined && readTextFile(LEGACY_SERVER_CONFIG_FILE) !== undefined
+    ? LEGACY_SERVER_CONFIG_FILE
+    : SERVER_DEFAULT_CONFIG_FILE;
+}
+
+/** The default data folder, or the CCM-era one while only that exists (so an upgrade keeps its data). */
+function resolveDefaultDataDirectory(mode: ApplicationMode, pathExists: (filePath: string) => boolean): string {
+  const defaultDataDirectory = createDefaults(mode).dataDir;
+  const legacyDataDirectory = mode === "server" ? LEGACY_SERVER_DATA_DIR : path.join(homedir(), LEGACY_DATA_DIR_NAME);
+  return !pathExists(defaultDataDirectory) && pathExists(legacyDataDirectory)
+    ? legacyDataDirectory
+    : defaultDataDirectory;
+}
+
+function createDefaults(mode: ApplicationMode): CmmConfig {
   const isServer = mode === "server";
   return {
     mode,
-    dataDir: isServer ? SERVER_DEFAULT_DATA_DIR : path.join(homedir(), ".ccm"),
+    dataDir: isServer ? SERVER_DEFAULT_DATA_DIR : path.join(homedir(), ".cmm"),
     bindHost: isServer ? "0.0.0.0" : "127.0.0.1",
     port: isServer ? SERVER_DEFAULT_PORT : 0,
     trustedProxies: [],
@@ -74,7 +96,7 @@ function createDefaults(mode: ApplicationMode): CcmConfig {
 function parseMode(modeText: string | undefined): ApplicationMode | undefined {
   if (modeText === undefined || modeText === "") return undefined;
   if ((APPLICATION_MODES as readonly string[]).includes(modeText)) return modeText as ApplicationMode;
-  throw new ConfigError(`CCM_MODE must be "desktop" or "server", received "${modeText}".`);
+  throw new ConfigError(`CMM_MODE must be "desktop" or "server", received "${modeText}".`);
 }
 
 function parsePort(portText: string | undefined): number | undefined {
@@ -103,35 +125,38 @@ function readConfigFile(
 }
 
 /**
- * Builds the config from, in order of precedence: environment variables (`CCM_MODE`,
- * `CCM_DATA_DIR`, `CCM_CONFIG`, `PORT`, `HOSTNAME`), the JSON config file, then the defaults for
+ * Builds the config from, in order of precedence: environment variables (`CMM_MODE`,
+ * `CMM_DATA_DIR`, `CMM_CONFIG`, `PORT`, `HOSTNAME`), the JSON config file, then the defaults for
  * the mode. A missing config file is fine; an invalid one throws a `ConfigError` that names every
  * problem.
  */
 export function loadConfig({
   environment = process.env,
   readTextFile = readTextFileIfPresent,
-}: ConfigSources = {}): CcmConfig {
-  const environmentMode = parseMode(environment.CCM_MODE);
+  pathExists = existsSync,
+}: ConfigSources = {}): CmmConfig {
+  const environmentMode = parseMode(environment.CMM_MODE);
+  const isServerMode = (environmentMode ?? "desktop") === "server";
   const configFilePath =
-    environment.CCM_CONFIG ||
-    ((environmentMode ?? "desktop") === "server"
-      ? SERVER_DEFAULT_CONFIG_FILE
-      : path.join(environment.CCM_DATA_DIR || createDefaults("desktop").dataDir, "config.json"));
+    environment.CMM_CONFIG ||
+    (isServerMode
+      ? resolveServerConfigFile(readTextFile)
+      : path.join(environment.CMM_DATA_DIR || resolveDefaultDataDirectory("desktop", pathExists), "config.json"));
   const fileValues = readConfigFile(configFilePath, readTextFile);
   const fileMode = typeof fileValues.mode === "string" ? parseMode(fileValues.mode) : undefined;
   const mode = environmentMode ?? fileMode ?? "desktop";
 
-  const environmentValues: Partial<CcmConfig> = { mode };
-  if (environment.CCM_DATA_DIR) environmentValues.dataDir = environment.CCM_DATA_DIR;
+  const environmentValues: Partial<CmmConfig> = { mode };
+  if (environment.CMM_DATA_DIR) environmentValues.dataDir = environment.CMM_DATA_DIR;
   if (environment.HOSTNAME) environmentValues.bindHost = environment.HOSTNAME;
   const environmentPort = parsePort(environment.PORT);
   if (environmentPort !== undefined) environmentValues.port = environmentPort;
 
-  const parsedConfig = configSchema.safeParse({ ...createDefaults(mode), ...fileValues, ...environmentValues });
+  const defaults = { ...createDefaults(mode), dataDir: resolveDefaultDataDirectory(mode, pathExists) };
+  const parsedConfig = configSchema.safeParse({ ...defaults, ...fileValues, ...environmentValues });
   if (!parsedConfig.success) {
     throw new ConfigError(
-      `Invalid CCM config (from ${configFilePath} and the environment):\n${z.prettifyError(parsedConfig.error)}`,
+      `Invalid CMM config (from ${configFilePath} and the environment):\n${z.prettifyError(parsedConfig.error)}`,
     );
   }
   const { tls, ...configValues } = parsedConfig.data;
@@ -139,6 +164,6 @@ export function loadConfig({
 }
 
 /** The config of this process, loaded once from `process.env` and the config file. */
-export function getConfig(): CcmConfig {
+export function getConfig(): CmmConfig {
   return getGlobalSingleton("config", () => loadConfig());
 }

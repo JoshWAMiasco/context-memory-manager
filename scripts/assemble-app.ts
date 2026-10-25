@@ -2,7 +2,7 @@
  * Assembles dist/app: the self-contained server that desktop and server packaging ship.
  *
  *   dist/app/entry.js       the bundled entry (runs migrations, binds, hands requests to Next)
- *   dist/app/cli.js         the bundled `ccm` admin CLI (server installs)
+ *   dist/app/cli.js         the bundled `cmm` admin CLI (server installs)
  *   dist/app/server.js …    the Next standalone output, with its traced node_modules
  *   dist/app/.next/static   client assets
  *   dist/app/public         public files
@@ -43,13 +43,13 @@ copyDirectory(path.join(projectRoot, "server", "db", "migrations"), path.join(ap
 copyDirectory(path.join(projectRoot, "content"), path.join(applicationDirectory, "content"));
 copyFileSync(path.join(projectRoot, "dist", "server", "entry.js"), path.join(applicationDirectory, "entry.js"));
 copyFileSync(path.join(projectRoot, "dist", "server", "entry.js.map"), path.join(applicationDirectory, "entry.js.map"));
-copyFileSync(path.join(projectRoot, "dist", "cli", "ccm.js"), path.join(applicationDirectory, "cli.js"));
-copyFileSync(path.join(projectRoot, "dist", "cli", "ccm.js.map"), path.join(applicationDirectory, "cli.js.map"));
+copyFileSync(path.join(projectRoot, "dist", "cli", "cmm.js"), path.join(applicationDirectory, "cli.js"));
+copyFileSync(path.join(projectRoot, "dist", "cli", "cmm.js.map"), path.join(applicationDirectory, "cli.js.map"));
 
 async function copyEntryDependencies(): Promise<number> {
   const { nodeFileTrace } = (await import(NFT_MODULE)) as { nodeFileTrace: NodeFileTrace };
   const { fileList } = await nodeFileTrace(
-    [path.join("dist", "server", "entry.js"), path.join("dist", "cli", "ccm.js")],
+    [path.join("dist", "server", "entry.js"), path.join("dist", "cli", "cmm.js")],
     {
       base: projectRoot,
       ignore: ["node_modules/next/**"],

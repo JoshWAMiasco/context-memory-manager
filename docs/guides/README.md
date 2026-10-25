@@ -1,11 +1,11 @@
-# CCM user guides
+# CMM user guides
 
-Two guides ship with CCM as PDFs:
+Two guides ship with CMM as PDFs:
 
 | Source | PDF | Ships in |
 |---|---|---|
-| `desktop-guide.md` | `dist/docs/CCM-Desktop-Guide.pdf` | the desktop app (Help › Desktop Guide), Settings › About |
-| `server-guide.md` | `dist/docs/CCM-Server-Guide.pdf` | the server tarball (`docs/`), Settings › About |
+| `desktop-guide.md` | `dist/docs/CMM-Desktop-Guide.pdf` | the desktop app (Help › Desktop Guide), Settings › About |
+| `server-guide.md` | `dist/docs/CMM-Server-Guide.pdf` | the server tarball (`docs/`), Settings › About |
 
 Build both with `npm run docs:pdf` (offline; uses Playwright's Chromium and the files in this folder only).
 `npm run build` builds them too.
@@ -20,8 +20,8 @@ The build (`scripts/build-guides-pdf.ts`) turns Markdown into the PDF with `mark
 
   ```
   ---
-  title: CCM Desktop Guide
-  subtitle: Install CCM on your computer and keep your memories safe
+  title: CMM Desktop Guide
+  subtitle: Install CMM on your computer and keep your memories safe
   ---
   ```
 
@@ -71,7 +71,7 @@ Captured at 1440×900, device scale 2, from a demo workspace.
 | `code-editor.png` | A code file in the code editor |
 | `image-viewer.png` | An image open in the viewer |
 | `csv-viewer.png` | A CSV file as a table |
-| `media-placeholder.png` | A video file: CCM shows details instead of playing it |
+| `media-placeholder.png` | A video file: CMM shows details instead of playing it |
 | `memory-overview.png` | The overview page of a memory folder |
 | `new-memory-dialog.png` | The New memory dialog with templates |
 | `protection-tab.png` | Folder settings › Protection |
@@ -101,9 +101,9 @@ Element ids are prefixed with the file name (they are inlined next to each other
 | File | Shows |
 |---|---|
 | `architecture-desktop.svg` | The desktop app: window, local server, your folders |
-| `architecture-server.svg` | The server: browsers on the LAN, optional proxy, the CCM service, storages |
+| `architecture-server.svg` | The server: browsers on the LAN, optional proxy, the CMM service, storages |
 | `encryption-flow.svg` | Generate key, download, verify, encrypt; unlock = key file + password |
-| `network-confirm.svg` | When CCM asks for your password: desktop never, LAN once, remote every action |
+| `network-confirm.svg` | When CMM asks for your password: desktop never, LAN once, remote every action |
 | `trash-lifecycle.svg` | Delete → Trash → restore, delete permanently, or move to the computer's trash |
 | `backup-modes.svg` | Copy, mirror and snapshot |
 | `versioning-undo-redo.svg` | Saves become versions; undo and redo add new versions |

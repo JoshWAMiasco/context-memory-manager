@@ -32,7 +32,7 @@ export function isTrustedProxy(address: string, trustedProxies: readonly string[
 }
 
 /**
- * The client's IP. The socket address comes from the `x-ccm-client-ip` header that the entry sets
+ * The client's IP. The socket address comes from the `x-cmm-client-ip` header that the entry sets
  * (clients can't spoof it). Only when that peer is a trusted proxy is `X-Forwarded-For` read, taking
  * the right-most address that isn't itself a trusted proxy.
  */
@@ -51,7 +51,7 @@ export function resolveClientIp(headers: Headers, trustedProxies: readonly strin
   return forwardedAddresses[0] ?? peerAddress;
 }
 
-/** True when the request reached CCM over TLS: CCM's own TLS, or `X-Forwarded-Proto: https` from a trusted proxy. */
+/** True when the request reached CMM over TLS: CMM's own TLS, or `X-Forwarded-Proto: https` from a trusted proxy. */
 export function isSecureRequest(headers: Headers, hasOwnTls: boolean, trustedProxies: readonly string[]): boolean {
   if (hasOwnTls) return true;
   const peerAddress = normalizeIp(headers.get(CLIENT_IP_HEADER) ?? "");

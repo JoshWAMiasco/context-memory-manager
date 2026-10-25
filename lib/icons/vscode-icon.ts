@@ -6,7 +6,7 @@ import {
   getIconForFolder,
   getIconForOpenFolder,
 } from "vscode-icons-js";
-import { CCM_ICON_OVERRIDES } from "@/lib/icons/vscode-icon-overrides";
+import { CMM_ICON_OVERRIDES } from "@/lib/icons/vscode-icon-overrides";
 import { VSCODE_ICON_NAMES } from "@/lib/icons/vscode-icon-names";
 import { readExtension } from "@/lib/file-kinds";
 
@@ -14,7 +14,7 @@ export const VSCODE_ICON_BASE_PATH = "/icons/vscode";
 
 /**
  * Picks the copied icon for a mapped name: the dark variant when the mapping chose a `light_`
- * one (CCM is dark-only), and `fallbackName` when the icon set doesn't have it.
+ * one (CMM is dark-only), and `fallbackName` when the icon set doesn't have it.
  */
 function resolveIconName(mappedName: string | undefined, fallbackName: string): string {
   if (!mappedName) return fallbackName;
@@ -35,7 +35,7 @@ function toIconUrl(iconName: string): string {
  */
 export function iconForFile(fileName: string): string {
   const lowerName = fileName.toLowerCase();
-  const overrideName = CCM_ICON_OVERRIDES[lowerName] ?? CCM_ICON_OVERRIDES[readExtension(lowerName)];
+  const overrideName = CMM_ICON_OVERRIDES[lowerName] ?? CMM_ICON_OVERRIDES[readExtension(lowerName)];
   if (overrideName && VSCODE_ICON_NAMES.has(overrideName)) return toIconUrl(overrideName);
   return toIconUrl(resolveIconName(getIconForFile(fileName), DEFAULT_FILE));
 }

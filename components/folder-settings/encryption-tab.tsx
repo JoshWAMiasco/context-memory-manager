@@ -158,7 +158,7 @@ export function EncryptionTab({ path: folderPath }: { path: string }) {
           <ShieldAlert className="mt-0.5 h-5 w-5 flex-none text-danger" aria-hidden />
           <span>
             <strong className="font-medium">This folder&rsquo;s key is not secret.</strong> It was encrypted by a test
-            build of CCM that used an empty key, so anyone with CCM could read these files. Choose{" "}
+            build of CMM that used an empty key, so anyone with CMM could read these files. Choose{" "}
             <strong className="font-medium">Re-key…</strong> below with its key file to protect it with a new key.
           </span>
         </div>

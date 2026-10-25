@@ -13,7 +13,7 @@ const debugBodySchema = z.object({
   snapshotDebounceMilliseconds: z.number().int().min(100).max(60_000).optional(),
 });
 
-/** Test runs only (`CCM_TEST_HOOKS=1`): hides git or shortens the external-change wait. */
+/** Test runs only (`CMM_TEST_HOOKS=1`): hides git or shortens the external-change wait. */
 export const POST = withApi(
   ({ body }) => {
     if (!areTestHooksEnabled()) throw notFound();

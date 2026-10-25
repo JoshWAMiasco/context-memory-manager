@@ -2,16 +2,16 @@ import "server-only";
 import type { IncomingMessage } from "node:http";
 
 /** Set by the entry from the TCP socket; route handlers trust only this header for the client IP. */
-export const CLIENT_IP_HEADER = "x-ccm-client-ip";
+export const CLIENT_IP_HEADER = "x-cmm-client-ip";
 
 /**
- * Headers only the entry may set. Client headers with these names are dropped. Other `x-ccm-*`
- * headers (such as the client's `x-ccm-action-token`) pass through untouched.
+ * Headers only the entry may set. Client headers with these names are dropped. Other `x-cmm-*`
+ * headers (such as the client's `x-cmm-action-token`) pass through untouched.
  */
 const ENTRY_SET_HEADERS = new Set([CLIENT_IP_HEADER]);
 
 /**
- * Removes any client-sent copy of the entry-set headers, then sets `x-ccm-client-ip` from the
+ * Removes any client-sent copy of the entry-set headers, then sets `x-cmm-client-ip` from the
  * socket's remote address. Runs in the entry before Next sees the request, so no client can spoof it.
  */
 export function applyTrustedHeaders(request: IncomingMessage): void {

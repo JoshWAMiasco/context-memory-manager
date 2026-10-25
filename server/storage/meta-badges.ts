@@ -4,13 +4,13 @@ import type { FileBadges } from "@/lib/api-types";
 import { readListingBadges } from "@/server/meta/effective";
 import { META_DIRECTORY } from "@/server/meta/store";
 
-export const CCM_META_DIRECTORY = META_DIRECTORY;
+export const CMM_META_DIRECTORY = META_DIRECTORY;
 
 export const EMPTY_BADGES: FileBadges = { isMemory: false, protection: "none", encrypted: false, versioned: false };
 
 /**
  * The badges of one entry: memory, effective protection (inherited from parent folders
- * or set on the entry), encryption and versioning, read from `.ccm/` files. Listings use
+ * or set on the entry), encryption and versioning, read from `.cmm/` files. Listings use
  * `readListingBadges` to read a folder's parents once for all its entries.
  *
  * @example

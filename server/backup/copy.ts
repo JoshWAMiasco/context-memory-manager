@@ -10,7 +10,7 @@ import { getGlobalSingleton } from "@/server/runtime/global-singleton";
 export const COPY_CHUNK_BYTES = 1024 * 1024;
 
 /** A file being copied is written next to its final name with this suffix, then renamed. */
-export const PART_SUFFIX = ".ccm-part";
+export const PART_SUFFIX = ".cmm-part";
 
 /** Windows paths this long need the `\\?\` prefix. */
 const WINDOWS_PATH_LIMIT = 260;
@@ -181,7 +181,7 @@ export interface CopyFileResult {
 }
 
 /**
- * Copies one file for a backup. The source streams to `<dst>.ccm-part` in 1 MiB pieces;
+ * Copies one file for a backup. The source streams to `<dst>.cmm-part` in 1 MiB pieces;
  * with `verify` its sha256 is computed on the way (only then: hashing costs about a third of the
  * speed on a fast SSD), the part is flushed to disk (fsync), read back and compared (a mismatch is
  * read once more before it counts). Then it is renamed over `dst` and given the source's

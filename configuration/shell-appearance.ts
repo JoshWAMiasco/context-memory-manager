@@ -4,7 +4,7 @@ const BREADCRUMB_SEPARATOR_CLASS_NAMES =
   "relative ml-5 pl-0.5 before:content-[''] before:w-[14px] before:h-[14px] before:bg-chevron-white before:opacity-50 before:transform before:rotate-[-90deg] before:bg-[length:100%] before:-ml-[1.125rem] before:absolute before:my-auto before:inset-y-0";
 
 /**
- * How CCM's shell looks: no side menu (the drives live on the home page
+ * How CMM's shell looks: no side menu (the drives live on the home page
  * and in quick search), a floating, frosted top bar across the whole width that holds the logo,
  * breadcrumb, quick search and page links, and the class lists of every shell element. The page
  * container is 1320px wide, except a page that marks itself `data-full-width` (the explorer).

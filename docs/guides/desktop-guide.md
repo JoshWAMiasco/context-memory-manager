@@ -1,17 +1,17 @@
 ---
-title: CCM Desktop Guide
-subtitle: Install CCM on your computer and keep your memories safe
+title: CMM Desktop Guide
+subtitle: Install CMM on your computer and keep your memories safe
 ---
 
-# What CCM is
+# What CMM is
 
-CCM (Context Memory Manager) is a file manager for the folders your AI tools read and write: their memories, notes and
-context. It also keeps private files safe. This chapter explains what CCM does and how its parts fit together.
+CMM (Context Memory Manager) is a file manager for the folders your AI tools read and write: their memories, notes and
+context. It also keeps private files safe. This chapter explains what CMM does and how its parts fit together.
 
-CCM runs entirely on your computer. It never connects to the internet: it sends no usage data and does not check for
+CMM runs entirely on your computer. It never connects to the internet: it sends no usage data and does not check for
 updates. Your files stay in your own folders, and you can open them with any other program as usual.
 
-With CCM you can:
+With CMM you can:
 
 - browse your folders and USB drives, and open notes, code, images, tables (CSV) and PDFs;
 - edit text and Markdown files, with a toolbar for formatting;
@@ -23,28 +23,28 @@ With CCM you can:
 
 ## How the parts fit together
 
-The CCM app has two parts that run together on your computer. The **window** is what you see and click. Behind it, a
+The CMM app has two parts that run together on your computer. The **window** is what you see and click. Behind it, a
 small **local server** does the work: it reads and writes your folders and remembers your settings in a small database.
 The two talk to each other only inside your computer. Other programs and other computers can't connect to it.
 
-![The CCM desktop app: the window, the local server inside the app, and your folders on this computer.](assets/diagrams/architecture-desktop.svg)
+![The CMM desktop app: the window, the local server inside the app, and your folders on this computer.](assets/diagrams/architecture-desktop.svg)
 
 > [!NOTE]
-> CCM does not copy your files into a library or a hidden store. A folder you open in CCM is the same folder you see in
-> Finder, File Explorer or Files. CCM adds only a few small hidden folders, described in the last chapter.
+> CMM does not copy your files into a library or a hidden store. A folder you open in CMM is the same folder you see in
+> Finder, File Explorer or Files. CMM adds only a few small hidden folders, described in the last chapter.
 
 ## Words used in this guide
 
-- **Storage**: a place listed on CCM's **Drives** page. It is a folder on your computer (such as your Home folder) or a
+- **Storage**: a place listed on CMM's **Drives** page. It is a folder on your computer (such as your Home folder) or a
   drive you plug in, such as a USB stick.
-- **Memory**: a folder that an AI tool uses as its memory. CCM shows it with a brain icon and its own name.
-- **Key file**: a small file (ending in `.ccmkey`) that CCM creates when you encrypt a folder. It works like the only
+- **Memory**: a folder that an AI tool uses as its memory. CMM shows it with a brain icon and its own name.
+- **Key file**: a small file (ending in `.cmmkey`) that CMM creates when you encrypt a folder. It works like the only
   key to a safe. You need it to open the folder.
-- **Admin**: the person who set up CCM. The admin can add other user accounts and change every setting.
+- **Admin**: the person who set up CMM. The admin can add other user accounts and change every setting.
 
 # System requirements
 
-This chapter lists the computers CCM runs on. Check it before you download an installer.
+This chapter lists the computers CMM runs on. Check it before you download an installer.
 
 | Your computer | What you need |
 |---|---|
@@ -55,73 +55,73 @@ This chapter lists the computers CCM runs on. Check it before you download an in
 You also need:
 
 - about **400 MB** of free disk space for the app;
-- room for CCM's own data (usually a few megabytes);
+- room for CMM's own data (usually a few megabytes);
 - **Git**, only if you want to keep a history of changes (see the chapter on versioning). Everything else works without it.
 
 > [!TIP]
-> You don't need an internet connection to install or use CCM. You can copy the installer to the computer on a USB
+> You don't need an internet connection to install or use CMM. You can copy the installer to the computer on a USB
 > stick.
 
-# Installing CCM
+# Installing CMM
 
-This chapter shows how to install CCM on a Mac, on Windows and on Linux. Follow the section for your computer.
+This chapter shows how to install CMM on a Mac, on Windows and on Linux. Follow the section for your computer.
 
 ## On a Mac
 
-The Mac installer is a `.dmg` file, for example `CCM-0.1.0-arm64.dmg`.
+The Mac installer is a `.dmg` file, for example `CMM-0.1.0-arm64.dmg`.
 
-1. Double-click the `.dmg` file. A window opens with the CCM icon and your Applications folder.
-2. Drag the **CCM** icon onto the **Applications** folder.
-3. Wait for the copy to finish, then eject the CCM disk in Finder (click the eject arrow next to it in the side bar).
-4. Open your **Applications** folder and double-click **CCM**.
+1. Double-click the `.dmg` file. A window opens with the CMM icon and your Applications folder.
+2. Drag the **CMM** icon onto the **Applications** folder.
+3. Wait for the copy to finish, then eject the CMM disk in Finder (click the eject arrow next to it in the side bar).
+4. Open your **Applications** folder and double-click **CMM**.
 
-### If macOS refuses to open CCM
+### If macOS refuses to open CMM
 
-CCM is not signed with an Apple developer certificate. The first time you open it, macOS may say that it can't check
-CCM for malicious software, or that CCM "Not Opened". This is expected. You only need to allow it once.
+CMM is not signed with an Apple developer certificate. The first time you open it, macOS may say that it can't check
+CMM for malicious software, or that CMM "Not Opened". This is expected. You only need to allow it once.
 
 1. Click **Done** (or **OK**) in the message. Don't click **Move to Trash**.
 2. Open the Apple menu and choose **System Settings**.
 3. Click **Privacy & Security** in the side bar.
-4. Scroll down to the **Security** section. You see a line saying that CCM was blocked.
+4. Scroll down to the **Security** section. You see a line saying that CMM was blocked.
 5. Click **Open Anyway**.
 6. Enter your Mac password (or use Touch ID) when asked.
 7. In the message that appears, click **Open Anyway** again.
 
-CCM now opens, and macOS remembers your choice.
+CMM now opens, and macOS remembers your choice.
 
 > [!TIP]
-> On older versions of macOS you can also right-click **CCM** in Applications, choose **Open**, then click **Open** in
+> On older versions of macOS you can also right-click **CMM** in Applications, choose **Open**, then click **Open** in
 > the message.
 
 > [!NOTE]
-> When CCM first opens a folder such as Documents, Desktop or Downloads, or a USB drive, macOS may ask whether CCM may
-> access it. Click **Allow**. Otherwise CCM can't show the files in that folder.
+> When CMM first opens a folder such as Documents, Desktop or Downloads, or a USB drive, macOS may ask whether CMM may
+> access it. Click **Allow**. Otherwise CMM can't show the files in that folder.
 
 ## On Windows
 
-The Windows installer is a `.exe` file, for example `CCM-Setup-0.1.0-x64.exe`.
+The Windows installer is a `.exe` file, for example `CMM-Setup-0.1.0-x64.exe`.
 
 1. Double-click the installer.
 2. If Windows shows **Windows protected your PC**, click **More info**, then **Run anyway**. This message appears
    because the installer is not signed with a certificate.
-3. Choose whether to install CCM only for you or for everyone who uses the computer, and click **Next**. "Only for me"
+3. Choose whether to install CMM only for you or for everyone who uses the computer, and click **Next**. "Only for me"
    needs no administrator rights.
-4. Choose where to install CCM, or keep the suggested folder. Click **Install**.
+4. Choose where to install CMM, or keep the suggested folder. Click **Install**.
 5. When the installer finishes, click **Finish**.
 
-The installer adds a **CCM** shortcut to your desktop and to the Start menu.
+The installer adds a **CMM** shortcut to your desktop and to the Start menu.
 
 > [!NOTE]
-> The SmartScreen message appears only for the installer. Once CCM is installed, it opens normally.
+> The SmartScreen message appears only for the installer. Once CMM is installed, it opens normally.
 
 ## On Linux
 
 There are two kinds of Linux installer. Choose one:
 
-- the **AppImage** (`CCM-0.1.0-x86_64.AppImage` or `CCM-0.1.0-arm64.AppImage`) runs on Ubuntu, Fedora and most other
+- the **AppImage** (`CMM-0.1.0-x86_64.AppImage` or `CMM-0.1.0-arm64.AppImage`) runs on Ubuntu, Fedora and most other
   versions of Linux, and needs no installation;
-- the **deb package** (a file ending in `.deb`) installs CCM on Ubuntu and Debian, with an entry in the applications
+- the **deb package** (a file ending in `.deb`) installs CMM on Ubuntu and Debian, with an entry in the applications
   menu.
 
 ### Using the AppImage
@@ -131,13 +131,13 @@ There are two kinds of Linux installer. Choose one:
 3. Allow the file to run:
 
    ```bash
-   chmod +x CCM-*.AppImage
+   chmod +x CMM-*.AppImage
    ```
 
-4. Start CCM:
+4. Start CMM:
 
    ```bash
-   ./CCM-*.AppImage
+   ./CMM-*.AppImage
    ```
 
 You can also right-click the AppImage in your file manager, open **Properties**, turn on **Allow executing file as
@@ -153,25 +153,25 @@ program**, and then double-click it.
 2. Install it:
 
    ```bash
-   sudo apt install ./CCM-*.deb
+   sudo apt install ./CMM-*.deb
    ```
 
-   This works without internet when your computer already has everything CCM needs, which is the case on a normal
+   This works without internet when your computer already has everything CMM needs, which is the case on a normal
    Ubuntu desktop. You can also use:
 
    ```bash
-   sudo dpkg -i CCM-*.deb
+   sudo dpkg -i CMM-*.deb
    ```
 
 3. Enter your password when asked.
-4. Open **CCM** from your applications menu.
+4. Open **CMM** from your applications menu.
 
 # First run: creating the admin account
 
-The first time CCM starts, it asks you to create an account. This chapter walks you through it. The account protects
-CCM with a password, so nobody else using your computer can open your files through CCM.
+The first time CMM starts, it asks you to create an account. This chapter walks you through it. The account protects
+CMM with a password, so nobody else using your computer can open your files through CMM.
 
-While CCM starts, a small window shows **CCM** and **Starting…**. After a moment the setup page opens.
+While CMM starts, a small window shows **CMM** and **Starting…**. After a moment the setup page opens.
 
 ## Creating the account
 
@@ -186,9 +186,9 @@ While CCM starts, a small window shows **CCM** and **Starting…**. After a mome
 
 ## Finishing setup and signing in
 
-1. Choose after how many idle minutes CCM locks itself (**Lock after this many idle minutes**). The default is 15. You
+1. Choose after how many idle minutes CMM locks itself (**Lock after this many idle minutes**). The default is 15. You
    can change it later.
-2. Click **Create admin**. The page says **CCM is ready.**
+2. Click **Create admin**. The page says **CMM is ready.**
 3. Click **Go to sign in**.
 4. Enter your username and password and click **Sign In**.
 
@@ -196,38 +196,38 @@ While CCM starts, a small window shows **CCM** and **Starting…**. After a mome
 
 > [!WARNING]
 > Choose a password you will remember. If you forget it and there is no other admin, the only way back in is to reset
-> CCM (see the troubleshooting chapter). Resetting never deletes your files, but you have to set CCM up again.
+> CMM (see the troubleshooting chapter). Resetting never deletes your files, but you have to set CMM up again.
 
 ## Auto-lock
 
-When you don't use CCM for the number of minutes you chose, it locks. The lock screen shows your name and asks for your
+When you don't use CMM for the number of minutes you chose, it locks. The lock screen shows your name and asks for your
 password. Type it and click **Unlock** to carry on where you were. Click **Sign out** to leave instead.
 
-![The lock screen after CCM locked itself.](assets/screens/lock-screen.png)
+![The lock screen after CMM locked itself.](assets/screens/lock-screen.png)
 
 Locking also locks every encrypted folder you had opened (see the encryption chapter). If you have unsaved changes when
-the lock is near, CCM warns you 30 seconds before, so you can save.
+the lock is near, CMM warns you 30 seconds before, so you can save.
 
-You can lock CCM yourself at any time: click your initials at the top right and choose **Lock now**.
+You can lock CMM yourself at any time: click your initials at the top right and choose **Lock now**.
 
-# A tour of CCM
+# A tour of CMM
 
-This chapter shows the parts of the CCM window and what each one is for.
+This chapter shows the parts of the CMM window and what each one is for.
 
 ![The Drives page: every storage as a card, grouped by kind, with its free space.](assets/screens/drives-dashboard.png)
 
 ## The Drives page
 
-After you sign in, CCM opens the **Drives** page. It shows each of your **storages** as a card, in groups:
+After you sign in, CMM opens the **Drives** page. It shows each of your **storages** as a card, in groups:
 
-- **Internal storages**: folders on your computer. CCM adds your **Home** folder for you. You can add more in
+- **Internal storages**: folders on your computer. CMM adds your **Home** folder for you. You can add more in
   **Settings › Storages**.
 - **External drives**: external hard drives you plug in.
 - **USB / flash drives**: USB sticks and memory cards.
 
 Click a card to open that storage. A drive appears a few seconds after you plug it in, and is highlighted briefly. Each
 card shows how much space is free, for example "2.8 GB free of 3 GB". Drives you can unplug have an eject button. Click
-it and confirm with **Eject**. When CCM says the drive was ejected, you can unplug it.
+it and confirm with **Eject**. When CMM says the drive was ejected, you can unplug it.
 
 > [!TIP]
 > When you have many drives, type part of a name in **Filter drives…** at the top of the page to show only those.
@@ -242,7 +242,7 @@ and **Settings**.
 
 The bar at the top of every page holds, from left to right:
 
-- the **CCM** logo, a brain wired into a hard drive. Click it to go back to the Drives page;
+- the **CMM** logo, a brain wired into a hard drive. Click it to go back to the Drives page;
 - a line that shows where you are, for example "Drives › Home › Notes › today.md". Click any part to go there;
 - **Search drives and files…**. See *Quick search* below;
 - buttons for the **Drives** page, **Backup**, **Trash** and **Settings**;
@@ -256,7 +256,7 @@ The bar at the top of every page holds, from left to right:
 
 Click **Search drives and files…** in the top bar, or press <kbd>Cmd</kbd>+<kbd>K</kbd> on a Mac
 (<kbd>Ctrl</kbd>+<kbd>K</kbd> on Windows and Linux), to open quick search. Without typing anything it lists your drives
-and the pages of CCM. Type part of a name to find:
+and the pages of CMM. Type part of a name to find:
 
 - a **drive**, to switch to it;
 - a **file or folder** in the storage that is open, by its name;
@@ -290,12 +290,12 @@ icon for a memory.
 
 ## Viewing and editing files
 
-CCM always opens a file in **view mode** first, so you can't change it by accident. To change a text file, click
+CMM always opens a file in **view mode** first, so you can't change it by accident. To change a text file, click
 **Edit** at the top of the file pane. To go back, click **View**.
 
 ![A Markdown file in view mode.](assets/screens/markdown-viewer.png)
 
-What CCM shows depends on the kind of file:
+What CMM shows depends on the kind of file:
 
 | Kind of file | What you see |
 |---|---|
@@ -304,17 +304,17 @@ What CCM shows depends on the kind of file:
 | Images | The picture, with **Fit to window**, **Actual size**, **Zoom in** and **Zoom out**. |
 | CSV and TSV tables | A table you can sort, search (**Search all columns**) and filter per column. |
 | PDF | The pages, with **Fit to width** and zoom. PDFs can't be edited. |
-| Video and audio | The file's details only. CCM does not play media files. |
+| Video and audio | The file's details only. CMM does not play media files. |
 | Other files | The file's details and a **Download** button. |
 
 ![An image open in the viewer.](assets/screens/image-viewer.png)
 
 ![A CSV file shown as a table.](assets/screens/csv-viewer.png)
 
-![A video file: CCM shows its details instead of playing it.](assets/screens/media-placeholder.png)
+![A video file: CMM shows its details instead of playing it.](assets/screens/media-placeholder.png)
 
 > [!NOTE]
-> Pictures that a Markdown note loads from the internet are not shown. CCM displays "External image blocked
+> Pictures that a Markdown note loads from the internet are not shown. CMM displays "External image blocked
 > (offline/privacy)" instead. Links to websites ask **Open … in your browser?** before they open, because your browser
 > may use the internet.
 
@@ -343,14 +343,14 @@ and has a button to turn word wrap on and off.
 2. The button shows **Saving…** while it works. A small yellow dot on the **Save** button means there are unsaved
    changes.
 
-If you try to open another file or leave edit mode with unsaved changes, CCM asks **Save changes to "…"?**. Choose
+If you try to open another file or leave edit mode with unsaved changes, CMM asks **Save changes to "…"?**. Choose
 **Save**, **Discard** (throw the changes away) or **Cancel** (stay where you are).
 
 > [!TIP]
 > Very large text files (over 5 MB by default) open in view mode only, because editing them would be slow. An admin can
 > change this limit in **Settings › General › Viewer and editor**.
 
-### When a file changes outside CCM
+### When a file changes outside CMM
 
 If another program, for example an AI tool, changes the file you have open, a yellow bar says **This file changed on
 disk.** Choose:
@@ -362,7 +362,7 @@ disk.** Choose:
 If the file was deleted or moved instead, the bar says **File was removed or moved.** Click **Save as…** to keep your
 version under a new name, or **Close**.
 
-If you save while the file has changed on disk, CCM says the file **changed on disk** and lets you choose:
+If you save while the file has changed on disk, CMM says the file **changed on disk** and lets you choose:
 
 - **Reload from disk**: take the other version and lose your changes;
 - **Overwrite**: keep your version and replace the other one;
@@ -386,7 +386,7 @@ You can also use **New file** and **New folder** in the toolbar above the tree. 
 selected.
 
 > [!NOTE]
-> A few characters and names can't be used, because some computers don't allow them. CCM tells you right away when a name
+> A few characters and names can't be used, because some computers don't allow them. CMM tells you right away when a name
 > is not allowed.
 
 ## Renaming
@@ -424,7 +424,7 @@ Large copies run in the background. The progress ring in the top bar shows how f
 
 ## Uploading files
 
-"Uploading" means copying files from anywhere on your computer into a folder in CCM.
+"Uploading" means copying files from anywhere on your computer into a folder in CMM.
 
 1. Drag files from Finder, File Explorer or your file manager onto a folder in the tree, or onto the file pane. The pane
    shows **Drop to upload to …**.
@@ -435,27 +435,27 @@ Or:
 1. Right-click a folder and choose **Upload here**, or click **Upload files** in the toolbar.
 2. Choose the files and confirm.
 
-A panel at the bottom of the window shows each file's progress. CCM uploads three files at a time. You can keep
+A panel at the bottom of the window shows each file's progress. CMM uploads three files at a time. You can keep
 browsing while it works.
 
-If a file with the same name already exists, CCM asks what to do: **Replace** it, **Keep both** (the new file is saved
+If a file with the same name already exists, CMM asks what to do: **Replace** it, **Keep both** (the new file is saved
 as "name (1).ext"), or **Skip** it. Tick **Do this for every name clash in this upload** to answer once for all files.
 
 > [!NOTE]
-> You can drop files, but not whole folders, from your computer. CCM skips folders and tells you so. Drop the files
+> You can drop files, but not whole folders, from your computer. CMM skips folders and tells you so. Drop the files
 > inside the folder instead.
 
 ## Downloading files
 
-"Downloading" means saving a copy of a file from CCM somewhere else on your computer.
+"Downloading" means saving a copy of a file from CMM somewhere else on your computer.
 
 1. Select the file and click **Download** at the top of the file pane, or right-click it and choose **Download**.
 2. Choose where to save the copy.
 
-For a folder, choose **Download as zip**. CCM puts the whole folder into one `.zip` file.
+For a folder, choose **Download as zip**. CMM puts the whole folder into one `.zip` file.
 
 > [!NOTE]
-> The desktop app never asks for your password before an upload or a download. (CCM's server edition, used on a shared
+> The desktop app never asks for your password before an upload or a download. (CMM's server edition, used on a shared
 > network, can ask for it.)
 
 ## Other useful commands
@@ -480,10 +480,10 @@ For a folder, choose **Download as zip**. CCM puts the whole folder into one `.z
 
 # Trash
 
-When you delete something in CCM, it goes to CCM's Trash first. This chapter explains how to get it back, or get rid
+When you delete something in CMM, it goes to CMM's Trash first. This chapter explains how to get it back, or get rid
 of it for good.
 
-![What happens after you delete something: it waits in CCM's Trash until you restore it, delete it permanently or move it to your computer's trash.](assets/diagrams/trash-lifecycle.svg)
+![What happens after you delete something: it waits in CMM's Trash until you restore it, delete it permanently or move it to your computer's trash.](assets/diagrams/trash-lifecycle.svg)
 
 ## Moving items to the Trash
 
@@ -507,7 +507,7 @@ an item.
 1. Click the **⋮** button at the end of the item's row.
 2. Choose **Restore**.
 
-The item goes back to where it was. If that folder no longer exists, CCM creates it again. If something else now has the
+The item goes back to where it was. If that folder no longer exists, CMM creates it again. If something else now has the
 same name, the restored item is called "name (restored)".
 
 To restore several items at once, tick them and click **Restore** above the list.
@@ -536,7 +536,7 @@ Bin with your other deleted files.
 3. Type `EMPTY` to confirm, then click **Empty trash**.
 
 > [!TIP]
-> CCM can delete old items for you. An admin can set **Settings › General › Trash › Delete items after** to a number of
+> CMM can delete old items for you. An admin can set **Settings › General › Trash › Delete items after** to a number of
 > days. The default, 0, keeps items until you delete them.
 
 # Memory folders and templates
@@ -544,7 +544,7 @@ Bin with your other deleted files.
 A memory is a folder that an AI tool uses to remember things between conversations. This chapter shows how to create
 one, and what the templates put inside.
 
-To your AI tools, a memory is a normal folder with normal files. CCM simply gives it a name, an icon and a colour, and
+To your AI tools, a memory is a normal folder with normal files. CMM simply gives it a name, an icon and a colour, and
 an overview page that shows what it holds.
 
 ## Creating a memory
@@ -552,7 +552,7 @@ an overview page that shows what it holds.
 1. Right-click the folder where the memory should go and choose **New memory**. You can also click **New memory** in the
    toolbar above the tree.
 2. Enter a **Name**, for example "Claude persona".
-3. CCM suggests a **Folder name** made from the name. Change it if you like.
+3. CMM suggests a **Folder name** made from the name. Change it if you like.
 4. Add a **Description**: what the memory holds and which tools use it.
 5. Choose an **Icon** and a **Colour**.
 6. Choose a **Template** (see below).
@@ -599,7 +599,7 @@ The files inside stay exactly as they were. To turn a memory back into a plain f
 3. Click **Save**.
 
 > [!NOTE]
-> A memory's settings are stored inside the memory, in a hidden `.ccm` folder. So a memory stays a memory when you copy it
+> A memory's settings are stored inside the memory, in a hidden `.cmm` folder. So a memory stays a memory when you copy it
 > to a USB stick or back it up.
 
 # Protecting folders from changes
@@ -622,7 +622,7 @@ settings applies.
 
 1. Right-click the folder and choose **Protection…**. You can also click **Set protection** on the folder's overview.
 2. The **Protection** tab of the folder settings opens. Choose **View-only** or **Locked**.
-3. Read the yellow note: it tells you what CCM changes on your disk.
+3. Read the yellow note: it tells you what CMM changes on your disk.
 4. Click **Apply**.
 
 ![Folder settings, Protection tab.](assets/screens/protection-tab.png)
@@ -639,16 +639,16 @@ To protect a single file, right-click it, choose **Properties**, and open **Prot
 3. To unlock a **Locked** folder, enter **Your password**. Only an admin can do this.
 4. Click **Apply**.
 
-CCM puts every file's original permissions back.
+CMM puts every file's original permissions back.
 
 ## What protection can and can't stop
 
-CCM protects a folder in two ways at once:
+CMM protects a folder in two ways at once:
 
-- **Inside CCM**, nobody can change a protected item. Buttons such as **Edit**, **Rename** and **Move to Trash** are
+- **Inside CMM**, nobody can change a protected item. Buttons such as **Edit**, **Rename** and **Move to Trash** are
   greyed out, with the reason.
-- **On the disk**, CCM removes the "write" permission from the folder and everything in it. This is the same permission
-  your computer uses for every file. So programs that don't use CCM, including AI agents that write files directly, are
+- **On the disk**, CMM removes the "write" permission from the folder and everything in it. This is the same permission
+  your computer uses for every file. So programs that don't use CMM, including AI agents that write files directly, are
   stopped too.
 
 Here is what that means for an AI agent working on your computer:
@@ -660,21 +660,21 @@ Here is what that means for an AI agent working on your computer:
 | changes, renames or deletes a file | Refused by your computer. |
 | adds a new file to the folder (Mac and Linux) | Refused by your computer. |
 | runs as an administrator, with `sudo` or as root | **Not stopped.** An administrator can ignore permissions. |
-| changes the permissions back first, then edits | Possible, because the agent runs as you. CCM notices, warns you, and makes the file read-only again. |
+| changes the permissions back first, then edits | Possible, because the agent runs as you. CMM notices, warns you, and makes the file read-only again. |
 
 > [!WARNING]
 > Protection is a strong safety net, not a wall. It stops tools that respect your computer's permissions. It does not stop
 > a program running as an administrator or root, or a program that deliberately changes permissions. Don't give AI
 > agents administrator rights if they work near protected folders.
 
-When a program changes something in a protected folder, CCM shows a message, and a red banner on the folder's overview
-says **An external process modified a protected folder**, with what changed and when. CCM has already made the file
-read-only again. Click **Dismiss** to hide the banner. CCM can only notice this while it is running.
+When a program changes something in a protected folder, CMM shows a message, and a red banner on the folder's overview
+says **An external process modified a protected folder**, with what changed and when. CMM has already made the file
+read-only again. Click **Dismiss** to hide the banner. CMM can only notice this while it is running.
 
 ### On Windows
 
 Windows can mark files read-only, but not folders. So in a protected folder, Windows stops programs from changing files,
-but can't stop them adding new files. CCM refuses such files inside the app and warns you when another program adds one.
+but can't stop them adding new files. CMM refuses such files inside the app and warns you when another program adds one.
 
 ### Strong lock on a Mac
 
@@ -685,22 +685,22 @@ can change anything. It applies to folders you lock after turning it on.
 # Encryption: key file and password
 
 Encryption turns the files in a folder into unreadable data on your disk. Only someone with the folder's key file and a
-CCM account can read them. This chapter explains how it works, how to set it up, and how to keep your key file safe.
+CMM account can read them. This chapter explains how it works, how to set it up, and how to keep your key file safe.
 
 ## How it works
 
-When you encrypt a folder, CCM creates a new, random key for it and gives it to you as a **key file** (a small file whose
-name ends in `.ccmkey`). CCM does not keep a copy. Every file in the folder is then encrypted on the disk.
+When you encrypt a folder, CMM creates a new, random key for it and gives it to you as a **key file** (a small file whose
+name ends in `.cmmkey`). CMM does not keep a copy. Every file in the folder is then encrypted on the disk.
 
 To read or edit the files, you **unlock** the folder with two things:
 
 - the **key file**, which is the actual key;
-- your **CCM password**, which confirms that it is really you.
+- your **CMM password**, which confirms that it is really you.
 
-While the folder is unlocked, CCM decrypts files in memory to show them, and encrypts them again when you save. The
-readable version is never written to the disk. When the folder locks again, CCM forgets the key.
+While the folder is unlocked, CMM decrypts files in memory to show them, and encrypts them again when you save. The
+readable version is never written to the disk. When the folder locks again, CMM forgets the key.
 
-![Encryption step by step: CCM creates a key, you download it and prove you saved it, then CCM encrypts the folder. Unlocking needs the key file and your password.](assets/diagrams/encryption-flow.svg)
+![Encryption step by step: CMM creates a key, you download it and prove you saved it, then CMM encrypts the folder. Unlocking needs the key file and your password.](assets/diagrams/encryption-flow.svg)
 
 What is **not** encrypted: file and folder names, the folder structure, roughly how big each file is, and a memory's name
 and description. Don't put secrets in file names.
@@ -708,15 +708,15 @@ and description. Don't put secrets in file names.
 ## Keep your key file safe
 
 > [!DANGER]
-> **The key file is the only key.** CCM never stores it. If you lose it, the files in the folder can't be recovered: not
-> by you, not by an admin, not by anyone else. Your password can't replace it, and resetting CCM doesn't bring it back.
+> **The key file is the only key.** CMM never stores it. If you lose it, the files in the folder can't be recovered: not
+> by you, not by an admin, not by anyone else. Your password can't replace it, and resetting CMM doesn't bring it back.
 
 Before you encrypt anything, decide where the key file will live:
 
 - **Copy it to a USB drive you keep somewhere else**, or store it in your password manager. Two copies in two places
   are better than one.
 - **Keep it outside the encrypted folder.** You can't open the folder to get its own key.
-- **Keep it private.** Anyone with the key file and a CCM account that can see the folder can read it.
+- **Keep it private.** Anyone with the key file and a CMM account that can see the folder can read it.
 - **Each folder has its own key file.** Label them clearly if you encrypt several folders.
 
 > [!WARNING]
@@ -737,7 +737,7 @@ Read the explanation. Tick **I understand: without the key file, the data can't 
 
 ### Step 2: Confirm password
 
-Enter **Your password** (your CCM password) and click **Next**.
+Enter **Your password** (your CMM password) and click **Next**.
 
 ![Encryption wizard, step 2: Confirm password.](assets/screens/encryption-step-2-password.png)
 
@@ -745,17 +745,17 @@ Enter **Your password** (your CCM password) and click **Next**.
 
 1. Click **Download key file**.
 2. Save the file somewhere safe, ideally straight onto a USB drive you keep apart. The file is named after the folder,
-   for example `persona.ccmkey`.
+   for example `persona.cmmkey`.
 3. Click **Next**.
 
 ![Encryption wizard, step 3: Download key.](assets/screens/encryption-step-3-download.png)
 
 ### Step 4: Verify
 
-CCM checks that you really saved the key file.
+CMM checks that you really saved the key file.
 
-1. Drop the `.ccmkey` file you just saved into the box, or click **Choose file** and pick it.
-2. CCM says **That's the right key file.** Click **Next**.
+1. Drop the `.cmmkey` file you just saved into the box, or click **Choose file** and pick it.
+2. CMM says **That's the right key file.** Click **Next**.
 
 ![Encryption wizard, step 4: Verify the key file.](assets/screens/encryption-step-4-verify.png)
 
@@ -763,7 +763,7 @@ CCM checks that you really saved the key file.
 
 1. Click **Encrypt now**.
 2. A progress bar shows the files, the amount done, the speed and the time left.
-3. When it finishes, CCM says the folder **is encrypted and unlocked for this session**. Click **Done**.
+3. When it finishes, CMM says the folder **is encrypted and unlocked for this session**. Click **Done**.
 
 ![Encryption wizard, step 5: Encrypt, with its progress.](assets/screens/encryption-step-5-encrypt.png)
 
@@ -776,16 +776,16 @@ bar shows how far it is, and a message tells you when it has finished.
 
 ## Unlocking an encrypted folder
 
-An encrypted folder shows a red key in the tree. When you click it, or a file inside it, CCM shows an unlock panel.
+An encrypted folder shows a red key in the tree. When you click it, or a file inside it, CMM shows an unlock panel.
 
-1. Drop the folder's `.ccmkey` file into the **Key file** box, or click **Choose file**.
+1. Drop the folder's `.cmmkey` file into the **Key file** box, or click **Choose file**.
 2. Enter **Your password**.
 3. Click **Unlock**.
 
 ![The unlock panel of a locked encrypted folder.](assets/screens/encryption-unlock.png)
 
 The key in the tree turns green, and the files open as usual. The file pane says **Encrypted · edits are re-encrypted on
-save**. When you save, the button shows **Encrypting & saving…**, then **Verifying…**, while CCM checks the new
+save**. When you save, the button shows **Encrypting & saving…**, then **Verifying…**, while CMM checks the new
 encrypted file before it replaces the old one.
 
 ## How long a folder stays unlocked
@@ -793,8 +793,8 @@ encrypted file before it replaces the old one.
 A folder locks again by itself when:
 
 - the unlock time runs out (60 minutes by default; an admin can change it in **Settings › Encryption › Unlock time**);
-- CCM locks after you have been idle, or you choose **Lock now**;
-- you sign out or quit CCM.
+- CMM locks after you have been idle, or you choose **Lock now**;
+- you sign out or quit CMM.
 
 Click the key button in the top bar to see which folders are unlocked and when each one locks.
 
@@ -804,14 +804,14 @@ Click the key button in the top bar to see which folders are unlocked and when e
 - To lock every folder at once, use **Lock all encrypted folders**: in the key button's menu in the top bar, or in the
   menu under your initials. **Settings › Encryption** has a **Lock all** button too.
 
-CCM wipes the keys from its memory straight away.
+CMM wipes the keys from its memory straight away.
 
 ## Copying and downloading encrypted files
 
-- When you **download** a file from an encrypted folder, CCM asks how: **Decrypted** (the readable file; the folder must
-  be unlocked) or **Encrypted (raw)** (the file as stored, still encrypted, which only CCM with the key file can open).
+- When you **download** a file from an encrypted folder, CMM asks how: **Decrypted** (the readable file; the folder must
+  be unlocked) or **Encrypted (raw)** (the file as stored, still encrypted, which only CMM with the key file can open).
   Folders downloaded as zip are always decrypted.
-- When you **copy or move** a file out of an encrypted folder into a normal one, CCM asks **Copy out of the encrypted
+- When you **copy or move** a file out of an encrypted folder into a normal one, CMM asks **Copy out of the encrypted
   folder?** (or **Move out of…**). If you confirm with **Copy and decrypt**, the copy is readable by anyone who can
   read that folder.
 - Moving a whole encrypted folder to another place keeps it encrypted.
@@ -821,7 +821,7 @@ says how many there are. Unlock the folder and click **Encrypt … files now**.
 
 ## Using an encrypted folder on another computer
 
-An encrypted folder carries its encryption settings with it. Copy the folder to another computer that runs CCM, for
+An encrypted folder carries its encryption settings with it. Copy the folder to another computer that runs CMM, for
 example with a USB stick. Then unlock it there with the same key file and your password on that computer. The password
 only confirms who you are. It is not part of the key.
 
@@ -842,7 +842,7 @@ nothing inside the folder can be changed until it ends. A message says **Decrypt
 
 ## Re-keying: replacing a key file
 
-Re-key a folder when you think someone else may have a copy of its key file. CCM creates a new key and encrypts every
+Re-key a folder when you think someone else may have a copy of its key file. CMM creates a new key and encrypts every
 file again. The old key file stops working.
 
 1. Open **Folder settings › Encryption** and click **Re-key…**.
@@ -854,7 +854,7 @@ Keep the new key file as carefully as the first one, and destroy the old one onc
 
 ## If an encryption task stops
 
-If CCM is closed or your computer turns off while it encrypts, decrypts or re-keys, nothing is lost. CCM never encrypts
+If CMM is closed or your computer turns off while it encrypts, decrypts or re-keys, nothing is lost. CMM never encrypts
 a file twice. To carry on:
 
 1. Open the folder's **Folder settings › Encryption**.
@@ -868,8 +868,8 @@ explains how to install Git, turn versioning on, and use history, undo and redo.
 
 ## Installing Git
 
-CCM keeps the history with **Git**, a free tool that records versions of files. Git must be installed on your computer.
-CCM never downloads anything by itself, so you install Git yourself. You need version 2.30 or newer.
+CMM keeps the history with **Git**, a free tool that records versions of files. Git must be installed on your computer.
+CMM never downloads anything by itself, so you install Git yourself. You need version 2.30 or newer.
 
 ### Mac
 
@@ -925,12 +925,12 @@ With internet, run `sudo dnf install git`.
 
 ![The "Turn on versioning" window checks that Git is installed.](assets/screens/versioning-git-required.png)
 
-CCM stores the history in a hidden `.git` folder inside the folder, on this computer only. Versioning works best for
+CMM stores the history in a hidden `.git` folder inside the folder, on this computer only. Versioning works best for
 text, such as notes and memories. Large pictures or videos make the history grow quickly.
 
 > [!NOTE]
-> If the folder already has its own Git history, CCM offers **Keep its history and enable**. It adds its own versions on
-> top and changes nothing in the existing history. If the folder had versioning in CCM before, you can choose
+> If the folder already has its own Git history, CMM offers **Keep its history and enable**. It adds its own versions on
+> top and changes nothing in the existing history. If the folder had versioning in CMM before, you can choose
 > **Restore archived history** or **Start a new history**.
 
 > [!WARNING]
@@ -941,10 +941,10 @@ text, such as notes and memories. Large pictures or videos make the history grow
 
 From now on, every change becomes a **version**:
 
-- each save, upload, new file, rename, move or deletion you make in CCM. The version has a clear name, such as
+- each save, upload, new file, rename, move or deletion you make in CMM. The version has a clear name, such as
   "Edit notes.md", "Upload 3 files" or "Moved draft.md to Trash";
-- changes made by other programs, such as an AI agent. CCM waits until the folder has been quiet for about ten seconds,
-  then records them as "External changes (2 files)". The history marks them as **Changed outside CCM**.
+- changes made by other programs, such as an AI agent. CMM waits until the folder has been quiet for about ten seconds,
+  then records them as "External changes (2 files)". The history marks them as **Changed outside CMM**.
 
 ## Undo and redo
 
@@ -977,7 +977,7 @@ Open the history in one of these ways:
 ![Version history, with the changes of one version.](assets/screens/versioning-history.png)
 
 The list on the left shows every version, newest first, with an icon for its kind (change, undo, redo, restore, changed
-outside CCM) and when it happened. Choose **This file only** or **Whole folder** to filter it.
+outside CMM) and when it happened. Choose **This file only** or **Whole folder** to filter it.
 
 Click a version to see what changed: the files, marked as added, modified, deleted or renamed, and the text before and
 after. Switch between **Side by side** and **Unified** views.
@@ -1000,8 +1000,8 @@ the **Versioning** tab, type a name and click **Create snapshot**.
 
 1. On the **Versioning** tab, click **Turn off versioning…**.
 2. Choose:
-   - **Keep history (archive)**: the history is kept in the folder (in `.ccm/git-archive/`). If you turn versioning on
-     again, CCM offers it back;
+   - **Keep history (archive)**: the history is kept in the folder (in `.cmm/git-archive/`). If you turn versioning on
+     again, CMM offers it back;
    - **Delete history permanently**: every earlier version is gone for good. Type `DELETE HISTORY` to confirm.
 3. Click the button to confirm.
 
@@ -1039,8 +1039,8 @@ Below the picture there are three tabs: **Active jobs**, **Profiles** and **Hist
 If you're not sure, choose **Copy**. It never removes anything from the drive.
 
 > [!NOTE]
-> A mirror never deletes files outright. Files it removes go to the drive's own Trash, where you can restore them in CCM
-> while the drive is plugged in. Because a mirror removes files, CCM asks for your password each time it runs.
+> A mirror never deletes files outright. Files it removes go to the drive's own Trash, where you can restore them in CMM
+> while the drive is plugged in. Because a mirror removes files, CMM asks for your password each time it runs.
 
 ## Creating a backup profile
 
@@ -1086,12 +1086,12 @@ While it runs, light flows from the source to the drive in the picture, with the
 
 ![The Backup page while a backup runs.](assets/screens/backup-transfer.png)
 
-The second time you run a profile, CCM copies only what changed, so it is much faster.
+The second time you run a profile, CMM copies only what changed, so it is much faster.
 
 ## Automatic backups when you plug in a drive
 
 Turn on **Run when the drive is plugged in** in the profile. From then on, a few seconds after you plug in the drive,
-CCM shows **Backup started**, and **Backup finished** when it is done. It recognises the drive even under a different
+CMM shows **Backup started**, and **Backup finished** when it is done. It recognises the drive even under a different
 drive letter, and skips the backup if the profile already ran in the last hour.
 
 ## If you unplug a drive during a backup
@@ -1104,7 +1104,7 @@ back** turned on), or click **Resume** on the **Active jobs** tab.
 > Before you unplug a drive, click its eject button on the Drives page or choose **Eject** in its menu on the Backup page.
 > Wait for the message that you can unplug it.
 
-If you quit CCM during a backup, the backup pauses. Start CCM again, open **Backup**, and click **Resume** on the
+If you quit CMM during a backup, the backup pauses. Start CMM again, open **Backup**, and click **Resume** on the
 **Active jobs** tab.
 
 ## History
@@ -1114,11 +1114,11 @@ copied, left unchanged or couldn't copy. Click a run for the details, including 
 
 ## Things to know
 
-- **Encrypted folders stay encrypted** in a backup. CCM copies them exactly as they are. You need the key file to open
+- **Encrypted folders stay encrypted** in a backup. CMM copies them exactly as they are. You need the key file to open
   the backup.
-- **Files larger than 4 GB** can't be stored on drives formatted as FAT32, which many USB sticks are. CCM skips them
+- **Files larger than 4 GB** can't be stored on drives formatted as FAT32, which many USB sticks are. CMM skips them
   and lists a warning in the run's details. Format the drive as exFAT (or another modern format) to back up large files.
-- CCM refuses a backup into the folder it is backing up, into an encrypted folder, or into a protected folder.
+- CMM refuses a backup into the folder it is backing up, into an encrypted folder, or into a protected folder.
 
 # Settings
 
@@ -1127,7 +1127,7 @@ Some pages are for admins only.
 
 ## General
 
-**Settings › General** shows the app's name, its mode (**Desktop**), the **Data directory** where CCM keeps its database,
+**Settings › General** shows the app's name, its mode (**Desktop**), the **Data directory** where CMM keeps its database,
 and the version number. Admins can also set:
 
 - **Trash › Delete items after**: the number of days after which deleted items are removed for good (0 = never);
@@ -1165,26 +1165,26 @@ access** (no access, read, or read and write, per storage), **Reset password**, 
 **Settings › Security** lets you:
 
 - **Change password**: enter your current password and a new one;
-- set **Auto-lock › Lock after** (admins): how many idle minutes before CCM locks, for every user;
+- set **Auto-lock › Lock after** (admins): how many idle minutes before CMM locks, for every user;
 - set **Sign-in lockout** (admins): after too many wrong passwords (5 by default), signing in is blocked for a while (15
   minutes by default);
 - see your **Active sessions**.
 
 ![Settings › Security.](assets/screens/settings-security.png)
 
-### When CCM asks for your password
+### When CMM asks for your password
 
 The desktop app never asks you to confirm your password before uploads, downloads or other everyday actions. You are
-on your own computer, and you already signed in. (CCM's server edition asks on a network.)
+on your own computer, and you already signed in. (CMM's server edition asks on a network.)
 
-![When CCM asks for your password again: the desktop app never does; a server asks once on the local network, and for every action from outside.](assets/diagrams/network-confirm.svg)
+![When CMM asks for your password again: the desktop app never does; a server asks once on the local network, and for every action from outside.](assets/diagrams/network-confirm.svg)
 
-CCM still asks for your password for a few serious actions: unlocking a **Locked** folder, encrypting, unlocking or
+CMM still asks for your password for a few serious actions: unlocking a **Locked** folder, encrypting, unlocking or
 decrypting a folder, and running a mirror backup.
 
 ## Storages
 
-**Settings › Storages** (admins only) lists the folders and drives CCM shows on the Drives page.
+**Settings › Storages** (admins only) lists the folders and drives CMM shows on the Drives page.
 
 ![Settings › Storages.](assets/screens/settings-storages.png)
 
@@ -1192,31 +1192,31 @@ To add a folder from your computer as a storage:
 
 1. Under **Internal storages**, click **Browse…**.
 2. Choose the folder in the **Choose a folder** window and click **Choose**.
-3. CCM fills in the path and a **Name**. Change the name if you like.
+3. CMM fills in the path and a **Name**. Change the name if you like.
 4. Click **Add storage**.
 
 The buttons on each row let you choose **Who can open it**, **Rename** it, hide it from everyone but admins, or remove
-it. Removing a storage (**Unregister**) only removes it from CCM. The files stay on disk.
+it. Removing a storage (**Unregister**) only removes it from CMM. The files stay on disk.
 
-**External drives** lists every drive CCM has seen, even when it is unplugged, so it remembers names and access. Use
+**External drives** lists every drive CMM has seen, even when it is unplugged, so it remembers names and access. Use
 **Forget drive** to remove one from the list. **New drives** decides who sees a newly plugged-in drive: **Admins only**
 (the default) or **Everyone**.
 
 ## Encryption
 
 **Settings › Encryption** lists every encrypted folder, its storage, its state and whether it is unlocked in this
-session, and has **Lock all**. Admins can set the **Unlock time**: how long an unlocked folder stays open before CCM
+session, and has **Lock all**. Admins can set the **Unlock time**: how long an unlocked folder stays open before CMM
 forgets its key (60 minutes by default). See the chapter on encryption.
 
 ![Settings › Encryption.](assets/screens/settings-encryption.png)
 
 ## About and this guide
 
-**Settings › About** shows the product, its version, the mode, and the network note: CCM never contacts the internet.
-It also lists the licences of the software CCM is built with.
+**Settings › About** shows the product, its version, the mode, and the network note: CMM never contacts the internet.
+It also lists the licences of the software CMM is built with.
 
 Under **Guides**, click **Open Desktop Guide** to open this guide as a PDF in a new window. **Open Server Guide** opens
-the guide for running CCM on a server. You can also open this guide from the menu bar: **Help › Desktop Guide (PDF)**.
+the guide for running CMM on a server. You can also open this guide from the menu bar: **Help › Desktop Guide (PDF)**.
 
 ![Settings › About, with the link to this guide.](assets/screens/settings-about.png)
 
@@ -1229,13 +1229,13 @@ This chapter covers the most common problems and how to solve them.
 If another admin uses this computer, ask them to reset your password: **Settings › Users › Manage › Reset password**.
 They give you a temporary password, and you choose a new one when you sign in.
 
-If you are the only admin, use **Reset CCM**. It removes CCM's accounts and settings and lets you start again.
+If you are the only admin, use **Reset CMM**. It removes CMM's accounts and settings and lets you start again.
 **It never touches your files or folders.**
 
 1. Let running encryption and backup jobs finish.
-2. Open the **Help** menu in the menu bar and choose **Reset CCM…**.
-3. Read the message, then click **Reset CCM** (or **Cancel** to change nothing).
-4. CCM stops, clears its database and starts again at the setup page.
+2. Open the **Help** menu in the menu bar and choose **Reset CMM…**.
+3. Read the message, then click **Reset CMM** (or **Cancel** to change nothing).
+4. CMM stops, clears its database and starts again at the setup page.
 5. Create a new admin account, as on the first run.
 
 What a reset removes, and what it keeps:
@@ -1261,15 +1261,15 @@ After a reset:
 ## I lost a key file
 
 > [!DANGER]
-> There is no way to recover an encrypted folder without its key file. CCM never stored the key, and neither your
+> There is no way to recover an encrypted folder without its key file. CMM never stored the key, and neither your
 > password, an admin nor a reset can replace it.
 
 What you can still do:
 
-- **Look for a copy** of the `.ccmkey` file: on USB drives, in your password manager, in your Downloads folder, in
+- **Look for a copy** of the `.cmmkey` file: on USB drives, in your password manager, in your Downloads folder, in
   email. A copy works exactly like the original.
-- **If the folder is still unlocked** in CCM right now, don't lock it, sign out or quit. Copy the files you need out of
-  the encrypted folder into a normal folder (CCM asks **Copy out of the encrypted folder?**; choose **Copy and
+- **If the folder is still unlocked** in CMM right now, don't lock it, sign out or quit. Copy the files you need out of
+  the encrypted folder into a normal folder (CMM asks **Copy out of the encrypted folder?**; choose **Copy and
   decrypt**), or download them as **Decrypted**. This is your last chance: decrypting permanently and re-keying both
   need the key file, so copying the readable files out is the only way to save them.
 - **Use readable copies** you made earlier: a decrypted download, files copied out before, or a backup made before the
@@ -1279,15 +1279,15 @@ Backups made after encryption are encrypted too, and need the same key file.
 
 ## A drive doesn't show up
 
-- Wait a few seconds. CCM checks for new drives every two seconds.
+- Wait a few seconds. CMM checks for new drives every two seconds.
 - Make sure your computer itself can see the drive, in Finder, File Explorer or Files.
 - On **Linux**, a drive may be plugged in but not mounted. Click **Mount** on its card on the Drives page. If there is no
   **Mount** button, mount it in your file manager first.
-- On a **Mac**, check that CCM is allowed to access removable volumes: **System Settings › Privacy & Security ›
+- On a **Mac**, check that CMM is allowed to access removable volumes: **System Settings › Privacy & Security ›
   Files and Folders**.
 - New drives are shown to admins only, unless an admin changed **Settings › Storages › New drives**. Ask an admin to
   give you access to the drive.
-- On **Windows**, CCM lists every drive letter except the system drive (usually `C:`) as a drive.
+- On **Windows**, CMM lists every drive letter except the system drive (usually `C:`) as a drive.
 
 ## Versioning says Git is not found
 
@@ -1299,30 +1299,30 @@ Git 2.30 or newer is needed. On a Mac, if `git --version` asks you to install th
 Hover over the greyed-out **Edit** button to see why. Usually the folder is protected or encrypted and locked, the file
 is too large (over 5 MB by default) or not plain text, or your account can only read this storage.
 
-## CCM locked me out after wrong passwords
+## CMM locked me out after wrong passwords
 
 After too many wrong passwords, sign-in is blocked for a while (15 minutes by default). Wait, then try again.
 
-## CCM stopped unexpectedly
+## CMM stopped unexpectedly
 
-If CCM's local server stops, a message says **CCM stopped unexpectedly.** Choose:
+If CMM's local server stops, a message says **CMM stopped unexpectedly.** Choose:
 
-- **Restart CCM** to start it again. Running tasks continue where they stopped;
+- **Restart CMM** to start it again. Running tasks continue where they stopped;
 - **Open Logs** to see what happened;
 - **Quit**.
 
-If CCM can't start at all, the message **CCM could not start.** offers **Open Logs** and **Quit**.
+If CMM can't start at all, the message **CMM could not start.** offers **Open Logs** and **Quit**.
 
 ## Where the logs are
 
-Logs are text files that record what CCM did. They help find the cause of a problem.
+Logs are text files that record what CMM did. They help find the cause of a problem.
 
 1. Open the **Help** menu and choose **Open Logs Folder**.
 2. Your file manager opens the logs folder. It contains:
    - `main.log`: the app window and start-up;
-   - `server.log`: CCM's local server.
+   - `server.log`: CMM's local server.
 
-The logs folder is `logs` inside CCM's data folder (see the next chapter). Old logs are rotated, so they never grow
+The logs folder is `logs` inside CMM's data folder (see the next chapter). Old logs are rotated, so they never grow
 beyond a few megabytes.
 
 ## Questions
@@ -1330,84 +1330,90 @@ beyond a few megabytes.
 **Can my AI tools still use the files?** Yes. They are normal folders on your computer. Only encrypted files can't be
 read by other programs, and protected folders can't be changed by them.
 
-**What happens when I close the window?** On Windows and Linux, closing the window quits CCM. On a Mac, choose
-**CCM › Quit CCM** or press <kbd>Cmd</kbd>+<kbd>Q</kbd>. Running tasks are paused and can be resumed later.
+**What happens when I close the window?** On Windows and Linux, closing the window quits CMM. On a Mac, choose
+**CMM › Quit CMM** or press <kbd>Cmd</kbd>+<kbd>Q</kbd>. Running tasks are paused and can be resumed later.
 
 # Uninstalling, and where your data lives
 
-This chapter explains where CCM keeps its own data, what it leaves in your folders, and how to remove it.
+This chapter explains where CMM keeps its own data, what it leaves in your folders, and how to remove it.
 
-## CCM's own data
+## CMM's own data
 
-CCM keeps its own data in one folder on your computer:
+CMM keeps its own data in one folder on your computer:
 
-| Computer | CCM's data folder |
+| Computer | CMM's data folder |
 |---|---|
-| Mac | `~/Library/Application Support/CCM` (in your home folder) |
-| Windows | `%APPDATA%\CCM` (usually `C:\Users\<you>\AppData\Roaming\CCM`) |
-| Linux | `~/.config/CCM` |
+| Mac | `~/Library/Application Support/CMM` (in your home folder) |
+| Windows | `%APPDATA%\CMM` (usually `C:\Users\<you>\AppData\Roaming\CMM`) |
+| Linux | `~/.config/CMM` |
 
 It holds:
 
-- `ccm.db`: the database, with user accounts, settings, the list of storages, and backup profiles and history;
-- `config.json`: CCM's basic configuration;
+- `cmm.db`: the database, with user accounts, settings, the list of storages, and backup profiles and history;
+- `config.json`: CMM's basic configuration;
 - `logs/`: the log files `main.log` and `server.log`;
 - `window-state.json`: the size and position of the window.
 
 It never holds your files or your key files. **Settings › General › Data directory** shows where it is.
 
-## What CCM leaves in your folders
+## What CMM leaves in your folders
 
-Your own files stay where they are, as normal files. CCM adds a few hidden folders, which it does not show in the file
+Your own files stay where they are, as normal files. CMM adds a few hidden folders, which it does not show in the file
 tree:
 
-- `.ccm/` inside a folder you made into a memory, protected, encrypted or versioned. It holds that folder's settings;
-- `.ccm-trash/` at the top of each storage: that storage's Trash;
-- `.ccm-tmp/` at the top of each storage: a working area for uploads and saves in progress.
+- `.cmm/` inside a folder you made into a memory, protected, encrypted or versioned. It holds that folder's settings;
+- `.cmm-trash/` at the top of each storage: that storage's Trash;
+- `.cmm-tmp/` at the top of each storage: a working area for uploads and saves in progress.
 
 A versioned folder also contains a `.git` folder with its history. It is a normal Git history that other Git tools can
 read.
 
+> [!NOTE]
+> Earlier versions of this app were called **CCM** and used `.ccm/`, `.ccm-trash/` and `.ccm-tmp/`, key files ending in
+> `.ccmkey`, and a data folder named `CCM`. CMM moves all of these to the new names by itself: the data folder on the
+> first start, each storage the first time CMM opens it, and each drive when you plug it in. Old `.ccmkey` key files
+> still unlock their folders.
+
 ## Before you uninstall
 
 > [!WARNING]
-> Uninstalling CCM does not decrypt or unprotect anything. Do these steps first if you won't use CCM again:
+> Uninstalling CMM does not decrypt or unprotect anything. Do these steps first if you won't use CMM again:
 >
-> - **Decrypt** every encrypted folder (**Folder settings › Encryption › Decrypt permanently…**). Without CCM, encrypted
+> - **Decrypt** every encrypted folder (**Folder settings › Encryption › Decrypt permanently…**). Without CMM, encrypted
 >   files can't be opened at all.
 > - **Remove protection** (set it to **None**) on protected folders. Otherwise their files stay read-only for every
 >   program.
-> - **Empty the Trash**, or restore what you want to keep. Deleted items stay in the hidden `.ccm-trash` folders.
+> - **Empty the Trash**, or restore what you want to keep. Deleted items stay in the hidden `.cmm-trash` folders.
 
-If you plan to install CCM again later, you can skip these steps: everything works again after reinstalling.
+If you plan to install CMM again later, you can skip these steps: everything works again after reinstalling.
 
 ## Uninstalling
 
 **Mac**
 
-1. Quit CCM.
-2. Open your **Applications** folder and drag **CCM** to the Trash.
+1. Quit CMM.
+2. Open your **Applications** folder and drag **CMM** to the Trash.
 
 **Windows**
 
-1. Quit CCM.
+1. Quit CMM.
 2. Open **Settings › Apps › Installed apps** (on Windows 10: **Settings › Apps › Apps & features**).
-3. Find **CCM** and choose **Uninstall**.
+3. Find **CMM** and choose **Uninstall**.
 
 **Linux**
 
-- AppImage: quit CCM and delete the AppImage file.
-- deb package: quit CCM and run:
+- AppImage: quit CMM and delete the AppImage file.
+- deb package: quit CMM and run:
 
   ```bash
-  sudo apt remove ccm
+  sudo apt remove cmm
   ```
 
-## Removing CCM's data as well
+## Removing CMM's data as well
 
-Uninstalling leaves CCM's data folder in place, so a later install finds your accounts and settings again. To remove
+Uninstalling leaves CMM's data folder in place, so a later install finds your accounts and settings again. To remove
 them too, delete the data folder listed above. This is the same as a reset: your own files are not affected.
 
-To remove the hidden `.ccm-trash` and `.ccm-tmp` folders from a storage, empty CCM's Trash first, then delete them in
-your file manager (you may need to show hidden files). Don't delete a `.ccm` folder inside an encrypted folder: it holds
-the information CCM needs to decrypt it later.
+To remove the hidden `.cmm-trash` and `.cmm-tmp` folders from a storage, empty CMM's Trash first, then delete them in
+your file manager (you may need to show hidden files). Don't delete a `.cmm` folder inside an encrypted folder: it holds
+the information CMM needs to decrypt it later.

@@ -3,7 +3,7 @@
  * active link and violet section labels. Collapsing the menu (xl screens) hides titles, badges and
  * chevrons until the menu is hovered.
  */
-.ccm .side-menu__divider {
+.cmm .side-menu__divider {
   margin: 1.25rem 0 0.5rem;
   padding-left: 0.75rem;
   font-family: var(--font-display);
@@ -15,7 +15,7 @@
   color: var(--color-accent);
 }
 
-.ccm .side-menu__link {
+.cmm .side-menu__link {
   position: relative;
   display: flex;
   align-items: center;
@@ -27,51 +27,51 @@
   transition-duration: 150ms;
 }
 
-.ccm .side-menu__link:hover {
+.cmm .side-menu__link:hover {
   background-color: var(--color-surface-muted);
   color: var(--color-foreground);
 }
 
-.ccm .side-menu__link__icon {
+.cmm .side-menu__link__icon {
   flex: none;
   stroke: currentColor;
   fill: color-mix(in srgb, currentColor 10%, transparent);
 }
 
-.ccm .side-menu__link__title {
+.cmm .side-menu__link__title {
   margin-left: 0.75rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.ccm .side-menu__link__title::before {
+.cmm .side-menu__link__title::before {
   content: "◇ ";
   font-size: 0.7em;
   color: var(--color-foreground-faint);
 }
 
-.ccm .side-menu__link--active,
-.ccm .side-menu__link--active:hover {
+.cmm .side-menu__link--active,
+.cmm .side-menu__link--active:hover {
   background-color: color-mix(in srgb, var(--color-brand) 12%, transparent);
   color: var(--color-brand);
   box-shadow: inset 2px 0 0 var(--color-brand);
 }
 
-.ccm .side-menu__link--active .side-menu__link__title {
+.cmm .side-menu__link--active .side-menu__link__title {
   font-weight: 600;
 }
 
-.ccm .side-menu__link--active .side-menu__link__title::before {
+.cmm .side-menu__link--active .side-menu__link__title::before {
   content: "◆ ";
   color: var(--color-brand);
 }
 
-.ccm .side-menu__link--active-dropdown:not(.side-menu__link--active) {
+.cmm .side-menu__link--active-dropdown:not(.side-menu__link--active) {
   color: var(--color-foreground);
 }
 
-.ccm .side-menu__link__badge {
+.cmm .side-menu__link__badge {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -86,25 +86,25 @@
   color: var(--color-accent);
 }
 
-.ccm .side-menu__link__chevron {
+.cmm .side-menu__link__chevron {
   flex: none;
   margin-left: auto;
 }
 
-.ccm .side-menu ul ul {
+.cmm .side-menu ul ul {
   margin: 2px 0 6px 1.35rem;
   padding-left: 0.5rem;
   border-left: 1px solid var(--color-line);
 }
 
 @media (min-width: 1280px) {
-  .ccm .side-menu--collapsed .side-menu__divider {
+  .cmm .side-menu--collapsed .side-menu__divider {
     position: relative;
     height: 1.25rem;
     color: transparent;
   }
 
-  .ccm .side-menu--collapsed .side-menu__divider::before {
+  .cmm .side-menu--collapsed .side-menu__divider::before {
     content: "···";
     position: absolute;
     inset-inline: 0;
@@ -112,38 +112,38 @@
     color: var(--color-foreground-faint);
   }
 
-  .ccm .side-menu--collapsed .side-menu__link {
+  .cmm .side-menu--collapsed .side-menu__link {
     overflow: hidden;
   }
 
-  .ccm .side-menu--collapsed .side-menu__link__title,
-  .ccm .side-menu--collapsed .side-menu__link__badge,
-  .ccm .side-menu--collapsed .side-menu__link__chevron {
+  .cmm .side-menu--collapsed .side-menu__link__title,
+  .cmm .side-menu--collapsed .side-menu__link__badge,
+  .cmm .side-menu--collapsed .side-menu__link__chevron {
     opacity: 0;
     white-space: nowrap;
     transition: opacity 300ms;
   }
 
-  .ccm .side-menu--collapsed .side-menu ul ul {
+  .cmm .side-menu--collapsed .side-menu ul ul {
     margin-left: 0;
     border-left-color: transparent;
   }
 
-  .ccm .side-menu--collapsed.side-menu--on-hover .side-menu__divider {
+  .cmm .side-menu--collapsed.side-menu--on-hover .side-menu__divider {
     color: var(--color-accent);
   }
 
-  .ccm .side-menu--collapsed.side-menu--on-hover .side-menu__divider::before {
+  .cmm .side-menu--collapsed.side-menu--on-hover .side-menu__divider::before {
     opacity: 0;
   }
 
-  .ccm .side-menu--collapsed.side-menu--on-hover .side-menu__link__title,
-  .ccm .side-menu--collapsed.side-menu--on-hover .side-menu__link__badge,
-  .ccm .side-menu--collapsed.side-menu--on-hover .side-menu__link__chevron {
+  .cmm .side-menu--collapsed.side-menu--on-hover .side-menu__link__title,
+  .cmm .side-menu--collapsed.side-menu--on-hover .side-menu__link__badge,
+  .cmm .side-menu--collapsed.side-menu--on-hover .side-menu__link__chevron {
     opacity: 1;
   }
 
-  .ccm .side-menu--collapsed.side-menu--on-hover .side-menu ul ul {
+  .cmm .side-menu--collapsed.side-menu--on-hover .side-menu ul ul {
     margin-left: 1.35rem;
     border-left-color: var(--color-line);
   }

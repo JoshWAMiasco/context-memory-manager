@@ -1,5 +1,5 @@
 /*
- * The CCM server as an Electron utility process: forked from the bundled
+ * The CMM server as an Electron utility process: forked from the bundled
  * `app-server/entry.js`, its output piped to `server.log`, stopped with a `shutdown` message
  * (jobs pause with a checkpoint) and killed if it is still running 10 seconds later.
  */
@@ -16,7 +16,7 @@ export interface DesktopServerOptions {
   onUnexpectedExit: (exitCode: number) => void;
 }
 
-/** One run of the CCM server. Create a new one to restart it. */
+/** One run of the CMM server. Create a new one to restart it. */
 export class DesktopServer {
   private readonly options: DesktopServerOptions;
   private child: UtilityProcess | undefined;
@@ -41,7 +41,7 @@ export class DesktopServer {
   start(): void {
     const { entryPath, environment, serverLog } = this.options;
     const child = utilityProcess.fork(entryPath, [], {
-      serviceName: "CCM Server",
+      serviceName: "CMM Server",
       stdio: "pipe",
       env: environment,
     });

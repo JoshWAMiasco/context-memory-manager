@@ -4,7 +4,7 @@ import { getEventBus } from "@/server/events/bus";
 import { getGlobalSingleton } from "@/server/runtime/global-singleton";
 
 /*
- * Every encryption key CCM holds lives here, in memory only: folders a session unlocked,
+ * Every encryption key CMM holds lives here, in memory only: folders a session unlocked,
  * keys waiting in the Enable encryption wizard, and keys a running job uses. Keys are wiped
  * (`fill(0)`) when they expire, when the session locks or ends, and when the process exits. They
  * are never logged, serialized or sent to a client.
@@ -250,7 +250,7 @@ export function discardPendingKey(sessionIdHash: string, pendingId: string): voi
   sessionPending?.delete(pendingId);
 }
 
-/** Gives a job its own copies of the keys it needs (wiped when the job ends or CCM stops). */
+/** Gives a job its own copies of the keys it needs (wiped when the job ends or CMM stops). */
 export function storeJobKeys(jobId: string, keys: readonly { keyId: Buffer; dek: Buffer }[]): void {
   const { jobs } = getState();
   wipeKeys(jobs.get(jobId)?.values() ?? []);

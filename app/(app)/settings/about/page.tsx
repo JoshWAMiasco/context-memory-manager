@@ -38,9 +38,9 @@ function readIconVersion(): string {
   }
 }
 
-/** Whether a bundled PDF guide is in this build (the entry sets `CCM_DOCS_DIR`). */
+/** Whether a bundled PDF guide is in this build (the entry sets `CMM_DOCS_DIR`). */
 function hasGuide(guideName: PdfGuideName): boolean {
-  const guidesDirectory = process.env.CCM_DOCS_DIR;
+  const guidesDirectory = process.env.CMM_DOCS_DIR;
   if (!guidesDirectory) return false;
   // The ignore comment keeps Turbopack's file tracer from matching this runtime path across the project.
   // eslint-disable-next-line no-inline-comments
@@ -67,7 +67,7 @@ export default async function AboutSettingsPage() {
         </FormSectionRow>
         <FormSectionRow
           label="Network"
-          description="CCM never contacts the internet: no telemetry, no update checks, no remote fonts."
+          description="CMM never contacts the internet: no telemetry, no update checks, no remote fonts."
           labelWidth="large"
         >
           Fully offline
@@ -75,7 +75,7 @@ export default async function AboutSettingsPage() {
       </SettingsPanel>
       <SettingsPanel title="Guides">
         <p className="mb-4 text-sm text-foreground-muted">
-          Illustrated PDF guides: installing CCM, every feature step by step, and what to do when something goes wrong.
+          Illustrated PDF guides: installing CMM, every feature step by step, and what to do when something goes wrong.
           They open in a new tab and work offline.
         </p>
         <ul className="flex flex-col gap-3" data-testid="about-guides">

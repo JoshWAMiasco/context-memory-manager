@@ -14,7 +14,7 @@ export interface EffectiveProtection {
   source?: { path: string; isFile: boolean };
 }
 
-/** The encrypted folder an entry is in: the nearest folder, itself included, with `.ccm/crypto.json`. */
+/** The encrypted folder an entry is in: the nearest folder, itself included, with `.cmm/crypto.json`. */
 export interface EncryptionScope {
   /** Storage-relative path of the encrypted folder. */
   path: string;
@@ -57,7 +57,7 @@ function toRelative(rootPath: string, absolutePath: string): string {
 
 /**
  * A folder's `crypto.json`, or undefined. A damaged one stops every read and write inside with
- * 409 `ENCRYPTED_LOCKED`: CCM can't tell which key the folder uses.
+ * 409 `ENCRYPTED_LOCKED`: CMM can't tell which key the folder uses.
  */
 export async function readCrypto(folderAbsolutePath: string): Promise<CryptoFile | undefined> {
   try {
@@ -67,7 +67,7 @@ export async function readCrypto(folderAbsolutePath: string): Promise<CryptoFile
     throw new ApiRouteError(
       409,
       "ENCRYPTED_LOCKED",
-      `"${path.basename(folderAbsolutePath)}" can't be opened: its encryption settings (.ccm/crypto.json) are damaged.`,
+      `"${path.basename(folderAbsolutePath)}" can't be opened: its encryption settings (.cmm/crypto.json) are damaged.`,
     );
   }
 }
@@ -158,9 +158,9 @@ export async function readVersioningEnabled(folderAbsolutePath: string): Promise
 
 /**
  * Badges for the entries of one folder listing: the folder's own inherited protection is
- * read once, then each child adds its own `.ccm/` (folders) or its `files` entry (files).
+ * read once, then each child adds its own `.cmm/` (folders) or its `files` entry (files).
  * `protection` is the effective mode; `protectionSource` says whether it is set on the entry itself.
- * `includeFolder: false` reads only the children's own `.ccm/` (the storage root, the trash).
+ * `includeFolder: false` reads only the children's own `.cmm/` (the storage root, the trash).
  *
  * @example
  * const badges = await readListingBadges(storage.rootPath, "notes", [{ name: "a.md", isDirectory: false }]);

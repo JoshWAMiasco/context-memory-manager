@@ -104,9 +104,9 @@ const highlightStyle = HighlightStyle.define([
 ]);
 
 /**
- * The CCM editor theme and syntax colours, as one extension.
+ * The CMM editor theme and syntax colours, as one extension.
  *
  * @example
- * EditorState.create({ doc, extensions: [ccmTheme, …] });
+ * EditorState.create({ doc, extensions: [cmmTheme, …] });
  */
-export const ccmTheme = [editorTheme, syntaxHighlighting(highlightStyle)];
+export const cmmTheme = [editorTheme, syntaxHighlighting(highlightStyle)];

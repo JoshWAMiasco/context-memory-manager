@@ -2,7 +2,7 @@ import { FileQuestion } from "lucide-react";
 import { ButtonLink } from "@/components/primitives/button";
 import { EmptyState } from "@/components/primitives/empty-state";
 
-/** Any address CCM doesn't have, or a page this account may not open (admins-only settings). */
+/** Any address CMM doesn't have, or a page this account may not open (admins-only settings). */
 export default function NotFoundPage() {
   return (
     <main className="flex min-h-screen items-center justify-center p-6" data-testid="not-found-page">

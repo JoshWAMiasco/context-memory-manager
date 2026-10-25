@@ -3,7 +3,7 @@
 import type { ComponentType } from "react";
 import { FilePlus, FolderPlus, ListCollapse, PanelLeftClose, RefreshCw, Upload } from "lucide-react";
 import { Tooltip } from "@/components/interactive/tooltip";
-import { BrainIcon } from "@/components/icons/ccm-icons";
+import { BrainIcon } from "@/components/icons/cmm-icons";
 import { useExplorer } from "@/components/explorer/explorer-context";
 import { TREE_TOGGLE_SHORTCUT, useTreeVisibility } from "@/components/explorer/tree-visibility";
 import { formatShortcut } from "@/lib/client/shortcuts";

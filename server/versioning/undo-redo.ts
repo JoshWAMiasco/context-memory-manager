@@ -51,7 +51,7 @@ export async function requireCleanTree(git: SimpleGit): Promise<void> {
   throw new ApiRouteError(
     409,
     "SCOPE_BUSY",
-    "Some changes made outside CCM haven't been recorded yet. Try again in a few seconds.",
+    "Some changes made outside CMM haven't been recorded yet. Try again in a few seconds.",
   );
 }
 

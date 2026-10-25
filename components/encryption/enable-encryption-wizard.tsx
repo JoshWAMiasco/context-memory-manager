@@ -83,7 +83,7 @@ function Notice({ tone, children }: { tone: "warning" | "danger"; children: Reac
 const KEEP_IT_TIPS = [
   "Copy it to a USB drive you keep somewhere else, or store it in your password manager.",
   "Keep it outside the encrypted folder: you can’t open the folder to get its own key.",
-  "Anyone with the key file and a CCM account that can see the folder can read it, so keep it private.",
+  "Anyone with the key file and a CMM account that can see the folder can read it, so keep it private.",
 ];
 
 /**
@@ -192,12 +192,12 @@ export function EnableEncryptionWizard({
           </p>
         ) : (
           <p>
-            Encrypting <strong>{folderName}</strong> creates a <strong>key file</strong> (.ccmkey). Every file inside is
+            Encrypting <strong>{folderName}</strong> creates a <strong>key file</strong> (.cmmkey). Every file inside is
             encrypted on disk; to view or edit them you unlock the folder with the key file and your password.
           </p>
         )}
         <Notice tone="danger">
-          <strong>The key file is the only key.</strong> CCM never stores it. If you lose it, the files can&rsquo;t be
+          <strong>The key file is the only key.</strong> CMM never stores it. If you lose it, the files can&rsquo;t be
           recovered, by you, an admin or anyone else.
         </Notice>
         <Notice tone="warning">

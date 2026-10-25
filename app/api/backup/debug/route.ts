@@ -13,7 +13,7 @@ const debugBodySchema = z.object({
   triggerSettleMilliseconds: z.number().int().min(0).max(60_000).optional(),
 });
 
-/** Test runs only (`CCM_TEST_HOOKS=1`): slows backups down or shortens the plug-in wait. */
+/** Test runs only (`CMM_TEST_HOOKS=1`): slows backups down or shortens the plug-in wait. */
 export const POST = withApi(
   ({ body }) => {
     if (!areTestHooksEnabled()) throw notFound();

@@ -1,11 +1,11 @@
 /*
  * The contract between the Electron preload (`electron/preload.ts`) and the renderer
- * (`lib/client/desktop.ts`): what `window.ccmDesktop` holds and the IPC channels behind it. Shared
+ * (`lib/client/desktop.ts`): what `window.cmmDesktop` holds and the IPC channels behind it. Shared
  * so both sides agree; nothing here imports Electron.
  */
 
-/** The bridge the desktop app's preload exposes as `window.ccmDesktop`; absent in a browser. */
-export interface CcmDesktopBridge {
+/** The bridge the desktop app's preload exposes as `window.cmmDesktop`; absent in a browser. */
+export interface CmmDesktopBridge {
   isDesktop: true;
   /** `process.platform` of the computer the desktop app runs on: "darwin", "win32", "linux"… */
   platform: string;
@@ -20,9 +20,9 @@ export interface CcmDesktopBridge {
 
 /** IPC channel names, `ipcRenderer.invoke` ↔ `ipcMain.handle`. */
 export const DESKTOP_CHANNELS = {
-  pickFolder: "ccm:pick-folder",
-  revealPath: "ccm:reveal-path",
-  openExternal: "ccm:open-external",
+  pickFolder: "cmm:pick-folder",
+  revealPath: "cmm:reveal-path",
+  openExternal: "cmm:open-external",
 } as const;
 
 /** Longest path the bridge passes on; longer arguments are rejected before they reach the main process. */

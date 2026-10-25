@@ -2,7 +2,7 @@ import type { MeResponse } from "@/lib/api-types";
 import type { StepUpAction, StepUpMode } from "@/lib/auth/policy";
 import { requestJson } from "@/lib/client/api";
 
-export const ACTION_TOKEN_HEADER = "x-ccm-action-token";
+export const ACTION_TOKEN_HEADER = "x-cmm-action-token";
 
 export interface StepUpPrompt {
   mode: StepUpMode;

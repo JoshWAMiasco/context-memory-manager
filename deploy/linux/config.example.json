@@ -1,7 +1,7 @@
 {
   "bindHost": "0.0.0.0",
   "port": 7420,
-  "storageRoots": [{ "path": "/srv/ccm", "label": "Server data" }],
+  "storageRoots": [{ "path": "/srv/cmm", "label": "Server data" }],
   "trustedProxies": [],
   "tls": null,
   "autoLockMinutes": 15

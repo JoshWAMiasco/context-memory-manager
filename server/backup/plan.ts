@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { lstat } from "node:fs/promises";
 import picomatch from "picomatch";
 import type { BackupCompare, BackupMode, BackupWarning } from "@/lib/api-types";
+import { LEGACY_PART_SUFFIX } from "@/lib/fs/legacy-names";
 import { isSystemMetadataName } from "@/lib/fs/system-files";
 import { hashFile, PART_SUFFIX } from "@/server/backup/copy";
 import { walkTree, type TreeEntry } from "@/server/storage/copy-tree";
@@ -52,7 +53,7 @@ export interface BackupPlan {
   delete: PlanDeletion[];
   /** Mirror only: destination entries in the way of a source entry of another type (a file where a folder goes), moved to the trash before copying. */
   replace: PlanDeletion[];
-  /** Leftover `.ccm-part` files from an interrupted copy, removed before copying. */
+  /** Leftover `.cmm-part` files from an interrupted copy, removed before copying. */
   staleParts: string[];
   /** Bytes to copy. */
   bytesTotal: number;
@@ -201,7 +202,10 @@ async function readDestination(
   if (!targetStats?.isDirectory()) return { entries, staleParts };
   for await (const treeEntry of walkTree(targetAbsolutePath, { signal })) {
     if (treeEntry.relativePath === "") continue;
-    if (treeEntry.type === "file" && treeEntry.relativePath.endsWith(PART_SUFFIX)) {
+    if (
+      treeEntry.type === "file" &&
+      (treeEntry.relativePath.endsWith(PART_SUFFIX) || treeEntry.relativePath.endsWith(LEGACY_PART_SUFFIX))
+    ) {
       staleParts.push(treeEntry.relativePath);
       continue;
     }
@@ -242,7 +246,7 @@ function hashPlan(mode: BackupMode, copy: readonly PlanEntry[], deletions: reado
 /**
  * Works out what a backup run copies, skips and (mirror) deletes, without writing.
  *
- * - The source is walked without `.ccm-trash/` and `.ccm-tmp/`, `.git/` when `includeGit` is off,
+ * - The source is walked without `.cmm-trash/` and `.cmm-tmp/`, `.git/` when `includeGit` is off,
  *   and whatever the exclude globs match.
  * - A file is unchanged when the destination has the same size and a modification time within
  *   2 s (FAT/exFAT precision), or the same sha256 with `compare: "checksum"`.

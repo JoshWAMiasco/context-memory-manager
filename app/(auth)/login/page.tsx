@@ -17,7 +17,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
     <AuthenticationFrame
       title={pendingPasswordChangeUsername ? "Choose a password" : "Sign In"}
-      prompt={pendingPasswordChangeUsername ? undefined : "Sign in with the account your CCM admin gave you."}
+      prompt={pendingPasswordChangeUsername ? undefined : "Sign in with the account your CMM admin gave you."}
     >
       <LoginPanel nextPath={nextPath} pendingPasswordChangeUsername={pendingPasswordChangeUsername} />
     </AuthenticationFrame>

@@ -34,18 +34,18 @@ function normalizeSetupCode(setupCode: string): string {
 
 /**
  * In server mode before setup, makes sure `<dataDir>/setup-code` exists. A new code is printed to
- * stdout (journald) so the person installing CCM can read it; `install.sh` normally creates it first.
+ * stdout (journald) so the person installing CMM can read it; `install.sh` normally creates it first.
  */
 export function ensureSetupCode(): void {
   if (!needsSetupCode()) return;
   const setupCodePath = getSetupCodePath();
   if (existsSync(setupCodePath)) {
-    console.log(`[ccm] first-run setup: the setup code is in ${setupCodePath}`);
+    console.log(`[cmm] first-run setup: the setup code is in ${setupCodePath}`);
     return;
   }
   const setupCode = generateSetupCode();
   writeFileSync(setupCodePath, `${setupCode}\n`, { mode: 0o600 });
-  console.log(`[ccm] first-run setup code: ${setupCode} (also saved in ${setupCodePath})`);
+  console.log(`[cmm] first-run setup code: ${setupCode} (also saved in ${setupCodePath})`);
 }
 
 function assertSetupCodeMatches(givenSetupCode: string | undefined, clientIp: string): void {
@@ -89,7 +89,7 @@ export async function createInitialAdmin({
   autoLockMinutes,
   ip: clientIp = "",
 }: InitialAdminRequest): Promise<{ id: string; username: string }> {
-  if (isSetupComplete()) throw conflict("SETUP_COMPLETE", "CCM is already set up.");
+  if (isSetupComplete()) throw conflict("SETUP_COMPLETE", "CMM is already set up.");
   const isServerMode = getConfig().mode === "server";
   if (isServerMode) assertSetupCodeMatches(setupCode, clientIp);
 
@@ -103,7 +103,7 @@ export async function createInitialAdmin({
   const adminId = randomUUID();
   const insertAdmin = connection.transaction(() => {
     const existingAdmin = orm.select({ id: users.id }).from(users).where(eq(users.role, "admin")).limit(1).get();
-    if (existingAdmin) throw conflict("SETUP_COMPLETE", "CCM is already set up.");
+    if (existingAdmin) throw conflict("SETUP_COMPLETE", "CMM is already set up.");
     orm.insert(users).values({ id: adminId, username: parsedUsername.data, passwordHash, role: "admin" }).run();
   });
   insertAdmin.immediate();

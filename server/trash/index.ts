@@ -21,13 +21,13 @@ import {
 } from "@/server/storage/roots";
 import { joinStoragePath } from "@/server/storage/storage-path";
 
-export const TRASH_DIRECTORY = ".ccm-trash";
+export const TRASH_DIRECTORY = ".cmm-trash";
 export const EMPTY_TRASH_CONFIRMATION = "EMPTY";
 
 const DAY_MILLISECONDS = 24 * 60 * 60 * 1000;
 const UUID_PATTERN = /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/;
 
-/** `<storage root>/.ccm-trash/items/<uuid>/meta.json` (overview §9). */
+/** `<storage root>/.cmm-trash/items/<uuid>/meta.json` (overview §9). */
 export interface TrashMeta {
   v: 1;
   id: string;
@@ -110,7 +110,7 @@ function toTrashItem(storage: ActiveStorage, meta: TrashMeta): TrashItem {
 }
 
 /**
- * Moves a file or folder into `<root>/.ccm-trash/items/<uuid>/payload/`. Nothing is
+ * Moves a file or folder into `<root>/.cmm-trash/items/<uuid>/payload/`. Nothing is
  * unlinked: the data stays on the same volume and a restore is a rename. `meta.json` is written
  * as "moving" before the rename and "ok" after, so `reconcileTrash` can repair a crash in between.
  * A folder holding a mount point, or an item on a drive mounted inside the storage, is refused.
@@ -209,7 +209,7 @@ export async function reconcileTrash(
         await rm(itemDirectory, { recursive: true, force: true });
         result.removed += 1;
       } else {
-        console.warn(`[ccm] trash item ${itemDirectory} has no readable meta.json; leaving it for manual review`);
+        console.warn(`[cmm] trash item ${itemDirectory} has no readable meta.json; leaving it for manual review`);
       }
       continue;
     }
@@ -380,7 +380,7 @@ export async function autoPurgeTrash(now = Date.now()): Promise<number> {
 export function createTrashAutoPurgeService(): BackgroundService {
   const timers: { first?: NodeJS.Timeout; daily?: NodeJS.Timeout } = {};
   const purgeSafely = () => {
-    autoPurgeTrash().catch((purgeError: unknown) => console.error("[ccm] trash auto-purge failed", purgeError));
+    autoPurgeTrash().catch((purgeError: unknown) => console.error("[cmm] trash auto-purge failed", purgeError));
   };
   return {
     name: "trash-auto-purge",

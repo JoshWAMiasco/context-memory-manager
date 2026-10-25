@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" font-family="Oxanium, sans-serif" role="img" aria-labelledby="encryption-flow-title">
-  <title id="encryption-flow-title">Encryption. Turning it on: generate a key, download the key file, verify it by uploading it back, then CCM encrypts the files. Opening an encrypted folder: key file plus account password unlock it; the key is kept in memory only and forgotten on lock, sign-out or timeout. Lose the key file and you lose the data.</title>
+  <title id="encryption-flow-title">Encryption. Turning it on: generate a key, download the key file, verify it by uploading it back, then CMM encrypts the files. Opening an encrypted folder: key file plus account password unlock it; the key is kept in memory only and forgotten on lock, sign-out or timeout. Lose the key file and you lose the data.</title>
   <defs>
     <marker id="encryption-flow-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
       <path d="M0 0 L10 5 L0 10 Z" fill="#275070"/>
@@ -59,13 +59,13 @@
   <use href="#encryption-flow-key" x="117" y="140" width="48" height="24"/>
   <path d="M110 136 v8 M106 140 h8 M171 158 v6 M168 161 h6" stroke="#153049" stroke-width="1.8" stroke-linecap="round"/>
   <text x="141" y="206" text-anchor="middle" font-size="15" font-weight="700" fill="#0b1f2e">Generate key</text>
-  <text x="141" y="226" text-anchor="middle" font-size="13" fill="#31506a">CCM makes a new key</text>
+  <text x="141" y="226" text-anchor="middle" font-size="13" fill="#31506a">CMM makes a new key</text>
   <!-- 2 download -->
   <use href="#encryption-flow-keyfile" x="343" y="128" width="34" height="42"/>
   <path d="M396 132 V156" stroke="#153049" stroke-width="2.4" marker-end="url(#encryption-flow-arrow)"/>
   <path d="M386 166 H406" stroke="#153049" stroke-width="2.4" stroke-linecap="round"/>
   <text x="367" y="206" text-anchor="middle" font-size="15" font-weight="700" fill="#0b1f2e">Download key file</text>
-  <text x="367" y="226" text-anchor="middle" font-family="'Martian Mono', monospace" font-size="12" fill="#153049">.ccmkey</text>
+  <text x="367" y="226" text-anchor="middle" font-family="'Martian Mono', monospace" font-size="12" fill="#153049">.cmmkey</text>
   <text x="367" y="244" text-anchor="middle" font-size="13" fill="#31506a">keep it somewhere safe</text>
   <!-- 3 verify -->
   <use href="#encryption-flow-keyfile" x="569" y="128" width="34" height="42"/>
@@ -80,7 +80,7 @@
   <path d="M791 134 a3 3 0 0 1 3 -3 h12 l5 5 h22 a3 3 0 0 1 3 3 v26 a3 3 0 0 1 -3 3 h-39 a3 3 0 0 1 -3 -3 z" fill="#b8ebfa" stroke="#153049" stroke-width="2" stroke-linejoin="round"/>
   <use href="#encryption-flow-lock" x="824" y="146" width="24" height="26"/>
   <text x="819" y="206" text-anchor="middle" font-size="15" font-weight="700" fill="#0b1f2e">Encrypt files</text>
-  <text x="819" y="226" text-anchor="middle" font-size="13" fill="#31506a">CCM locks every file</text>
+  <text x="819" y="226" text-anchor="middle" font-size="13" fill="#31506a">CMM locks every file</text>
   <text x="819" y="242" text-anchor="middle" font-size="13" fill="#31506a">in the folder</text>
 
   <!-- lane B -->
@@ -91,7 +91,7 @@
   <rect x="45" y="338" width="220" height="56" rx="10" fill="#ffffff" stroke="#275070" stroke-width="1.5"/>
   <use href="#encryption-flow-keyfile" x="59" y="345" width="34" height="42"/>
   <text x="106" y="362" font-size="15" font-weight="700" fill="#0b1f2e">Key file</text>
-  <text x="106" y="382" font-family="'Martian Mono', monospace" font-size="12" fill="#153049">.ccmkey</text>
+  <text x="106" y="382" font-family="'Martian Mono', monospace" font-size="12" fill="#153049">.cmmkey</text>
 
   <rect x="45" y="410" width="220" height="56" rx="10" fill="#ffffff" stroke="#275070" stroke-width="1.5"/>
   <rect x="57" y="426" width="40" height="24" rx="4" fill="#edf2ff" stroke="#153049" stroke-width="2"/>
@@ -125,7 +125,7 @@
     <path d="M620 380 h18 l8 8 v32 h-26 z" fill="#ffffff"/>
     <path d="M626 396 h14 M626 403 h14 M626 410 h10" stroke-width="1.5"/>
   </g>
-  <text x="664" y="394" font-size="17" font-weight="700" fill="#0b1f2e">Files readable in CCM</text>
+  <text x="664" y="394" font-size="17" font-weight="700" fill="#0b1f2e">Files readable in CMM</text>
   <text x="664" y="414" font-size="13" fill="#31506a">open, edit and save as usual</text>
 
   <!-- memory note -->

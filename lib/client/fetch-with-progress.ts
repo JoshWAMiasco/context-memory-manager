@@ -39,7 +39,7 @@ export async function fetchWithProgress(
     response = await fetch(url, { credentials: "same-origin", signal });
   } catch (networkError) {
     if (networkError instanceof DOMException && networkError.name === "AbortError") throw networkError;
-    throw new ApiError(0, "NETWORK_ERROR", "The CCM server could not be reached.");
+    throw new ApiError(0, "NETWORK_ERROR", "The CMM server could not be reached.");
   }
   if (!response.ok) {
     const apiError = toApiError(response.status, await readErrorBody(response));
@@ -122,7 +122,7 @@ export function sendJsonWithProgress<ResponseBody>(
       reject(apiError);
     });
     request.addEventListener("error", () =>
-      reject(new ApiError(0, "NETWORK_ERROR", "The CCM server could not be reached.")),
+      reject(new ApiError(0, "NETWORK_ERROR", "The CMM server could not be reached.")),
     );
     request.addEventListener("abort", () => reject(new DOMException("The save was cancelled.", "AbortError")));
     signal?.addEventListener("abort", () => request.abort(), { once: true });

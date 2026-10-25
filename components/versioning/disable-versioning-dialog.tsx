@@ -12,7 +12,7 @@ const DELETE_CONFIRM_TEXT = "DELETE HISTORY";
 
 /**
  * Turning versioning off: "Keep history (archive)" moves `.git` into
- * `.ccm/git-archive/`, where turning it on again offers it back; "Delete history permanently"
+ * `.cmm/git-archive/`, where turning it on again offers it back; "Delete history permanently"
  * needs `DELETE HISTORY` typed. The files themselves are never touched.
  *
  * @example
@@ -44,7 +44,7 @@ export function DisableVersioningDialog({
         await disable.mutateAsync({ storageId: storage.id, path: folderPath, mode, confirmText });
         announce(
           "Versioning is off",
-          mode === "archive" ? "The history was kept in .ccm/git-archive/." : "The history was deleted.",
+          mode === "archive" ? "The history was kept in .cmm/git-archive/." : "The history was deleted.",
         );
       }}
     >
@@ -54,7 +54,7 @@ export function DisableVersioningDialog({
           id="disable-archive"
           name="disable-mode"
           label="Keep history (archive)"
-          description="Moved into .ccm/git-archive/ inside the folder. Turning versioning on again offers it back."
+          description="Moved into .cmm/git-archive/ inside the folder. Turning versioning on again offers it back."
           checked={mode === "archive"}
           onChange={() => setMode("archive")}
         />

@@ -3,7 +3,7 @@
  * the Adobe CMaps and standard fonts (text in PDFs that don't embed their fonts), the ICC profile,
  * and the image decoders (JBIG2, JPEG 2000, colour management) as WebAssembly with JavaScript
  * fallbacks. The QuickJS engine pdf.js ships for running a PDF's own JavaScript is left out on
- * purpose: CCM never runs scripts from documents. `npm run dev` and `npm run build` run this, so
+ * purpose: CMM never runs scripts from documents. `npm run dev` and `npm run build` run this, so
  * the copy always matches the installed pdfjs-dist; the output is not committed.
  */
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";

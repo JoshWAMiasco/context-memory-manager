@@ -60,11 +60,11 @@ function readCachedSubnets(now: number): InterfaceSubnet[] {
 /**
  * Where the client is: `loopback` (this machine), `lan` (a subnet of one of this machine's
  * interfaces) or `remote`. Desktop mode is always loopback. Tests can force a class with
- * `CCM_TEST_FORCE_NETWORK`.
+ * `CMM_TEST_FORCE_NETWORK`.
  */
 export function classifyClient(address: string, mode: ApplicationMode, now = Date.now()): NetworkClass {
   if (mode === "desktop") return "loopback";
-  const forcedClass = readTestOverride("CCM_TEST_FORCE_NETWORK");
+  const forcedClass = readTestOverride("CMM_TEST_FORCE_NETWORK");
   if (forcedClass === "loopback" || forcedClass === "lan" || forcedClass === "remote") return forcedClass;
   return classifyAddress(address, readCachedSubnets(now));
 }

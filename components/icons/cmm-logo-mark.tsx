@@ -1,21 +1,21 @@
 import { mergeClassNames } from "@/utilities/merge-class-names";
 
-/** The tile's navy and the brand cyan, as in `public/icons/ccm/logo.svg` (the same drawing). */
+/** The tile's navy and the brand cyan, as in `public/icons/cmm/logo.svg` (the same drawing). */
 const TILE_FILL = "#0d2233";
 const BRAND = "#4cc9f0";
 /** The cyan at 55% over the navy, opaque so the edge looks the same on any background. */
 const TILE_BORDER = "#307e9b";
 
 /**
- * CCM's logo: the left half of a brain whose circuit traces run into a hard drive (memory kept on
- * your own drives), on a navy tile. The same drawing as `public/icons/ccm/logo.svg`, which the app
+ * CMM's logo: the left half of a brain whose circuit traces run into a hard drive (memory kept on
+ * your own drives), on a navy tile. The same drawing as `public/icons/cmm/logo.svg`, which the app
  * icons, the splash window and the guide covers use; change both together. Decorative by default;
  * pass `title` when it is the only content of a link or button.
  *
  * @example
- * <CcmLogoMark className="h-[34px] w-[34px]" />
+ * <CmmLogoMark className="h-[34px] w-[34px]" />
  */
-export function CcmLogoMark({ className, title }: { className?: string; title?: string }) {
+export function CmmLogoMark({ className, title }: { className?: string; title?: string }) {
   return (
     <svg
       viewBox="0 0 64 64"

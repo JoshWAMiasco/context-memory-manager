@@ -3,7 +3,7 @@ import { readRouteParameter, withApi } from "@/server/auth/guard";
 import { buildContentDisposition } from "@/server/http/fs-route-input";
 
 /**
- * Wizard step 3: downloads the pending key's `.ccmkey` file. It can be downloaded again while the
+ * Wizard step 3: downloads the pending key's `.cmmkey` file. It can be downloaded again while the
  * pending slot lives (15 minutes); it is never cached.
  */
 export const GET = withApi(async ({ actor, params }) => {

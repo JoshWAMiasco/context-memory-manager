@@ -37,7 +37,7 @@
       "urlPattern": "^https?://([a-z0-9-]+\\.)*example\\.(com|org|net)([/:?#]|$)"
     },
     {
-      "reason": "Next.js network features CCM keeps off at runtime: telemetry (NEXT_TELEMETRY_DISABLED=1), the dev-only npm registry version check and config schema download. The runtime offline guard blocks them as well",
+      "reason": "Next.js network features CMM keeps off at runtime: telemetry (NEXT_TELEMETRY_DISABLED=1), the dev-only npm registry version check and config schema download. The runtime offline guard blocks them as well",
       "files": "standalone/node_modules/next/**",
       "urlPattern": "^https://(telemetry\\.nextjs\\.org|registry\\.npmjs\\.org|unpkg\\.com|raw\\.githubusercontent\\.com)/"
     },
@@ -47,7 +47,7 @@
       "urlPattern": "^https?://(stackoverflow\\.com|security\\.stackexchange\\.com|lodash\\.com|underscorejs\\.org|feross\\.org|openjsf\\.org|npms\\.io|people\\.mozilla\\.org|www\\.cse\\.yorku\\.ca|en\\.wikipedia\\.org|support\\.1password\\.com|developers\\.google\\.com|developers\\.facebook\\.com|developer\\.twitter\\.com|developer\\.chrome\\.com|hreflang\\.org|www\\.typescriptlang\\.org|www\\.youtube\\.com|vercel\\.com|linear\\.app|sharp\\.pixelplumbing\\.com|opentelemetry\\.io|rustwasm\\.github\\.io|bugs\\.webkit\\.org|webpack\\.js\\.org)([/:?#]|$)"
     },
     {
-      "reason": "systeminformation (drive detection): links in comments and in its inet*/wifi helpers, which CCM never calls; CCM only uses blockDevices() and fsSize(), which run local commands. Server-only; the runtime offline guard blocks network use regardless",
+      "reason": "systeminformation (drive detection): links in comments and in its inet*/wifi helpers, which CMM never calls; CMM only uses blockDevices() and fsSize(), which run local commands. Server-only; the runtime offline guard blocks network use regardless",
       "files": "standalone/**node_modules/systeminformation*/**",
       "urlPattern": "^https?://"
     },

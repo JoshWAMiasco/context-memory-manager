@@ -11,7 +11,7 @@ import { registerProtectionGuard } from "@/server/protection/guard";
 import { applyReadOnly, createPermissionSystem } from "@/server/protection/os-perms";
 import { isScopeBusy, listProtectedScopes, type ProtectedScopeRow } from "@/server/protection/scopes";
 import { getGlobalSingleton } from "@/server/runtime/global-singleton";
-import { isHiddenCcmName } from "@/server/security/path-jail";
+import { isHiddenCmmName } from "@/server/security/path-jail";
 import type { BackgroundService } from "@/server/services";
 import { findActiveStorage } from "@/server/storage/roots";
 import { joinStoragePath } from "@/server/storage/storage-path";
@@ -52,7 +52,7 @@ export async function reportViolation(
       absolutePath: changedPath,
       mode: entryStats.mode & 0o7777,
       isDirectory: entryStats.isDirectory(),
-    }).catch((chmodError: unknown) => console.warn("[ccm] could not make a changed entry read-only again", chmodError));
+    }).catch((chmodError: unknown) => console.warn("[cmm] could not make a changed entry read-only again", chmodError));
   }
   const firstPath = changedPaths[0] ?? scopeAbsolutePath;
   const scopeFolder = row.kind === "file" ? path.dirname(scopeAbsolutePath) : scopeAbsolutePath;
@@ -65,7 +65,7 @@ export async function reportViolation(
     await writeMeta(scopeFolder, META_FILES.protection, {
       ...protection,
       violation: { at: detectedAt, path: changedRelativePath },
-    }).catch((writeError: unknown) => console.warn("[ccm] could not record a protection alert", writeError));
+    }).catch((writeError: unknown) => console.warn("[cmm] could not record a protection alert", writeError));
   }
   getEventBus().emit("protection.violation", {
     storageId: row.storageId,
@@ -77,7 +77,7 @@ export async function reportViolation(
 
 /**
  * Reports only entries that are writable again. An event for an entry that is already read-only
- * is CCM's own chmod (the protection job, or making a changed entry read-only again) arriving
+ * is CMM's own chmod (the protection job, or making a changed entry read-only again) arriving
  * late, not a new change.
  */
 async function reportWritableChanges(row: ProtectedScopeRow, scopeAbsolutePath: string, changedPaths: string[]) {
@@ -93,7 +93,7 @@ function watchScope(row: ProtectedScopeRow, absolutePath: string): ScopeWatch {
   const watcher = chokidar.watch(absolutePath, {
     ignoreInitial: true,
     followSymlinks: false,
-    ignored: (watchedPath: string) => watchedPath !== absolutePath && isHiddenCcmName(path.basename(watchedPath)),
+    ignored: (watchedPath: string) => watchedPath !== absolutePath && isHiddenCmmName(path.basename(watchedPath)),
   });
   const scopeWatch: ScopeWatch = { row, absolutePath, watcher, pendingPaths: new Set() };
   watcher.on("all", (eventName, changedPath) => {
@@ -108,7 +108,7 @@ function watchScope(row: ProtectedScopeRow, absolutePath: string): ScopeWatch {
       void reportWritableChanges(row, absolutePath, changedPaths);
     }, VIOLATION_DEBOUNCE_MILLISECONDS);
   });
-  watcher.on("error", (watchError) => console.warn("[ccm] protection watcher error", watchError));
+  watcher.on("error", (watchError) => console.warn("[cmm] protection watcher error", watchError));
   return scopeWatch;
 }
 
@@ -149,7 +149,7 @@ async function closeProtectionWatches(): Promise<void> {
 
 /**
  * The protection service: registers the protection guard and job type, then watches protected
- * folders for changes made outside CCM, re-reading the list when protection changes or a drive
+ * folders for changes made outside CMM, re-reading the list when protection changes or a drive
  * comes and goes.
  *
  * @example
@@ -164,7 +164,7 @@ export function createProtectionService(): BackgroundService {
       ensureProtectionJobType();
       const resync = () => {
         void syncProtectionWatches().catch((syncError: unknown) =>
-          console.warn("[ccm] could not refresh the protection watchers", syncError),
+          console.warn("[cmm] could not refresh the protection watchers", syncError),
         );
       };
       unsubscribers.push(onProtectionChanged(resync));

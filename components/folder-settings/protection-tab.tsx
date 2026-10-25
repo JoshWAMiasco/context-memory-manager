@@ -49,11 +49,11 @@ function describeOsEffect(
   if (platform === "win32") {
     return isFile
       ? "Windows marks the file read-only."
-      : "Windows marks every file inside read-only. Windows can't stop new files being created in the folder; CCM refuses them and warns when another program adds one.";
+      : "Windows marks every file inside read-only. Windows can't stop new files being created in the folder; CMM refuses them and warns when another program adds one.";
   }
   const base = isFile
     ? "The file's write permission is removed on disk, so other programs can't change it either."
-    : "Write permission is removed on disk from the folder and everything in it, so other programs (including agents that don't use CCM) can't change, add or delete files.";
+    : "Write permission is removed on disk from the folder and everything in it, so other programs (including agents that don't use CMM) can't change, add or delete files.";
   return mode === "locked" && isStrongLockEnabled && !isFile
     ? `${base} Strong lock also sets the macOS immutable flag.`
     : base;
@@ -132,7 +132,7 @@ export function ProtectionTab({ path: entryPath }: { path: string }) {
           <ShieldAlert className="h-5 w-5 flex-none text-danger" aria-hidden />
           <div>
             An external process modified this protected {protection.isFile ? "file" : "folder"} (
-            <span className="font-medium">{protection.violation.path}</span>). CCM made it read-only again.
+            <span className="font-medium">{protection.violation.path}</span>). CMM made it read-only again.
           </div>
         </div>
       )}
@@ -186,7 +186,7 @@ export function ProtectionTab({ path: entryPath }: { path: string }) {
         <div className="flex gap-2.5 rounded-md border border-warning/30 bg-warning/10 p-3 text-sm leading-relaxed">
           <TriangleAlert className="h-4 w-4 flex-none text-warning" aria-hidden />
           <div>
-            {osEffect} Programs running as your OS user can still remove these permissions; CCM will detect and warn.
+            {osEffect} Programs running as your OS user can still remove these permissions; CMM will detect and warn.
           </div>
         </div>
       )}

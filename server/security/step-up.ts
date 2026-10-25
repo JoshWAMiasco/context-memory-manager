@@ -11,7 +11,7 @@ import { ApiRouteError } from "@/server/http/api-error";
 import { requirePasswordConfirm } from "@/server/security/password-confirm";
 import { getSetting } from "@/server/settings/store";
 
-export const ACTION_TOKEN_HEADER = "x-ccm-action-token";
+export const ACTION_TOKEN_HEADER = "x-cmm-action-token";
 export const ACTION_TOKEN_QUERY_PARAMETER = "at";
 export const ACTION_TOKEN_LIFETIME_MILLISECONDS = 2 * 60 * 1000;
 

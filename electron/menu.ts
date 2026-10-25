@@ -1,15 +1,15 @@
 /*
  * The application menu: the standard App, Edit and Window menus, View with reload, zoom
- * and full screen (DevTools only with `CCM_DEBUG=1`), and Help with the bundled Desktop Guide, the
- * logs folder, Reset CCM (a forgotten password) and About.
+ * and full screen (DevTools only with `CMM_DEBUG=1`), and Help with the bundled Desktop Guide, the
+ * logs folder, Reset CMM (a forgotten password) and About.
  */
 import type { MenuItemConstructorOptions } from "electron";
 
 export const MENU_ITEM_IDS = {
   desktopGuide: "desktop-guide",
   openLogs: "open-logs",
-  resetCcm: "reset-ccm",
-  about: "about-ccm",
+  resetCmm: "reset-cmm",
+  about: "about-cmm",
   toggleDevTools: "toggle-devtools",
 } as const;
 
@@ -18,7 +18,7 @@ export interface ApplicationMenuOptions {
   isDebug: boolean;
   onOpenGuide: () => void;
   onOpenLogs: () => void;
-  onResetCcm: () => void;
+  onResetCmm: () => void;
   onAbout: () => void;
 }
 
@@ -27,7 +27,7 @@ export interface ApplicationMenuOptions {
  *
  * @example
  * Menu.setApplicationMenu(
- *   Menu.buildFromTemplate(buildApplicationMenu({ isMac, isDebug, onOpenGuide, onOpenLogs, onResetCcm, onAbout })),
+ *   Menu.buildFromTemplate(buildApplicationMenu({ isMac, isDebug, onOpenGuide, onOpenLogs, onResetCmm, onAbout })),
  * );
  */
 export function buildApplicationMenu({
@@ -35,7 +35,7 @@ export function buildApplicationMenu({
   isDebug,
   onOpenGuide,
   onOpenLogs,
-  onResetCcm,
+  onResetCmm,
   onAbout,
 }: ApplicationMenuOptions): MenuItemConstructorOptions[] {
   const viewItems: MenuItemConstructorOptions[] = [
@@ -53,15 +53,15 @@ export function buildApplicationMenu({
     { id: MENU_ITEM_IDS.desktopGuide, label: "Desktop Guide (PDF)", click: onOpenGuide },
     { id: MENU_ITEM_IDS.openLogs, label: "Open Logs Folder", click: onOpenLogs },
     { type: "separator" },
-    { id: MENU_ITEM_IDS.resetCcm, label: "Reset CCM…", click: onResetCcm },
+    { id: MENU_ITEM_IDS.resetCmm, label: "Reset CMM…", click: onResetCmm },
   ];
-  if (!isMac) helpItems.push({ type: "separator" }, { id: MENU_ITEM_IDS.about, label: "About CCM", click: onAbout });
+  if (!isMac) helpItems.push({ type: "separator" }, { id: MENU_ITEM_IDS.about, label: "About CMM", click: onAbout });
   const template: MenuItemConstructorOptions[] = [];
   if (isMac) {
     template.push({
-      label: "CCM",
+      label: "CMM",
       submenu: [
-        { id: MENU_ITEM_IDS.about, label: "About CCM", click: onAbout },
+        { id: MENU_ITEM_IDS.about, label: "About CMM", click: onAbout },
         { type: "separator" },
         { role: "services" },
         { type: "separator" },

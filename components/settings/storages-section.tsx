@@ -298,7 +298,7 @@ export function StoragesSection({
     <>
       <SettingsPanel title="Internal storages">
         <p className="mb-4 leading-relaxed text-foreground-muted">
-          Folders on this {mode === "desktop" ? "computer" : "server"} that CCM shows as storages. Removing one only
+          Folders on this {mode === "desktop" ? "computer" : "server"} that CMM shows as storages. Removing one only
           unregisters it; the files stay on disk.
         </p>
         {registryQuery.error && <FormErrorAlert message={registryQuery.error.message} className="mb-4" />}
@@ -318,7 +318,7 @@ export function StoragesSection({
             <div className="flex gap-2">
               <FormInput
                 id="new-storage-path"
-                placeholder={mode === "server" ? "/srv/ccm/notes" : "/Users/you/Documents"}
+                placeholder={mode === "server" ? "/srv/cmm/notes" : "/Users/you/Documents"}
                 value={newRootPath}
                 onChange={(changeEvent) => setNewRootPath(changeEvent.target.value)}
               />
@@ -358,7 +358,7 @@ export function StoragesSection({
 
       <SettingsPanel title="External drives">
         <p className="mb-4 leading-relaxed text-foreground-muted">
-          Drives CCM has seen. Their names and access are remembered while they are unplugged.
+          Drives CMM has seen. Their names and access are remembered while they are unplugged.
         </p>
         {driveStorages.length > 0 ? (
           <StorageRows storages={driveStorages} onOpen={setDialog} onToggleHidden={toggleHidden} />
@@ -421,7 +421,7 @@ export function StoragesSection({
           announce(`${dialog.storage.label} removed`, "The files were not touched.");
         }}
       >
-        CCM stops showing it and forgets who could open it. The files on disk are not touched.
+        CMM stops showing it and forgets who could open it. The files on disk are not touched.
       </ConfirmDialog>
     </>
   );

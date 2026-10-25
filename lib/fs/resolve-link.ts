@@ -70,7 +70,7 @@ export type MarkdownImageSource =
   | { kind: "blocked"; reason: "external" | "outside" | "unsupported" };
 
 /**
- * Where a Markdown image in `filePath` loads from. Remote images are blocked (CCM works offline
+ * Where a Markdown image in `filePath` loads from. Remote images are blocked (CMM works offline
  * and doesn't leak what you read); `data:` images are shown; relative paths load from the storage.
  *
  * @example

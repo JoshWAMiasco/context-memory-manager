@@ -1,7 +1,7 @@
 /*
  * Files the operating system writes next to the user's own: macOS keeps extended attributes in
  * "._name" (AppleDouble) files on FAT and exFAT drives, plus Finder and Spotlight state; Windows
- * keeps its own folders at a drive's root. CCM hides them from listings and backups never copy or
+ * keeps its own folders at a drive's root. CMM hides them from listings and backups never copy or
  * mirror-delete them. Isomorphic: no server-only imports here.
  */
 

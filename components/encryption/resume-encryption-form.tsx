@@ -71,7 +71,7 @@ export function ResumeEncryptionForm({
       <div className="text-sm leading-relaxed">
         <div className="font-medium">{ACTIVITY[state]} was interrupted</div>
         <span className="text-foreground-muted">
-          Files can&rsquo;t be changed until it finishes. CCM doesn&rsquo;t keep keys, so choose the key file
+          Files can&rsquo;t be changed until it finishes. CMM doesn&rsquo;t keep keys, so choose the key file
           {isRekey ? "s" : ""} again to continue; files already done are skipped.
         </span>
       </div>

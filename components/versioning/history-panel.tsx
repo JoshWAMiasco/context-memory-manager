@@ -43,7 +43,7 @@ const KIND_ICONS: Record<HistoryCommitKind, { icon: LucideIcon; label: string; t
   undo: { icon: Undo2, label: "Undo", tone: "text-warning" },
   redo: { icon: Redo2, label: "Redo", tone: "text-info" },
   restore: { icon: RotateCcw, label: "Restore", tone: "text-success" },
-  external: { icon: Plug, label: "Changed outside CCM", tone: "text-pending" },
+  external: { icon: Plug, label: "Changed outside CMM", tone: "text-pending" },
   enable: { icon: GitBranch, label: "Versioning turned on", tone: "text-foreground-muted" },
 };
 

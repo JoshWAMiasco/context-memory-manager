@@ -1,5 +1,5 @@
 /*
- * The main-process side of `window.ccmDesktop`. Every handler checks that the call
+ * The main-process side of `window.cmmDesktop`. Every handler checks that the call
  * comes from the app's own page and validates its arguments before touching the dialog or the
  * shell.
  */
@@ -23,7 +23,7 @@ export async function confirmAndOpenExternal(parentWindow: BrowserWindow | null,
     defaultId: 0,
     cancelId: 1,
     message: `Open ${describeExternalLink(url)} in your browser?`,
-    detail: `${url}\n\nThis link leaves CCM and opens in your default browser, which may use the network.`,
+    detail: `${url}\n\nThis link leaves CMM and opens in your default browser, which may use the network.`,
   };
   const { response } = parentWindow
     ? await dialog.showMessageBox(parentWindow, options)
@@ -49,7 +49,7 @@ export function registerDesktopIpc(readAppOrigin: () => string | undefined): voi
     } catch {
       senderOrigin = undefined;
     }
-    if (!senderOrigin || senderOrigin !== readAppOrigin()) throw new Error("Refused: not the CCM window.");
+    if (!senderOrigin || senderOrigin !== readAppOrigin()) throw new Error("Refused: not the CMM window.");
   };
 
   ipcMain.handle(DESKTOP_CHANNELS.pickFolder, async (event) => {

@@ -23,7 +23,7 @@ import type { StorageSummary } from "@/lib/api-types";
 import { formatShortcut } from "@/lib/client/shortcuts";
 
 /** `localStorage` key of the tree/pane split. */
-export const SPLIT_STORAGE_KEY = "ccm.split";
+export const SPLIT_STORAGE_KEY = "cmm.split";
 
 const TREE_PANEL_ID = "tree";
 const PANE_PANEL_ID = "pane";
@@ -163,7 +163,7 @@ function StackedView() {
 
 /**
  * The storage page: the file tree and the file pane side by side, with a resizable split
- * (tree 24% by default, 16–45%) remembered in `localStorage` under `ccm.split`. The tree can be
+ * (tree 24% by default, 16–45%) remembered in `localStorage` under `cmm.split`. The tree can be
  * hidden to give the file pane the whole width (its toolbar button, dragging the split to the
  * left, or ⌘\); a slim rail brings it back. Narrow screens stack them, with the tree in a "Files"
  * drawer. The URL path is the selected entry.

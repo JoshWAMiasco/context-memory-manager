@@ -7,7 +7,7 @@ import { parseMetaDocument, type MetaData, type MetaFileName } from "@/server/me
 import { joinStoragePath } from "@/server/storage/storage-path";
 
 /** The folder that makes a folder a scope (overview §6). */
-export const META_DIRECTORY = ".ccm";
+export const META_DIRECTORY = ".cmm";
 
 const CACHE_LIMIT = 4000;
 
@@ -23,7 +23,7 @@ function getMetaCache(): Map<string, CachedMeta> {
   return getGlobalSingleton("meta-cache", () => new Map<string, CachedMeta>());
 }
 
-/** The `.ccm/` folder of a scope. */
+/** The `.cmm/` folder of a scope. */
 export function metaDirectoryOf(scopeAbsolutePath: string): string {
   return joinStoragePath(scopeAbsolutePath, META_DIRECTORY);
 }
@@ -39,8 +39,8 @@ export class InvalidMetaError extends Error {
 }
 
 /**
- * Reads and validates a `.ccm/` file, or undefined when it doesn't exist. Results are
- * cached by path, modification time and size, so a changed file (by CCM, the watcher or another
+ * Reads and validates a `.cmm/` file, or undefined when it doesn't exist. Results are
+ * cached by path, modification time and size, so a changed file (by CMM, the watcher or another
  * program) is read again. Throws `InvalidMetaError` for a file that is damaged or too new.
  *
  * @example
@@ -69,7 +69,7 @@ export async function readMeta<FileName extends MetaFileName>(
   } catch (readError) {
     if ((readError as NodeJS.ErrnoException).code === "ENOENT") return undefined;
     entry.error = new InvalidMetaError(
-      `${path.basename(scopeAbsolutePath)}/.ccm/${fileName} can't be read: ${(readError as Error).message}`,
+      `${path.basename(scopeAbsolutePath)}/.cmm/${fileName} can't be read: ${(readError as Error).message}`,
     );
   }
   if (cache.size >= CACHE_LIMIT) cache.delete(cache.keys().next().value ?? "");
@@ -90,8 +90,8 @@ export function invalidateMeta(scopeAbsolutePath: string, fileName?: string): vo
 }
 
 /**
- * Creates the scope's `.ccm/` folder if needed. It stays writable by its owner even inside a
- * protected folder, so CCM can keep its metadata up to date.
+ * Creates the scope's `.cmm/` folder if needed. It stays writable by its owner even inside a
+ * protected folder, so CMM can keep its metadata up to date.
  */
 export async function ensureMetaDirectory(scopeAbsolutePath: string): Promise<string> {
   const metaDirectory = metaDirectoryOf(scopeAbsolutePath);
@@ -118,7 +118,7 @@ export async function writeJsonAtomically(filePath: string, document: unknown): 
 }
 
 /**
- * Validates and writes a `.ccm/` file atomically, creating `.ccm/` when it is missing.
+ * Validates and writes a `.cmm/` file atomically, creating `.cmm/` when it is missing.
  * Returns the stored document.
  *
  * @example
@@ -138,7 +138,7 @@ export async function writeMeta<FileName extends MetaFileName>(
   return parsedDocument;
 }
 
-/** Deletes a `.ccm/` file, and the `.ccm/` folder when nothing else is left in it. */
+/** Deletes a `.cmm/` file, and the `.cmm/` folder when nothing else is left in it. */
 export async function deleteMeta(scopeAbsolutePath: string, fileName: string): Promise<void> {
   await rm(metaFilePath(scopeAbsolutePath, fileName), { force: true });
   invalidateMeta(scopeAbsolutePath, fileName);
@@ -147,7 +147,7 @@ export async function deleteMeta(scopeAbsolutePath: string, fileName: string): P
   if (remaining?.length === 0) await rmdir(metaDirectory).catch(() => undefined);
 }
 
-/** Whether a folder has a `.ccm/` folder, i.e. is a scope. */
+/** Whether a folder has a `.cmm/` folder, i.e. is a scope. */
 export async function isScope(folderAbsolutePath: string): Promise<boolean> {
   try {
     return (await stat(metaDirectoryOf(folderAbsolutePath))).isDirectory();
@@ -161,7 +161,7 @@ export async function isScope(folderAbsolutePath: string): Promise<boolean> {
  * first. `absolutePath` must be inside `rootPath`.
  *
  * @example
- * await findScopes("/data/notes", "/data/notes/a/b"); // ["/data/notes/a/b", "/data/notes"] when both have .ccm/
+ * await findScopes("/data/notes", "/data/notes/a/b"); // ["/data/notes/a/b", "/data/notes"] when both have .cmm/
  */
 export async function findScopes(rootPath: string, absolutePath: string): Promise<string[]> {
   const candidates = listAncestors(rootPath, absolutePath);

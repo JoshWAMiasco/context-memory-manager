@@ -59,7 +59,7 @@ function SideMenuNavigation({ navigation, className }: { navigation: readonly Si
 
 /**
  * The side menu: dividers, links and collapsible groups from `navigation`, or custom `content`
- * (CCM's live storage list), in the theme's layout (`appearance.layoutVariant`). In
+ * (CMM's live storage list), in the theme's layout (`appearance.layoutVariant`). In
  * `side-menu-with-brand` themes it also holds the logo and the collapse toggle. Server component;
  * only the active-link highlight and group toggles run on the client.
  *

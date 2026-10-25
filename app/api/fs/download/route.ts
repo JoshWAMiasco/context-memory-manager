@@ -41,7 +41,7 @@ export const GET = withApi(
     headers["content-type"] = "application/octet-stream";
     headers["content-disposition"] = buildContentDisposition(
       "attachment",
-      asStored ? `${fileStream.fileName}.ccm1` : fileStream.fileName,
+      asStored ? `${fileStream.fileName}.cmm1` : fileStream.fileName,
     );
     headers["content-length"] = String(fileStream.size);
     return new Response(toResponseBody(fileStream.stream), { headers });

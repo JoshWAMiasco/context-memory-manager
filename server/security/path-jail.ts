@@ -1,12 +1,13 @@
 import "server-only";
 import { lstat, realpath } from "node:fs/promises";
 import path from "node:path";
-import { findNameProblem, RESERVED_CCM_NAMES } from "@/lib/fs/validate-name";
+import { isLegacyHiddenName } from "@/lib/fs/legacy-names";
+import { findNameProblem, RESERVED_CMM_NAMES } from "@/lib/fs/validate-name";
 import { ApiRouteError, notFound } from "@/server/http/api-error";
 import { joinStoragePath } from "@/server/storage/storage-path";
 
-/** Folder names CCM keeps for itself inside a storage; only internal services may address them. */
-export const RESERVED_NAMES = RESERVED_CCM_NAMES;
+/** Folder names CMM keeps for itself inside a storage; only internal services may address them. */
+export const RESERVED_NAMES = RESERVED_CMM_NAMES;
 
 const DRIVE_LETTER_PATTERN = /^[a-z]:/i;
 const WINDOWS_INVALID_CHARACTER_PATTERN = /[<>:"|?*]/;
@@ -19,7 +20,7 @@ export interface JailedStorage {
 export interface ResolveOptions {
   /** The target may be missing (create, upload, rename target). Otherwise a missing target is 404. */
   forCreate?: boolean;
-  /** Lets internal services reach `.ccm`, `.ccm-trash` and `.ccm-tmp`. */
+  /** Lets internal services reach `.cmm`, `.cmm-trash` and `.cmm-tmp`. */
   allowReserved?: boolean;
 }
 
@@ -48,14 +49,14 @@ export function isInsideRoot(rootPath: string, candidatePath: string): boolean {
   return comparableCandidate.startsWith(rootWithSeparator);
 }
 
-/** Whether a single path segment is one of CCM's own folders (`.ccm`, `.ccm-trash`, `.ccm-tmp`). */
+/** Whether a single path segment is one of CMM's own folders (`.cmm`, `.cmm-trash`, `.cmm-tmp`, or their old `.ccm` names). */
 export function isReservedName(segment: string): boolean {
   return (RESERVED_NAMES as readonly string[]).includes(segment.toLowerCase());
 }
 
-/** Whether `segment` is a hidden CCM folder, which listings, watchers and zips skip (`.ccm*`). */
-export function isHiddenCcmName(segment: string): boolean {
-  return segment.toLowerCase().startsWith(".ccm");
+/** Whether `segment` is a hidden CMM folder, which listings, watchers and zips skip (`.cmm*`, and the old `.ccm*`). */
+export function isHiddenCmmName(segment: string): boolean {
+  return segment.toLowerCase().startsWith(".cmm") || isLegacyHiddenName(segment);
 }
 
 /**
@@ -93,10 +94,10 @@ export function normalizeRelativePath(relativeInput: string, { allowReserved = f
   return segments;
 }
 
-const insideReservedFolder = () => outsideStorage("That path leads into CCM's own folders.");
+const insideReservedFolder = () => outsideStorage("That path leads into CMM's own folders.");
 
 /**
- * Whether a resolved real path lies in one of CCM's own folders, which a symlink inside the
+ * Whether a resolved real path lies in one of CMM's own folders, which a symlink inside the
  * storage could otherwise lead to even though the names in the request are fine.
  */
 function reachesReservedFolder(rootPath: string, realTargetPath: string): boolean {

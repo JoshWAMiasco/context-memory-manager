@@ -6,11 +6,11 @@ import { notFound } from "@/server/http/api-error";
 
 /**
  * The offline "How to install Git" notes, from `content/help/git-install.md`. The entry
- * sets `CCM_CONTENT_DIR` (the source tree in development, `dist/app/content` when packaged), so
+ * sets `CMM_CONTENT_DIR` (the source tree in development, `dist/app/content` when packaged), so
  * Next's file tracing never has to follow a computed path.
  */
 export const GET = withApi(async () => {
-  const contentDirectory = process.env.CCM_CONTENT_DIR;
+  const contentDirectory = process.env.CMM_CONTENT_DIR;
   if (!contentDirectory) throw notFound("The help texts aren't available.");
   // The ignore comment keeps Turbopack's file tracer from matching this runtime path across the project.
   // eslint-disable-next-line no-inline-comments

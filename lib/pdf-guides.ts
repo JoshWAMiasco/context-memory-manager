@@ -1,11 +1,11 @@
 /*
- * The PDF guides that ship with CCM, shared by the docs route and Settings › About.
+ * The PDF guides that ship with CMM, shared by the docs route and Settings › About.
  * Isomorphic: no server-only imports here.
  */
 
 export const PDF_GUIDES = {
-  "desktop-guide": { fileName: "CCM-Desktop-Guide.pdf", title: "Desktop Guide" },
-  "server-guide": { fileName: "CCM-Server-Guide.pdf", title: "Server Guide" },
+  "desktop-guide": { fileName: "CMM-Desktop-Guide.pdf", title: "Desktop Guide" },
+  "server-guide": { fileName: "CMM-Server-Guide.pdf", title: "Server Guide" },
 } as const;
 
 export type PdfGuideName = keyof typeof PDF_GUIDES;

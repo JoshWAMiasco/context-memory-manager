@@ -1,4 +1,5 @@
 import "server-only";
+import { LEGACY_RESERVED_NAMES } from "@/lib/fs/legacy-names";
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { and, eq } from "drizzle-orm";
@@ -14,9 +15,16 @@ import { joinStoragePath } from "@/server/storage/storage-path";
 export const UNDO_STACK_LIMIT = 200;
 
 /** Folders a walk for nested versioned folders never enters. */
-const SKIPPED_NAMES = new Set([".ccm-trash", ".ccm-tmp", ".git", META_DIRECTORY, "node_modules"]);
+const SKIPPED_NAMES = new Set([
+  ".cmm-trash",
+  ".cmm-tmp",
+  ".git",
+  META_DIRECTORY,
+  "node_modules",
+  ...LEGACY_RESERVED_NAMES,
+]);
 
-/** A versioned folder: the nearest folder, itself included, whose `.ccm/versioning.json` is enabled. */
+/** A versioned folder: the nearest folder, itself included, whose `.cmm/versioning.json` is enabled. */
 export interface VersionedScope {
   /** Storage-relative path of the versioned folder. */
   path: string;
@@ -32,7 +40,7 @@ export async function readVersioning(folderAbsolutePath: string): Promise<Versio
     return await readMeta(folderAbsolutePath, META_FILES.versioning);
   } catch (readError) {
     if (readError instanceof InvalidMetaError) {
-      console.warn(`[ccm] ${readError.message}`);
+      console.warn(`[cmm] ${readError.message}`);
       return undefined;
     }
     throw readError;

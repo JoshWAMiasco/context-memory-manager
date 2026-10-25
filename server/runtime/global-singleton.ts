@@ -17,7 +17,7 @@ export function getGlobalSingleton<Value>(
   isUsable: (storedValue: unknown) => boolean = () => true,
 ): Value {
   const registry = globalThis as unknown as Record<symbol, unknown>;
-  const registryKey = Symbol.for(`ccm.${singletonName}`);
+  const registryKey = Symbol.for(`cmm.${singletonName}`);
   if (!(registryKey in registry) || !isUsable(registry[registryKey])) registry[registryKey] = createValue();
   return registry[registryKey] as Value;
 }
@@ -25,5 +25,5 @@ export function getGlobalSingleton<Value>(
 /** Forgets the instance named `singletonName`, so the next `getGlobalSingleton` call creates a new one. */
 export function clearGlobalSingleton(singletonName: string): void {
   const registry = globalThis as unknown as Record<symbol, unknown>;
-  delete registry[Symbol.for(`ccm.${singletonName}`)];
+  delete registry[Symbol.for(`cmm.${singletonName}`)];
 }

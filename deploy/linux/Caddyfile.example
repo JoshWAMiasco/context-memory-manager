@@ -1,16 +1,16 @@
-# Optional reverse proxy in front of CCM (see README-INSTALL.txt, "HTTPS with Caddy").
+# Optional reverse proxy in front of CMM (see README-INSTALL.txt, "HTTPS with Caddy").
 #
-# 1. In /etc/ccm/config.json set   "bindHost": "127.0.0.1"   and   "trustedProxies": ["127.0.0.1"]
-#    so CCM is only reachable through Caddy and trusts the client address Caddy forwards.
-#    Then: sudo systemctl restart ccm
-# 2. Copy this file to /etc/caddy/Caddyfile, replace ccm.example.lan with the server's name or
+# 1. In /etc/cmm/config.json set   "bindHost": "127.0.0.1"   and   "trustedProxies": ["127.0.0.1"]
+#    so CMM is only reachable through Caddy and trusts the client address Caddy forwards.
+#    Then: sudo systemctl restart cmm
+# 2. Copy this file to /etc/caddy/Caddyfile, replace cmm.example.lan with the server's name or
 #    address, and run: sudo systemctl reload caddy
 #
 # `tls internal` makes Caddy issue the certificate from its own local CA, with no network access.
 # Install that CA on client machines (caddy trust, or copy
 # /var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt) to avoid browser warnings.
 
-ccm.example.lan {
+cmm.example.lan {
 	tls internal
 	encode gzip
 	reverse_proxy 127.0.0.1:7420 {

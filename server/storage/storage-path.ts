@@ -7,7 +7,7 @@ import path from "node:path";
  * ignore comment here tells it to skip them.
  *
  * @example
- * joinStoragePath(rootPath, ".ccm-trash", "items", itemUuid);
+ * joinStoragePath(rootPath, ".cmm-trash", "items", itemUuid);
  */
 export function joinStoragePath(...segments: string[]): string {
   // eslint-disable-next-line no-inline-comments

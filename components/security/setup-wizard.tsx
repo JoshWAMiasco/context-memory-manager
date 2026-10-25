@@ -218,13 +218,13 @@ export function SetupWizard({ mode, needsSetupCode }: SetupWizardProps) {
             {mode === "server" ? "Server mode" : "Desktop mode"}
           </Badge>
           <p className="mt-5 leading-relaxed text-foreground-muted">
-            CCM keeps your files, LLM memory folders and keys on this {mode === "server" ? "server" : "computer"}.
+            CMM keeps your files, LLM memory folders and keys on this {mode === "server" ? "server" : "computer"}.
             Create the admin account to start. The admin can add other users later.
           </p>
           {needsSetupCode && (
             <p className="mt-3 leading-relaxed text-foreground-muted">
-              You will need the one-time setup code. CCM prints it in its log when it starts (the terminal running{" "}
-              <code className="text-brand">npm run dev</code>, or <code className="text-brand">journalctl -u ccm</code>{" "}
+              You will need the one-time setup code. CMM prints it in its log when it starts (the terminal running{" "}
+              <code className="text-brand">npm run dev</code>, or <code className="text-brand">journalctl -u cmm</code>{" "}
               on an installed server) and saves it in the <code className="text-brand">setup-code</code> file in the
               data directory.
             </p>
@@ -246,7 +246,7 @@ export function SetupWizard({ mode, needsSetupCode }: SetupWizardProps) {
           <WizardField
             id="setup-code"
             label="Setup code"
-            helpText="Shown in the CCM server log at start-up, and saved in the setup-code file in the data directory (.ccm-dev-data/ when using npm run dev)."
+            helpText="Shown in the CMM server log at start-up, and saved in the setup-code file in the data directory (.cmm-dev-data/ when using npm run dev)."
           >
             <FormInput
               id="setup-code"
@@ -370,7 +370,7 @@ export function SetupWizard({ mode, needsSetupCode }: SetupWizardProps) {
         <div>
           <div className="flex items-center gap-3 text-success">
             <ShieldCheck className="h-6 w-6 stroke-[1.5]" />
-            <span className="font-medium">CCM is ready.</span>
+            <span className="font-medium">CMM is ready.</span>
           </div>
           <p className="mt-4 leading-relaxed text-foreground-muted">
             Sign in as <span className="font-medium text-foreground">{adminFields.username.trim().toLowerCase()}</span>{" "}

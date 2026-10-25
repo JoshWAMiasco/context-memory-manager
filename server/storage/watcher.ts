@@ -3,7 +3,7 @@ import path from "node:path";
 import chokidar, { type FSWatcher } from "chokidar";
 import { getEventBus } from "@/server/events/bus";
 import { getGlobalSingleton } from "@/server/runtime/global-singleton";
-import { isHiddenCcmName, joinRelativePath, resolveInStorage } from "@/server/security/path-jail";
+import { isHiddenCmmName, joinRelativePath, resolveInStorage } from "@/server/security/path-jail";
 import type { ActiveStorage } from "@/server/storage/roots";
 
 export const WATCH_DEBOUNCE_MILLISECONDS = 300;
@@ -45,9 +45,9 @@ function scheduleFlush(directoryWatch: DirectoryWatch): void {
 }
 
 /**
- * Watches one folder (not its subfolders) and emits `fs.changed` for changes made outside CCM
+ * Watches one folder (not its subfolders) and emits `fs.changed` for changes made outside CMM
  *. Watches are shared and counted: each subscriber gets an unsubscribe function, and the
- * watcher closes when the last one leaves. Changes are batched for 300 ms; `.ccm*` and `.git` are
+ * watcher closes when the last one leaves. Changes are batched for 300 ms; `.cmm*` and `.git` are
  * ignored.
  */
 export async function subscribeToDirectory(storage: ActiveStorage, relativePath: string): Promise<() => Promise<void>> {
@@ -64,7 +64,7 @@ export async function subscribeToDirectory(storage: ActiveStorage, relativePath:
       followSymlinks: false,
       ignored: (watchedPath: string) => {
         const baseName = path.basename(watchedPath);
-        return watchedPath !== resolvedPath.absolutePath && (isHiddenCcmName(baseName) || baseName === ".git");
+        return watchedPath !== resolvedPath.absolutePath && (isHiddenCmmName(baseName) || baseName === ".git");
       },
     });
     const createdWatch: DirectoryWatch = {
@@ -80,7 +80,7 @@ export async function subscribeToDirectory(storage: ActiveStorage, relativePath:
       createdWatch.pendingChanges.set(joinRelativePath(resolvedPath.relativePath, path.basename(changedPath)), change);
       scheduleFlush(createdWatch);
     });
-    watcher.on("error", (watchError) => console.warn(`[ccm] watcher error in ${storage.id}`, watchError));
+    watcher.on("error", (watchError) => console.warn(`[cmm] watcher error in ${storage.id}`, watchError));
     registry.set(watchKey, createdWatch);
     directoryWatch = createdWatch;
   }

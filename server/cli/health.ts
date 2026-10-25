@@ -3,7 +3,7 @@ import http from "node:http";
 import https from "node:https";
 import type { NetworkInterfaceInfo } from "node:os";
 import type { HealthResponse } from "@/lib/api-types";
-import type { CcmConfig } from "@/server/config";
+import type { CmmConfig } from "@/server/config";
 
 /** The address the CLI uses to reach the server on this machine. */
 export function resolveLoopbackHost(bindHost: string): string {
@@ -14,7 +14,7 @@ export function resolveLoopbackHost(bindHost: string): string {
 
 /** The URLs people can open: one per interface address when bound to every interface, else the bound address. */
 export function listServiceUrls(
-  config: Pick<CcmConfig, "bindHost" | "port" | "tls">,
+  config: Pick<CmmConfig, "bindHost" | "port" | "tls">,
   networkInterfaces: NodeJS.Dict<NetworkInterfaceInfo[]>,
 ): string[] {
   const protocol = config.tls ? "https" : "http";
@@ -31,11 +31,11 @@ export type HealthCheck =
   { isHealthy: true; health: HealthResponse; url: string } | { isHealthy: false; problem: string; url: string };
 
 /**
- * Asks the local server for `/api/health`. Over CCM's own TLS the certificate is not verified: it
+ * Asks the local server for `/api/health`. Over CMM's own TLS the certificate is not verified: it
  * is usually self-signed, and the request never leaves this machine.
  */
 export function checkHealth(
-  config: Pick<CcmConfig, "bindHost" | "port" | "tls">,
+  config: Pick<CmmConfig, "bindHost" | "port" | "tls">,
   timeoutMilliseconds = 3000,
 ): Promise<HealthCheck> {
   const url = `${config.tls ? "https" : "http"}://${resolveLoopbackHost(config.bindHost)}:${config.port}/api/health`;

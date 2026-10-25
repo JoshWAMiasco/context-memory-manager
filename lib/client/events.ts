@@ -75,7 +75,7 @@ export class ServerEventsClient {
     return () => eventListeners.delete(listener as AnyListener);
   }
 
-  /** Watches a folder for changes made outside CCM; returns the function that stops watching. */
+  /** Watches a folder for changes made outside CMM; returns the function that stops watching. */
   watch(storageId: string, directoryPath: string): () => void {
     const watchKey = `${storageId}:${directoryPath}`;
     this.watchCounts.set(watchKey, (this.watchCounts.get(watchKey) ?? 0) + 1);

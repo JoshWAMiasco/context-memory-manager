@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="-6.5 -6.5 77 77">
-  <!-- CCM's logo: a brain with circuit traces running into a hard drive. Same drawing as components/icons/ccm-logo-mark.tsx. -->
+  <!-- CMM's logo: a brain with circuit traces running into a hard drive. Same drawing as components/icons/cmm-logo-mark.tsx. -->
   <rect x="1" y="1" width="62" height="62" rx="14" fill="#0d2233" stroke="#307e9b" stroke-width="1.5"/>
   <path d="M29 16 C27 11.5 21 11 19.5 15 C15 13.5 11 17 12.5 21.5 C8.5 23.5 8 30 11.5 32 C8 35 9 41.5 13.5 42 C14 47 20 49.5 23 47 C25 50 28.5 50 29 48" fill="none" stroke="#4cc9f0" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
   <path d="M29 22 H24 L21.5 19.5 M29 30 H18 M29 38 H24 L21.5 40.5" fill="none" stroke="#4cc9f0" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>

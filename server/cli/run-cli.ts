@@ -1,4 +1,4 @@
-/* Parses a `ccm` command line and runs the command. The process entry is `server/cli/index.ts`. */
+/* Parses a `cmm` command line and runs the command. The process entry is `server/cli/index.ts`. */
 import "server-only";
 import { spawn } from "node:child_process";
 import { parseArgs } from "node:util";
@@ -17,22 +17,22 @@ import {
 import { runSystemCommand, type CliContext } from "@/server/cli/context";
 import { resolveSystemPaths, SERVICE_NAME } from "@/server/cli/paths";
 
-export const USAGE = `CCM ${CLI_VERSION} server admin
+export const USAGE = `CMM ${CLI_VERSION} server admin
 
-Usage: ccm <command> [options]
+Usage: cmm <command> [options]
 
   status                         Service state, health, version, URLs and storage count
   reset-admin [username]         Give an admin a temporary password (lists the admins without a name)
-  add-storage <path> [--label X] Let CCM use a folder: ACLs, config and the systemd drop-in
+  add-storage <path> [--label X] Let CMM use a folder: ACLs, config and the systemd drop-in
   remove-storage <path>          Stop using a folder (its files are never touched)
   gen-cert [--host name] [--days 825]
                                  Create a self-signed certificate and turn HTTPS on
   setup-code [--regenerate]      Print the first-run setup code
-  logs                           Follow the service log (journalctl -u ccm -f)
+  logs                           Follow the service log (journalctl -u cmm -f)
   version                        Print the version
   rollback                       Switch back to the previously installed version
 
-Commands that restart CCM accept --no-restart.`;
+Commands that restart CMM accept --no-restart.`;
 
 function readPositional(positionals: readonly string[], index: number, usageLine: string): string {
   const value = positionals[index];
@@ -99,12 +99,12 @@ export async function runCli(argumentList: readonly string[], context: CliContex
       return 0;
     }
     case "add-storage": {
-      const rootInput = readPositional(positionals, 0, "ccm add-storage <path> [--label X]");
+      const rootInput = readPositional(positionals, 0, "cmm add-storage <path> [--label X]");
       await runAddStorage(context, rootInput, { ...(values.label ? { label: values.label } : {}), shouldRestart });
       return 0;
     }
     case "remove-storage": {
-      await runRemoveStorage(context, readPositional(positionals, 0, "ccm remove-storage <path>"), { shouldRestart });
+      await runRemoveStorage(context, readPositional(positionals, 0, "cmm remove-storage <path>"), { shouldRestart });
       return 0;
     }
     case "write-dropin": {

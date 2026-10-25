@@ -26,7 +26,7 @@ import { ensureFileCopyJobType, type StoragePathReference } from "@/server/jobs/
 import { getJobQueue } from "@/server/jobs/queue";
 import {
   assertValidName,
-  isHiddenCcmName,
+  isHiddenCmmName,
   joinRelativePath,
   parentRelativePath,
   resolveInStorage,
@@ -54,7 +54,7 @@ import { recordVersionedScope } from "@/server/versioning/scope";
 
 export const LIST_PAGE_SIZE = 5000;
 export const TEXT_EDIT_LIMIT_BYTES = 5 * 1024 * 1024;
-export const TEMPORARY_DIRECTORY = ".ccm-tmp";
+export const TEMPORARY_DIRECTORY = ".cmm-tmp";
 /** Inline copies stop here; anything bigger runs as a job with progress. */
 export const INLINE_COPY_LIMIT_BYTES = 64 * 1024 * 1024;
 
@@ -87,7 +87,7 @@ async function hasVisibleChildren(directoryPath: string): Promise<boolean> {
     const directoryHandle = await opendir(directoryPath);
     try {
       for await (const childEntry of directoryHandle) {
-        if (!isHiddenCcmName(childEntry.name) && !isSystemMetadataName(childEntry.name)) return true;
+        if (!isHiddenCmmName(childEntry.name) && !isSystemMetadataName(childEntry.name)) return true;
       }
     } finally {
       await directoryHandle.close().catch(() => undefined);
@@ -206,8 +206,8 @@ function emitChange(storageId: string, relativePath: string, change: "added" | "
 }
 
 /**
- * Lists a folder: folders first, then files, by name with numbers in order. CCM's own
- * `.ccm*` entries are hidden, and so is the `.git` of a versioned folder, which CCM manages,
+ * Lists a folder: folders first, then files, by name with numbers in order. CMM's own
+ * `.cmm*` entries are hidden, and so is the `.git` of a versioned folder, which CMM manages,
  * and the operating system's metadata (`._name`, `.DS_Store`: `isSystemMetadataName`). Folders
  * with more than 5,000 entries come in pages: pass back `nextCursor` for the next one.
  */
@@ -223,7 +223,7 @@ export async function listDirectory(
   const isVersioned = await readVersioningEnabled(resolvedPath.absolutePath);
   if (isVersioned) recordVersionedScope(storage.id, resolvedPath.relativePath);
   const directoryEntries = (await readdir(resolvedPath.absolutePath, { withFileTypes: true }))
-    .filter((directoryEntry) => !isHiddenCcmName(directoryEntry.name) && !isSystemMetadataName(directoryEntry.name))
+    .filter((directoryEntry) => !isHiddenCmmName(directoryEntry.name) && !isSystemMetadataName(directoryEntry.name))
     .filter((directoryEntry) => !(isVersioned && directoryEntry.name === ".git"))
     .map((directoryEntry) => ({ name: directoryEntry.name, isDirectory: directoryEntry.isDirectory() }))
     .toSorted(compareEntries);
@@ -452,7 +452,7 @@ async function checkIfMatch(
 }
 
 /**
- * Writes `content` to `targetPath` atomically: into `<root>/.ccm-tmp/<uuid>` through the write
+ * Writes `content` to `targetPath` atomically: into `<root>/.cmm-tmp/<uuid>` through the write
  * transforms (encryption), with fsync and the `verifyWrite` hooks (the new ciphertext is
  * authenticated), then a rename over the target, so a crash never leaves a half-written
  * file or a mix of old and new. The target's mode is kept.

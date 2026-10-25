@@ -31,11 +31,11 @@ export const SALT_BYTES = 16;
 const FILE_KEY_INFO = "ccm/file/v1";
 const NONCE_BYTES = 12;
 
-/** A chunk failed authentication: the file is damaged, was changed outside CCM, or needs another key. */
+/** A chunk failed authentication: the file is damaged, was changed outside CMM, or needs another key. */
 export class CryptoAuthError extends ApiRouteError {
   override name = "CryptoAuthError";
 
-  constructor(message = "This file is damaged or was modified outside CCM.") {
+  constructor(message = "This file is damaged or was modified outside CMM.") {
     super(422, "CRYPTO_AUTH_FAILED", message);
   }
 }
@@ -44,7 +44,7 @@ export class CryptoAuthError extends ApiRouteError {
 export class CryptoFormatError extends ApiRouteError {
   override name = "CryptoFormatError";
 
-  constructor(message = "This file is not in CCM's encrypted format.") {
+  constructor(message = "This file is not in CMM's encrypted format.") {
     super(422, "CRYPTO_AUTH_FAILED", message);
   }
 }
@@ -79,7 +79,7 @@ export function buildHeader(keyId: Buffer, fileSalt: Buffer): Buffer {
 export function parseHeader(bytes: Buffer): CryptoHeader {
   if (bytes.length < HEADER_BYTES || !bytes.subarray(0, 4).equals(CRYPTO_MAGIC)) throw new CryptoFormatError();
   if (bytes[4] !== CRYPTO_FORMAT_VERSION || bytes[6] !== CHUNK_LOG2) {
-    throw new CryptoFormatError("This file was encrypted by a newer CCM.");
+    throw new CryptoFormatError("This file was encrypted by a newer CMM.");
   }
   const headerBytes = Buffer.from(bytes.subarray(0, HEADER_BYTES));
   return { keyId: headerBytes.subarray(8, 24), fileSalt: headerBytes.subarray(24, 40), bytes: headerBytes };

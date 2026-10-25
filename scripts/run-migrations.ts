@@ -1,5 +1,5 @@
 /*
- * Applies the SQL migrations to <dataDir>/ccm.db using the normal config (CCM_DATA_DIR, CCM_MODE…).
+ * Applies the SQL migrations to <dataDir>/cmm.db using the normal config (CMM_DATA_DIR, CMM_MODE…).
  * The entry does this on every start; this script is for doing it by hand. Run with the
  * react-server condition so `server-only` resolves to its empty export: `npm run db:migrate`.
  */

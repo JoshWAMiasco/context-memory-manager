@@ -132,8 +132,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     "node_modules/**",
     "server/db/migrations/**",
-    ".ccm-test-data/**",
-    ".ccm-dev-data/**",
+    ".cmm-test-data/**",
+    ".cmm-dev-data/**",
     "public/vendor/**",
   ]),
 ]);

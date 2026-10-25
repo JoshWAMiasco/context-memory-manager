@@ -11,7 +11,7 @@ import { EmptyState } from "@/components/primitives/empty-state";
 import { FormInput } from "@/components/primitives/form-input";
 import { ProgressBar } from "@/components/primitives/progress-bar";
 import { formatFileSize } from "@/components/page-sections/applications/file-manager/format-file-size";
-import { EjectShieldIcon } from "@/components/icons/ccm-icons";
+import { EjectShieldIcon } from "@/components/icons/cmm-icons";
 import { StorageKindIcon } from "@/components/icons/storage-kind-icon";
 import { useServerEvent } from "@/hooks/use-server-events";
 import type { StorageKind, StorageSummary } from "@/lib/api-types";

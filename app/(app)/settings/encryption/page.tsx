@@ -34,7 +34,7 @@ export default async function EncryptionSettingsPage() {
       )}
       <SettingsPanel title="How encryption works">
         <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-foreground-muted">
-          <li>Each encrypted folder has its own key, kept only in its .ccmkey key file. CCM never stores it.</li>
+          <li>Each encrypted folder has its own key, kept only in its .cmmkey key file. CMM never stores it.</li>
           <li>
             Files are always encrypted on disk (AES-256-GCM). Unlocking holds the key in memory for this session only.
           </li>

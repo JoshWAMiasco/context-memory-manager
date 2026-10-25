@@ -1,14 +1,15 @@
 import "server-only";
+import { LEGACY_META_DIRECTORY, LEGACY_TEMPORARY_DIRECTORY, LEGACY_TRASH_DIRECTORY } from "@/lib/fs/legacy-names";
 import { createReadStream, createWriteStream } from "node:fs";
 import { chmod, lstat, mkdir, readdir, readlink, rm, stat, symlink, utimes } from "node:fs/promises";
 import { Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { isSystemMetadataName } from "@/lib/fs/system-files";
-import { isHiddenCcmName } from "@/server/security/path-jail";
+import { isHiddenCmmName } from "@/server/security/path-jail";
 import { joinStoragePath } from "@/server/storage/storage-path";
 
-/** Root-level folders a copy, zip or size walk never includes. `.ccm/` folder metadata is kept: it travels with the folder. */
-const SKIPPED_TREE_NAMES = new Set([".ccm-trash", ".ccm-tmp"]);
+/** Root-level folders a copy, zip or size walk never includes. `.cmm/` folder metadata is kept: it travels with the folder. */
+const SKIPPED_TREE_NAMES = new Set([".cmm-trash", ".cmm-tmp", LEGACY_TRASH_DIRECTORY, LEGACY_TEMPORARY_DIRECTORY]);
 
 export interface TreeEntry {
   /** Path relative to the walked folder, with `/` separators; "" for the folder itself. */
@@ -24,7 +25,7 @@ export interface TreeEntry {
 }
 
 export interface WalkOptions {
-  /** Also skip `.ccm/`, `.git` and the operating system's metadata files (zip downloads). */
+  /** Also skip `.cmm/`, `.git` and the operating system's metadata files (zip downloads). */
   skipMetadata?: boolean;
   /** Also skip these entries (and everything inside them); gets the path relative to the walked folder. */
   skip?: (relativePath: string) => boolean;
@@ -36,13 +37,15 @@ const PROTECTION_FILE_PATTERN = /^protection(-modes(\.\d+)?)?\.json$/;
 
 function shouldSkip(entryName: string, skipMetadata: boolean, parentName: string): boolean {
   if (SKIPPED_TREE_NAMES.has(entryName.toLowerCase())) return true;
-  if (parentName === ".ccm" && PROTECTION_FILE_PATTERN.test(entryName)) return true;
-  return skipMetadata && (isHiddenCcmName(entryName) || entryName === ".git" || isSystemMetadataName(entryName));
+  if ((parentName === ".cmm" || parentName === LEGACY_META_DIRECTORY) && PROTECTION_FILE_PATTERN.test(entryName)) {
+    return true;
+  }
+  return skipMetadata && (isHiddenCmmName(entryName) || entryName === ".git" || isSystemMetadataName(entryName));
 }
 
 /**
  * Walks a file or folder without following symlinks, parents before children, names sorted (a
- * folder's `.ccm/` first), so a resumed job sees the same order. Protection files in `.ccm/` are
+ * folder's `.cmm/` first), so a resumed job sees the same order. Protection files in `.cmm/` are
  * never included.
  */
 export async function* walkTree(rootAbsolutePath: string, options: WalkOptions = {}): AsyncGenerator<TreeEntry> {
@@ -65,9 +68,9 @@ export async function* walkTree(rootAbsolutePath: string, options: WalkOptions =
       isSpecial: type === "file" && !entryStats.isFile(),
     };
     if (type !== "directory") continue;
-    // `.ccm/` comes first, so a copied folder is an encrypted folder before its files arrive.
+    // `.cmm/` comes first, so a copied folder is an encrypted folder before its files arrive.
     const childNames = (await readdir(absolutePath)).toSorted((first, second) =>
-      first === ".ccm" ? -1 : second === ".ccm" ? 1 : first < second ? -1 : first > second ? 1 : 0,
+      first === ".cmm" ? -1 : second === ".cmm" ? 1 : first < second ? -1 : first > second ? 1 : 0,
     );
     const childPaths = childNames
       .filter(

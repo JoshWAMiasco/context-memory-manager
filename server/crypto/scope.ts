@@ -2,6 +2,7 @@ import "server-only";
 import { readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { and, eq } from "drizzle-orm";
+import { LEGACY_RESERVED_NAMES } from "@/lib/fs/legacy-names";
 import { getDatabase } from "@/server/db/client";
 import { encryptedScopes } from "@/server/db/schema";
 import { ApiRouteError } from "@/server/http/api-error";
@@ -12,12 +13,12 @@ import { getGlobalSingleton } from "@/server/runtime/global-singleton";
 import { joinStoragePath } from "@/server/storage/storage-path";
 
 /** Folders a walk for nested encrypted folders never enters. */
-const SKIPPED_NAMES = new Set([".ccm-trash", ".ccm-tmp", ".git", META_DIRECTORY]);
+const SKIPPED_NAMES = new Set([".cmm-trash", ".cmm-tmp", ".git", META_DIRECTORY, ...LEGACY_RESERVED_NAMES]);
 
 export type EncryptedScopeRow = typeof encryptedScopes.$inferSelect;
 
 /**
- * The encrypted folder an entry is in: the nearest folder with `.ccm/crypto.json`, the
+ * The encrypted folder an entry is in: the nearest folder with `.cmm/crypto.json`, the
  * entry itself included when it is a folder.
  *
  * @example

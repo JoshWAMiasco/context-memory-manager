@@ -12,7 +12,7 @@ import {
   UserRound,
   type LucideIcon,
 } from "lucide-react";
-import { BrainIcon } from "@/components/icons/ccm-icons";
+import { BrainIcon } from "@/components/icons/cmm-icons";
 import { MEMORY_COLOR_VALUES, type MemoryColor, type MemoryIcon as MemoryIconName } from "@/lib/memory";
 import { mergeClassNames } from "@/utilities/merge-class-names";
 

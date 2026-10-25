@@ -34,7 +34,7 @@ let timingDecoyHash: Promise<string> | undefined;
  * reveal which usernames are taken.
  */
 export async function verifyAgainstDecoy(password: string): Promise<false> {
-  timingDecoyHash ??= hashPassword("ccm-timing-decoy-password");
+  timingDecoyHash ??= hashPassword("cmm-timing-decoy-password");
   await verifyPassword(await timingDecoyHash, password);
   return false;
 }

@@ -1,4 +1,5 @@
 import "server-only";
+import { LEGACY_META_DIRECTORY } from "@/lib/fs/legacy-names";
 import { randomBytes } from "node:crypto";
 import path from "node:path";
 import { ApiRouteError } from "@/server/http/api-error";
@@ -52,9 +53,9 @@ async function scopeOfTarget(target: FileOperationTarget, isDirectory: boolean):
   return scope;
 }
 
-/** CCM's own metadata (`.ccm/` files) is never encrypted: it must stay readable without a key. */
+/** CMM's own metadata (`.cmm/` files, or an old `.ccm/`) is never encrypted: it must stay readable without a key. */
 function isMetadataPath(relativePath: string): boolean {
-  return relativePath.split("/").includes(".ccm");
+  return relativePath.split("/").some((segment) => segment === ".cmm" || segment === LEGACY_META_DIRECTORY);
 }
 
 /** Keys this session holds for a scope, looked up by the key id in each file's header. */

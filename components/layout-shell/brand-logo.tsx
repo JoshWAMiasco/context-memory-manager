@@ -1,6 +1,6 @@
 import { joinClassNames } from "@/utilities/join-class-names";
 import Link from "next/link";
-import { CcmLogoMark } from "@/components/icons/ccm-logo-mark";
+import { CmmLogoMark } from "@/components/icons/cmm-logo-mark";
 import { THEME_IDENTITY } from "@/configuration/theme-identity";
 
 export interface BrandLogoClassNames {
@@ -10,7 +10,7 @@ export interface BrandLogoClassNames {
 }
 
 /**
- * CCM's logo mark (`CcmLogoMark`) and the product name. The
+ * CMM's logo mark (`CmmLogoMark`) and the product name. The
  * theme decides where it sits and how it looks (`SHELL_APPEARANCE.classNames`); pass `brandName`
  * to show another name.
  *
@@ -29,7 +29,7 @@ export function BrandLogo({
 }) {
   return (
     <Link href={href} aria-label={`${brandName} home`} className={joinClassNames(classNames.brandLink)}>
-      <CcmLogoMark className={classNames.brandMark} />
+      <CmmLogoMark className={classNames.brandMark} />
       <div className={classNames.brandName}>{brandName}</div>
     </Link>
   );

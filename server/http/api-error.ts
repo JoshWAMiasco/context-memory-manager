@@ -2,7 +2,7 @@ import "server-only";
 import type { ApiErrorCode } from "@/lib/api-types";
 
 /** Marks API errors with a registry symbol, shared by every copy of this module in the process. */
-const API_ROUTE_ERROR_BRAND = Symbol.for("ccm.api-route-error");
+const API_ROUTE_ERROR_BRAND = Symbol.for("cmm.api-route-error");
 
 /**
  * An expected failure a route handler reports to the client as `{ error: { code, message, details } }`.

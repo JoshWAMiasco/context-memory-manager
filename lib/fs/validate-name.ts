@@ -4,7 +4,10 @@
  * Isomorphic: no server-only imports here.
  */
 
-export const RESERVED_CCM_NAMES = [".ccm", ".ccm-trash", ".ccm-tmp"] as const;
+import { LEGACY_RESERVED_NAMES } from "@/lib/fs/legacy-names";
+
+/** CMM's own folders, and the names they had before (`.ccm`…), which no one may create or rename to. */
+export const RESERVED_CMM_NAMES = [".cmm", ".cmm-trash", ".cmm-tmp", ...LEGACY_RESERVED_NAMES] as const;
 
 const WINDOWS_RESERVED_NAME_PATTERN = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i;
 const CONTROL_CHARACTER_PATTERN = /[\u0000-\u001F]/;
@@ -23,8 +26,8 @@ export function findNameProblem(entryName: string, { allowReserved = false } = {
   if (CONTROL_CHARACTER_PATTERN.test(entryName)) return "A name can't contain control characters.";
   if (WINDOWS_RESERVED_NAME_PATTERN.test(entryName)) return `"${entryName}" is a reserved name.`;
   if (entryName.endsWith(".") || entryName.endsWith(" ")) return "A name can't end with a dot or a space.";
-  if (!allowReserved && RESERVED_CCM_NAMES.some((reservedName) => reservedName === entryName.toLowerCase())) {
-    return `"${entryName}" is reserved for CCM.`;
+  if (!allowReserved && RESERVED_CMM_NAMES.some((reservedName) => reservedName === entryName.toLowerCase())) {
+    return `"${entryName}" is reserved for CMM.`;
   }
   if (new TextEncoder().encode(entryName).length > MAXIMUM_NAME_BYTES) return "That name is too long.";
   return undefined;

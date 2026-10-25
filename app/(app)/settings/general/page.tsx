@@ -37,7 +37,7 @@ export default async function GeneralSettingsPage() {
         </FormSectionRow>
         <FormSectionRow
           label="Mode"
-          description="Desktop runs inside the CCM app; server runs as a service on your network."
+          description="Desktop runs inside the CMM app; server runs as a service on your network."
           labelWidth="large"
         >
           <Badge tone="primary" variant="outline" data-testid="settings-mode">
@@ -46,7 +46,7 @@ export default async function GeneralSettingsPage() {
         </FormSectionRow>
         <FormSectionRow
           label="Data directory"
-          description="Where CCM keeps its database. Your files stay in their storages."
+          description="Where CMM keeps its database. Your files stay in their storages."
           labelWidth="large"
         >
           <ReadOnlyValue testIdentifier="settings-data-dir">{config.dataDir}</ReadOnlyValue>
@@ -103,7 +103,7 @@ export default async function GeneralSettingsPage() {
           title="Strong lock (macOS)"
           settingKey="protection.macosImmutable"
           label="Also set the macOS immutable flag on locked folders"
-          description="Locked folders get chflags uchg on top of read-only permissions, so even a program that changes permissions can't edit or delete their files until an admin unlocks them in CCM. Applies to folders locked from now on."
+          description="Locked folders get chflags uchg on top of read-only permissions, so even a program that changes permissions can't edit or delete their files until an admin unlocks them in CMM. Applies to folders locked from now on."
           initialValue={getSetting("protection.macosImmutable")}
         />
       )}

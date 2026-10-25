@@ -24,7 +24,7 @@ function announceSaved(title: string, description?: string) {
 
 /**
  * The change-password card of Security settings (wired to
- * the CCM API). Other sessions of the user are signed out after a change.
+ * the CMM API). Other sessions of the user are signed out after a change.
  *
  * @example
  * <ChangePasswordPanel username="alice" />
@@ -115,7 +115,7 @@ const NETWORK_LABELS: Record<SessionSummary["networkClass"], string> = {
 
 function describeBrowser(userAgent: string | null): string {
   if (!userAgent) return "Unknown browser";
-  if (userAgent.includes("Electron")) return "CCM desktop";
+  if (userAgent.includes("Electron")) return "CMM desktop";
   const browserName = ["Edg", "Firefox", "Chrome", "Safari"].find((candidateName) => userAgent.includes(candidateName));
   const platformName = ["Windows", "Mac OS", "Linux", "Android", "iPhone", "iPad"].find((candidateName) =>
     userAgent.includes(candidateName),
