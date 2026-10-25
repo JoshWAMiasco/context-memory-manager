@@ -5,6 +5,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import { ArrowRight, Pencil, Play, Plus, Trash2, Zap } from "lucide-react";
 import { useState } from "react";
 import { BackupModeBadge } from "@/components/backup/backup-mode-badge";
+import { BrainIcon } from "@/components/icons/cmm-icons";
 import { MirrorPasswordDialog } from "@/components/backup/mirror-password-dialog";
 import { RunStatusBadge } from "@/components/backup/run-history";
 import { ConfirmDialog } from "@/components/interactive/confirm-dialog";
@@ -17,16 +18,26 @@ import { isActiveJob } from "@/lib/client/jobs";
 
 dayjs.extend(relativeTime);
 
-function Endpoint({ endpoint }: { endpoint: BackupProfile["source"] }) {
+function Endpoint({ endpoint, description }: { endpoint: BackupProfile["source"]; description?: string }) {
   return (
     <span className="flex min-w-0 items-center gap-1.5" title={endpoint.available ? undefined : "Not connected"}>
       <span
         className={`h-2 w-2 flex-none rounded-full ${endpoint.available ? "bg-success" : "bg-foreground-faint"}`}
         aria-hidden
       />
-      <span className="truncate">{endpoint.path === "" ? endpoint.label : `${endpoint.label} / ${endpoint.path}`}</span>
+      <span className="truncate">
+        {description ?? (endpoint.path === "" ? endpoint.label : `${endpoint.label} / ${endpoint.path}`)}
+      </span>
     </span>
   );
+}
+
+/** A memory backup's source: "Home / notes", or "Home: 3 folders". */
+function describeMemorySources(profile: BackupProfile): string | undefined {
+  const paths = profile.memory?.paths;
+  if (!paths) return undefined;
+  if (paths.length === 1) return paths[0] ? `${profile.source.label} / ${paths[0]}` : profile.source.label;
+  return `${profile.source.label}: ${paths.length} folders`;
 }
 
 /**
@@ -90,18 +101,29 @@ export function ProfilesList({
           return (
             <Card
               key={profile.id}
-              className="grid gap-3 p-4"
+              className="grid grid-cols-1 gap-3 p-4"
               data-testid="backup-profile-card"
               data-profile-id={profile.id}
             >
               <div className="flex items-start gap-2">
                 <div className="min-w-0 flex-1">
-                  <div className="truncate font-medium">{profile.name}</div>
+                  <div className="flex items-center gap-1.5 font-medium">
+                    {profile.memory && <BrainIcon className="h-4 w-4 flex-none text-accent" />}
+                    <span className="truncate">{profile.name}</span>
+                  </div>
                   <div className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-foreground-muted">
-                    <Endpoint endpoint={profile.source} />
+                    <Endpoint endpoint={profile.source} description={describeMemorySources(profile)} />
                     <ArrowRight className="h-3.5 w-3.5 flex-none" aria-hidden />
                     <Endpoint endpoint={profile.destination} />
                   </div>
+                  {profile.memory && profile.memory.paths.length > 1 && (
+                    <div
+                      className="mt-1 truncate text-xs text-foreground-subtle"
+                      title={profile.memory.paths.join("\n")}
+                    >
+                      {profile.memory.paths.map((memoryPath) => memoryPath || profile.source.label).join(", ")}
+                    </div>
+                  )}
                 </div>
                 <BackupModeBadge mode={profile.mode} />
               </div>

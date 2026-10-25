@@ -68,7 +68,7 @@ This chapter shows how to install CMM on a Mac, on Windows and on Linux. Follow 
 
 ## On a Mac
 
-The Mac installer is a `.dmg` file, for example `CMM-1.0.0-arm64.dmg`.
+The Mac installer is a `.dmg` file, for example `CMM-1.1.0-arm64.dmg`.
 
 1. Double-click the `.dmg` file. A window opens with the CMM icon and your Applications folder.
 2. Drag the **CMM** icon onto the **Applications** folder.
@@ -166,6 +166,19 @@ program**, and then double-click it.
 3. Enter your password when asked.
 4. Open **CMM** from your applications menu.
 
+## Updating CMM
+
+Install a new version the same way as the first one: on a Mac, drag the new **CMM** onto **Applications** and choose
+**Replace**; on Windows, run the new installer; on Linux, replace the AppImage or install the new deb package. Quit CMM
+first, and let running backups finish (a backup that is stopped by quitting waits for you to resume it).
+
+Your files, memories, settings, users, backup profiles and history stay: CMM keeps them apart from the app (see
+*Uninstalling, and where your data lives*) and updates them itself the first time the new version starts. The version
+you are running shows on the sign-in page and next to **Drives**.
+
+On a Mac, the first start of a new version may ask again whether CMM may open your Documents, Desktop or Downloads
+folder. Click **Allow**. While it asks, your memories still show on the Drives page: CMM remembers where it found them.
+
 # First run: creating the admin account
 
 The first time CMM starts, it asks you to create an account. This chapter walks you through it. The account protects
@@ -225,8 +238,8 @@ After you sign in, CMM opens the **Drives** page. It shows each of your **storag
 - **External drives**: external hard drives you plug in.
 - **USB / flash drives**: USB sticks and memory cards.
 
-Below the internal storages, **Memories** shows every memory on them as a card of its own, with its icon, name, where it
-is and its description. Click a memory's card to open it in its own view (see *A memory's own view*).
+Below the internal storages, **Memories** shows every memory on them and on the drives plugged in now as a card of its
+own, with its icon, name, where it is and its description. Click a memory's card to open it in its own view (see *A memory's own view*).
 
 Click a drive's card to open that storage. A drive appears a few seconds after you plug it in, and is highlighted briefly. Each
 card shows how much space is free, for example "2.8 GB free of 3 GB". Drives you can unplug have an eject button. Click
@@ -1104,6 +1117,32 @@ While it runs, light flows from the source to the drive in the picture, with the
 
 The second time you run a profile, CMM copies only what changed, so it is much faster.
 
+## Backing up folders and memories into a new memory
+
+You can back up one or more folders or memories into a new memory on another drive, for example to take your memories to
+a new computer.
+
+1. Choose what to back up:
+   - In the file tree, select the folders and memories (hold <kbd>⌘</kbd>/<kbd>Ctrl</kbd> or <kbd>Shift</kbd> to select
+     several), right-click one of them and choose **Back up to a new memory…**, or
+   - open a folder's **Folder settings** and click **Back up to a new memory…** in the **General** tab. If the folder is
+     one of several selected in the tree, the button backs up all of them.
+2. The **Backup** page opens with the folders listed. Type a **Memory name**: you can't continue without one. You can
+   leave out a folder, or add another with **Add a folder**.
+3. Choose the drive and folder to **Create the memory in**, a mode and options, as for any profile.
+4. Click **Save and run**.
+
+CMM creates a new memory folder named after the memory, for example **agent-memory** for "Agent memory". One folder's
+files go straight into it. With several folders, each one goes into a folder of its own inside it. Each folder's CMM
+details (memory name, icon and colour, encryption, versioning) go with it. The profile stays in the **Profiles** tab, so
+the next run copies only what changed.
+
+### Taking memories to another computer
+
+Plug the drive into the other computer and open CMM there. The memories on the drive show up on the **Drives** page.
+Open one, right-click it in the file tree and choose **Back up to a new memory…** again, this time with a folder on that
+computer as the destination. A single memory copied this way keeps its icon, colour and description under its new name.
+
 ## Automatic backups when you plug in a drive
 
 Turn on **Run when the drive is plugged in** in the profile. From then on, a few seconds after you plug in the drive,
@@ -1135,6 +1174,43 @@ copied, left unchanged or couldn't copy. Click a run for the details, including 
 - **Files larger than 4 GB** can't be stored on drives formatted as FAT32, which many USB sticks are. CMM skips them
   and lists a warning in the run's details. Format the drive as exFAT (or another modern format) to back up large files.
 - CMM refuses a backup into the folder it is backing up, into an encrypted folder, or into a protected folder.
+
+# Terminals
+
+A terminal runs commands in a folder, without leaving CMM: `git`, scripts, or command-line agents such as Claude Code
+(`claude`). Terminals sit along the bottom of the window like chat windows, and you can have several open at once.
+
+## Opening a terminal
+
+- Right-click a folder or memory in the file tree and choose **Open in terminal** (on a file, the terminal opens in its
+  folder), or
+- click **Open in terminal** on a folder's or memory's overview.
+
+The terminal starts in that folder, with your usual shell (on a Mac, the one Terminal uses; on Windows, the Command
+Prompt), so the commands you have installed work as they do there.
+
+## Working with terminal windows
+
+- **Minimize**: click **–** on its title bar, or double-click the title bar. Only the title bar stays at the bottom of
+  the window; a dot on it means new output arrived. Click it to open it again.
+- **Resize**: drag the top edge, the left edge or the top-left corner. CMM remembers each terminal's size.
+- **Several terminals**: each new one opens on the right. When there is no room, the older ones shrink to their title
+  bars, and then move into the **+N** button; pick one there to bring it back.
+- **Close**: click **×**. If something is still running, CMM asks first, since it stops.
+- When the shell ends (for example after `exit`), the title bar says **Ended**; click the restart button to start a new
+  one in the same folder.
+
+Terminals keep running while they are minimized, and when you go to another page or reload it: the window comes back
+with what happened meanwhile. They stop when you close them or quit CMM. When CMM locks, the windows disconnect and
+the programs keep running; they reconnect when you unlock.
+
+Links a program prints, such as a sign-in link, open in your browser after CMM asks.
+
+## What to know
+
+- A terminal can do anything your account on this computer can, including changing files CMM protects or reading
+  folders you haven't added to CMM. Only admins can open terminals.
+- To turn terminals off, go to **Settings › Security › Terminals**.
 
 # Settings
 
@@ -1184,6 +1260,7 @@ access** (no access, read, or read and write, per storage), **Reset password**, 
 - set **Auto-lock › Lock after** (admins): how many idle minutes before CMM locks, for every user;
 - set **Sign-in lockout** (admins): after too many wrong passwords (5 by default), signing in is blocked for a while (15
   minutes by default);
+- turn **Terminals** on or off (admins): see the chapter on terminals;
 - see your **Active sessions**.
 
 ![Settings › Security.](assets/screens/settings-security.png)
@@ -1229,6 +1306,7 @@ forgets its key (60 minutes by default). See the chapter on encryption.
 ## About and this guide
 
 **Settings › About** shows the product, its version, the mode, and the network note: CMM never contacts the internet.
+The version also shows on the sign-in page and next to **Drives**.
 It also lists the licences of the software CMM is built with.
 
 Under **Guides**, click **Open Desktop Guide** to open this guide as a PDF in a new window. **Open Server Guide** opens
@@ -1304,6 +1382,19 @@ Backups made after encryption are encrypted too, and need the same key file.
 - New drives are shown to admins only, unless an admin changed **Settings › Storages › New drives**. Ask an admin to
   give you access to the drive.
 - On **Windows**, CMM lists every drive letter except the system drive (usually `C:`) as a drive.
+
+## I can't save files to a drive
+
+If a drive's card says **Read only** next to its format, CMM can show its files but can't change them, and it isn't
+offered as a backup destination. Hold the pointer over the card's details to see why.
+
+- **NTFS on a Mac:** drives formatted for Windows (NTFS) are read-only on a Mac, in Finder too. To write to one,
+  either reformat it as **exFAT** in **Disk Utility** (this **erases everything on it**, so copy its files off first),
+  or install an NTFS driver for macOS. exFAT works on Mac, Windows and Linux.
+- **A lock switch:** some SD cards and USB sticks have a small lock switch. Slide it to unlocked and plug the drive in
+  again.
+- **macOS didn't allow access:** if a message tells you macOS didn't let CMM do something, allow CMM in **System
+  Settings › Privacy & Security › Files and Folders**.
 
 ## Versioning says Git is not found
 

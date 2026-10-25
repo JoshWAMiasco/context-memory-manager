@@ -7,6 +7,7 @@ import {
   FloatingPortal,
   offset,
   shift,
+  size,
   useDismiss,
   useFloating,
   useInteractions,
@@ -21,6 +22,7 @@ import {
   FilePlus,
   FolderOpen,
   FolderPlus,
+  HardDriveUpload,
   Info,
   PanelsTopLeft,
   Pencil,
@@ -28,17 +30,19 @@ import {
   Settings2,
   Shield,
   SquareArrowOutUpRight,
+  SquareTerminal,
   Trash2,
   Upload,
 } from "lucide-react";
 import { useRef, useState, type ComponentType } from "react";
 import { BrainIcon } from "@/components/icons/cmm-icons";
 import { announce, announceError, useExplorer } from "@/components/explorer/explorer-context";
+import { useOpenTerminal } from "@/components/terminal/use-open-terminal";
 import { useMemoryMutations } from "@/lib/client/memory";
 import { useFileClipboard } from "@/lib/client/clipboard";
 import { isDesktopApp, readFileManagerName, revealInFileManager } from "@/lib/client/desktop";
 import { readParentPath } from "@/lib/client/query-keys";
-import { buildMemoryHref } from "@/lib/client/routes";
+import { buildMemoryBackupHref, buildMemoryHref } from "@/lib/client/routes";
 import { mergeClassNames } from "@/utilities/merge-class-names";
 
 interface MenuAction {
@@ -70,6 +74,7 @@ export function ExplorerContextMenu() {
     );
   };
   const clipboard = useFileClipboard();
+  const terminal = useOpenTerminal();
   const { contextMenu, canWrite, readOnlyReason } = explorer;
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const listRef = useRef<(HTMLElement | null)[]>([]);
@@ -84,7 +89,18 @@ export function ExplorerContextMenu() {
     },
     placement: "bottom-start",
     strategy: "fixed",
-    middleware: [offset({ mainAxis: 2, alignmentAxis: 2 }), flip(), shift({ padding: 8 })],
+    middleware: [
+      offset({ mainAxis: 2, alignmentAxis: 2 }),
+      flip({ padding: 8 }),
+      shift({ padding: 8 }),
+      // At most as tall as the room left on screen; the rest scrolls (scrollbar-visible).
+      size({
+        padding: 8,
+        apply({ availableHeight, elements }) {
+          elements.floating.style.maxHeight = `${Math.max(120, Math.floor(availableHeight))}px`;
+        },
+      }),
+    ],
     whileElementsMounted: autoUpdate,
   });
   const { getFloatingProps, getItemProps } = useInteractions([
@@ -199,6 +215,26 @@ export function ExplorerContextMenu() {
       onSelect: () => void explorer.download(entry?.path ?? explorer.rootPath),
     },
   );
+  if (entry) {
+    const areAllFolders = actionPaths.every((actionPath) => explorer.findEntry(actionPath)?.type === "directory");
+    actions.push({
+      key: "backup-memory",
+      label:
+        actionPaths.length > 1 ? `Back up ${actionPaths.length} folders to a new memory…` : "Back up to a new memory…",
+      icon: HardDriveUpload,
+      onSelect: () => router.push(buildMemoryBackupHref(explorer.storage.id, actionPaths)),
+      disabledReason: areAllFolders ? undefined : "Only folders can be backed up. Select folders and memories only.",
+    });
+  }
+  if (terminal.isOffered) {
+    actions.push({
+      key: "open-terminal",
+      label: "Open in terminal",
+      icon: SquareTerminal,
+      onSelect: () => terminal.open(explorer.storage.id, folderPath),
+      disabledReason: terminal.disabledReason,
+    });
+  }
   if (explorer.mode === "desktop") {
     const revealPath = entry?.path ?? explorer.rootPath;
     actions.push({
@@ -272,7 +308,7 @@ export function ExplorerContextMenu() {
           style={floatingStyles}
           data-testid="explorer-context-menu"
           tabIndex={-1}
-          className="z-[70] min-w-56 rounded-md border border-line-strong bg-surface-strong p-1 text-sm shadow-overlay"
+          className="scrollbar-visible z-[70] min-w-56 overflow-y-auto overscroll-contain rounded-md border border-line-strong bg-surface-strong p-1 text-sm shadow-overlay"
           {...getFloatingProps()}
         >
           {actions.map((action, actionIndex) => {

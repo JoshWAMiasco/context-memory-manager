@@ -49,6 +49,11 @@ const SETTING_DEFINITIONS = {
     schema: z.boolean(),
     readDefault: () => false,
   },
+  /* A terminal is a shell as CMM's own user, so a server (shared over the network) starts with them off. */
+  "terminal.enabled": {
+    schema: z.boolean(),
+    readDefault: () => getConfig().mode === "desktop",
+  },
   "encryption.unlockTtlMinutes": {
     schema: z.number().int().min(1).max(1440),
     readDefault: () => getConfig().unlockTtlMinutes,

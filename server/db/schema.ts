@@ -141,7 +141,8 @@ export const versionedScopes = sqliteTable(
 );
 
 /**
- * Saved backups: a source folder, a destination folder and a mode. Storages are named by
+ * Saved backups: a source folder (or, for a memory backup, several folders gathered into a new
+ * memory folder), a destination folder and a mode. Storages are named by
  * storage id; a drive's id is made from its volume id (`ext-<volume id>`), so a profile still
  * finds the drive after it is unplugged, plugged into another port or given another drive letter.
  */
@@ -153,6 +154,9 @@ export const backupProfiles = sqliteTable("backup_profiles", {
   destinationStorageId: text("destination_storage_id").notNull(),
   destinationPath: text("destination_path").notNull(),
   mode: text("mode", { enum: ["copy", "mirror", "snapshot"] }).notNull(),
+  /** A memory backup: the memory's name and its folders (a JSON array of paths in the source storage). */
+  memoryName: text("memory_name"),
+  memoryPathsJson: text("memory_paths_json"),
   compare: text("compare", { enum: ["size-mtime", "checksum"] })
     .notNull()
     .default("size-mtime"),
@@ -191,3 +195,21 @@ export const backupRuns = sqliteTable("backup_runs", {
   message: text("message"),
   createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
 });
+
+/**
+ * Memory folders the dashboard's search has found, so they show at once the next time CMM starts:
+ * walking a big home folder takes a while, and macOS can hold it up while it asks for permission.
+ * Each is checked again before it is shown.
+ */
+export const memoryLocations = sqliteTable(
+  "memory_locations",
+  {
+    storageId: text("storage_id")
+      .notNull()
+      .references(() => storages.id, { onDelete: "cascade" }),
+    /** The memory folder, relative to the storage root. */
+    path: text("path").notNull(),
+    lastSeenAt: integer("last_seen_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.storageId, table.path] })],
+);

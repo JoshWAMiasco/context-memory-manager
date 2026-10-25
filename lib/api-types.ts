@@ -43,6 +43,7 @@ export type ApiErrorCode =
   | "VERSIONING_ENCRYPTION_CONFLICT"
   | "GIT_COMMAND_FAILED"
   | "BACKUP_RUNNING"
+  | "TOO_MANY_TERMINALS"
   | "INTERNAL_ERROR";
 
 export interface ApiErrorBody {
@@ -266,6 +267,8 @@ export interface StorageSummary {
   canEject?: boolean;
   /** The drive's file system ("exfat", "vfat", "apfs"…), for external drives. */
   fsType?: string;
+  /** Why nothing can be written to it, for a drive mounted read-only (`access` is then "read"). */
+  readOnlyReason?: string;
 }
 
 /** A storage as admins see it in settings, including remembered drives that are unplugged. */
@@ -493,12 +496,24 @@ export interface BackupEndpoint {
   path: string;
 }
 
+/**
+ * A memory backup: folders of the source storage gathered into a new memory folder inside the
+ * destination, one folder each.
+ */
+export interface BackupMemory {
+  /** The memory's name; its folder inside the destination is named after it. */
+  name: string;
+  /** The folders backed up, relative to the source storage. */
+  paths: string[];
+}
+
 /** The source and destination of a running backup job, for the Backup page's topology. */
 export interface JobTransfer {
   source: BackupEndpoint;
   destination: BackupEndpoint;
   mode: BackupMode;
   profileId?: string;
+  memory?: BackupMemory;
 }
 
 /** How a backup runs: what it compares, checks and leaves out. */
@@ -519,6 +534,8 @@ export interface BackupProfile extends BackupOptions {
   source: BackupEndpoint & { label: string; available: boolean };
   destination: BackupEndpoint & { label: string; available: boolean };
   mode: BackupMode;
+  /** A memory backup: the folders it gathers (the source's own path is unused) and the memory's name. */
+  memory?: BackupMemory;
   autoRunOnConnect: boolean;
   autoResume: boolean;
   lastRunAt: string | null;
@@ -533,6 +550,7 @@ export interface BackupProfileInput extends BackupOptions {
   source: BackupEndpoint;
   destination: BackupEndpoint;
   mode: BackupMode;
+  memory?: BackupMemory;
   autoRunOnConnect: boolean;
   autoResume: boolean;
 }
@@ -581,6 +599,7 @@ export interface BackupRunSummary {
   mode: BackupMode;
   source: BackupEndpoint & { label: string };
   destination: BackupEndpoint & { label: string };
+  memory?: BackupMemory;
   status: "running" | "paused" | "done" | "failed" | "cancelled";
   startedAt: string;
   endedAt: string | null;
@@ -598,4 +617,31 @@ export interface BackupMachine {
   hostname: string;
   mode: "desktop" | "server";
   storages: { storageId: string; label: string; size: number; used: number }[];
+}
+
+/** Why terminals can't be opened: not an admin, turned off in Settings › Security, or no terminal support on this machine. */
+export type TerminalUnavailableCode = "ROLE" | "DISABLED" | "UNSUPPORTED";
+
+/** A shell running in a folder (`GET /api/terminals`). It keeps running while its panel is minimized or the page reloads. */
+export interface TerminalSummary {
+  id: string;
+  storageId: string;
+  storageLabel: string;
+  /** The folder it started in, relative to the storage. */
+  path: string;
+  /** The memory's name, the folder's name, or the storage's label. */
+  title: string;
+  /** The shell it runs: "zsh", "bash", "cmd.exe"… */
+  shell: string;
+  status: "running" | "exited";
+  exitCode?: number;
+  createdAt: string;
+}
+
+/** `GET /api/terminals`: whether this user may open terminals, and the ones they have open. */
+export interface TerminalListResponse {
+  available: boolean;
+  unavailableCode?: TerminalUnavailableCode;
+  unavailableReason?: string;
+  terminals: TerminalSummary[];
 }

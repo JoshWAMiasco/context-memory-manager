@@ -1,7 +1,8 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { BackupJobPanel } from "@/components/backup/job-panel";
 import { ProfileEditor, type ProfileEditorSeed } from "@/components/backup/profile-editor";
 import { ProfilesList } from "@/components/backup/profiles-list";
@@ -23,20 +24,27 @@ const TAB_HISTORY = 2;
 /**
  * The Backup page: the live topology across the top, and below it the Active jobs,
  * Profiles and History tabs. Dragging between nodes or using a drive's menu opens the profile
- * editor with the endpoints filled in.
+ * editor with the endpoints filled in. `memorySources` (folders chosen in the explorer or Folder
+ * settings) opens it on a new memory backup of them, and is then dropped from the URL so a reload
+ * doesn't open it again.
  *
  * @example
- * <BackupWorkspace />
+ * <BackupWorkspace memorySources={{ storageId: "home", paths: ["notes", "persona"] }} />
  */
-export function BackupWorkspace() {
-  const { data: storages = [] } = useStorages();
+export function BackupWorkspace({ memorySources }: { memorySources?: { storageId: string; paths: string[] } }) {
+  const router = useRouter();
+  const { data: storages = [], isSuccess: hasLoadedStorages } = useStorages();
   const { data: machine } = useBackupMachine();
   const { data: profiles = [] } = useBackupProfiles();
   const { data: runs = [] } = useBackupRuns();
   const jobs = useBackupJobs();
   const { ejectDrive, mountDrive } = useDriveActions();
   const [tabIndex, setTabIndex] = useState(TAB_ACTIVE);
-  const [editorSeed, setEditorSeed] = useState<ProfileEditorSeed>();
+  const [editorSeed, setEditorSeed] = useState<ProfileEditorSeed | undefined>(() =>
+    memorySources
+      ? { source: { storageId: memorySources.storageId }, memory: { name: "", paths: memorySources.paths } }
+      : undefined,
+  );
   const [ejectTarget, setEjectTarget] = useState<StorageSummary>();
   const [detailsRun, setDetailsRun] = useState<BackupRunSummary>();
   const activeCount = jobs.filter(isActiveJob).length;
@@ -46,6 +54,11 @@ export function BackupWorkspace() {
     nodeId === "machine" ? firstInternalId : nodeId.slice("drive:".length);
 
   const openEditor = (seed: ProfileEditorSeed) => setEditorSeed(seed);
+
+  const hasMemorySources = memorySources !== undefined;
+  useEffect(() => {
+    if (hasMemorySources) router.replace("/backup", { scroll: false });
+  }, [hasMemorySources, router]);
 
   return (
     <div className="flex flex-col gap-5" data-testid="backup-page">
@@ -113,7 +126,8 @@ export function BackupWorkspace() {
         </TabPanels>
       </Tabs>
 
-      {editorSeed && (
+      {/* The editor picks its default storages when it opens, so it waits for them. */}
+      {editorSeed && hasLoadedStorages && (
         <ProfileEditor
           seed={editorSeed}
           storages={storages}

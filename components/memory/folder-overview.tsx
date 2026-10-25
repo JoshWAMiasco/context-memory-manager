@@ -12,6 +12,7 @@ import {
   PanelsTopLeft,
   Settings2,
   Shield,
+  SquareTerminal,
   ShieldAlert,
   type LucideIcon,
 } from "lucide-react";
@@ -25,6 +26,7 @@ import { UnlockPanel } from "@/components/encryption/unlock-panel";
 import { announce, announceError, useExplorer } from "@/components/explorer/explorer-context";
 import { FileIcon } from "@/components/explorer/file-icon";
 import { MemoryIcon } from "@/components/explorer/memory-icon";
+import { useOpenTerminal } from "@/components/terminal/use-open-terminal";
 import { formatFileSize } from "@/components/page-sections/applications/file-manager/format-file-size";
 import type { FileEntry } from "@/lib/api-types";
 import { useEncryptionMutations } from "@/lib/client/encryption";
@@ -241,6 +243,7 @@ function InlineDescription({
 export function FolderOverview({ entry }: { entry: FileEntry }) {
   const explorer = useExplorer();
   const router = useRouter();
+  const terminal = useOpenTerminal();
   const { data: memory } = useMemory(explorer.storage.id, entry.path);
   const writeReason = explorer.readWriteReason(entry.path);
   const { lock } = useEncryptionMutations();
@@ -313,6 +316,15 @@ export function FolderOverview({ entry }: { entry: FileEntry }) {
             disabledReason={writeReason}
             onClick={() => explorer.openDialog({ kind: "convert-memory", path: entry.path })}
             testId="quick-convert-memory"
+          />
+        )}
+        {terminal.isOffered && (
+          <QuickAction
+            label="Open in terminal"
+            icon={SquareTerminal}
+            disabledReason={terminal.disabledReason}
+            onClick={() => terminal.open(explorer.storage.id, entry.path)}
+            testId="quick-open-terminal"
           />
         )}
         <QuickAction

@@ -85,6 +85,7 @@ export async function createEventStream({
     "fs.changed": (event) => topics.has("fs") && isStorageVisible(event.storageId),
     "protection.violation": (event) => topics.has("fs") && isStorageVisible(event.storageId),
     "versioning.changed": (event) => topics.has("fs") && isStorageVisible(event.storageId),
+    "memories.changed": (event) => topics.has("fs") && isStorageVisible(event.storageId),
     "encryption.changed": (event) =>
       topics.has("fs") &&
       (event.sessionIdHash === undefined

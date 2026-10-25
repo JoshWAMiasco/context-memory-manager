@@ -103,14 +103,39 @@ function readGrantedLevels(userId: string): Map<string, StorageAccessLevel> {
 }
 
 /**
+ * Why nothing can be written to a drive that is mounted read-only, or undefined when it can be
+ * written to. macOS mounts NTFS drives read-only, which is the usual reason.
+ *
+ * @example
+ * readReadOnlyReason(usbStick); // '"Miasco" is formatted as NTFS, which macOS can read but not write to. …'
+ */
+export function readReadOnlyReason(storage: Pick<ActiveStorage, "label" | "drive">): string | undefined {
+  if (!storage.drive?.readOnly) return undefined;
+  if (storage.drive.fsType.toLowerCase() === "ntfs" && process.platform === "darwin") {
+    return `"${storage.label}" is formatted as NTFS, which macOS can read but not write to, so CMM can only view its files. To write to it, reformat it as exFAT in Disk Utility (this erases the drive), or install an NTFS driver.`;
+  }
+  return `"${storage.label}" is mounted read-only, so CMM can only view its files.`;
+}
+
+/**
  * What `actor` may do in a storage. Admins write everywhere. Others need a grant, capped at read
  * for viewers; hidden storages are admin-only. External drives without a grant are visible to
- * everyone (editors write, viewers read) only when `storage.newDrivesVisibleTo` is "all".
+ * everyone (editors write, viewers read) only when `storage.newDrivesVisibleTo` is "all". A drive
+ * mounted read-only is read for everyone.
  */
 export function readAccessLevel(
   actor: StorageActor,
-  storage: Pick<ActiveStorage, "id" | "kind" | "hidden">,
+  storage: Pick<ActiveStorage, "id" | "kind" | "hidden"> & { drive?: Pick<Drive, "readOnly"> },
   grantedLevels: ReadonlyMap<string, StorageAccessLevel> = readGrantedLevels(actor.id),
+): StorageAccessLevel | undefined {
+  const level = readGrantedAccessLevel(actor, storage, grantedLevels);
+  return level && storage.drive?.readOnly ? "read" : level;
+}
+
+function readGrantedAccessLevel(
+  actor: StorageActor,
+  storage: Pick<ActiveStorage, "id" | "kind" | "hidden">,
+  grantedLevels: ReadonlyMap<string, StorageAccessLevel>,
 ): StorageAccessLevel | undefined {
   if (actor.role === "admin") return "write";
   if (storage.hidden) return undefined;
@@ -147,6 +172,8 @@ function toStorageSummary(storage: ActiveStorage, level: StorageAccessLevel, act
     summary.canEject = storage.available && isEjectSupported();
     summary.canMount = !storage.available && process.platform === "linux";
     summary.fsType = storage.drive.fsType;
+    const readOnlyReason = readReadOnlyReason(storage);
+    if (readOnlyReason) summary.readOnlyReason = readOnlyReason;
   }
   if (actor.role === "admin") summary.rootPath = storage.rootPath;
   return summary;
@@ -175,7 +202,9 @@ export function requireStorageAccess(actor: StorageActor, storageId: string, lev
   if (!activeStorage) throw notFound("That storage is not available.");
   const grantedLevel = readAccessLevel(actor, activeStorage);
   if (!grantedLevel) throw forbidden("You don't have access to this storage.");
-  if (level === "write" && grantedLevel !== "write") throw forbidden("You can only view files in this storage.");
+  if (level === "write" && grantedLevel !== "write") {
+    throw forbidden(readReadOnlyReason(activeStorage) ?? "You can only view files in this storage.");
+  }
   if (!activeStorage.available) throw notFound("This drive is not mounted.");
   return activeStorage;
 }

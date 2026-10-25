@@ -14,6 +14,8 @@ export interface Drive {
   protocol: string;
   /** The OS device: `/dev/sdb1`, `/dev/disk4s1`, or `E:`. */
   device: string;
+  /** Mounted read-only: nothing can be written to it (an NTFS drive on macOS, a locked SD card…). */
+  readOnly: boolean;
 }
 
 export interface DriveProvider {

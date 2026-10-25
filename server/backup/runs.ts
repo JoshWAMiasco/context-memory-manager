@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { and, desc, eq } from "drizzle-orm";
 import type {
   BackupEndpoint,
+  BackupMemory,
   BackupMode,
   BackupRunError,
   BackupRunSummary,
@@ -34,6 +35,7 @@ export interface RunStart {
   mode: BackupMode;
   source: BackupEndpoint & { label: string };
   destination: BackupEndpoint & { label: string };
+  memory?: BackupMemory;
   createdBy: string | null;
 }
 
@@ -65,7 +67,8 @@ export function recordRunStart(start: RunStart): BackupRunRow {
       profileId: profileExists ? (start.profileId ?? null) : null,
       name: start.name,
       mode: start.mode,
-      sourceJson: JSON.stringify(start.source),
+      // A memory backup's folders are kept with its source.
+      sourceJson: JSON.stringify(start.memory ? { ...start.source, memory: start.memory } : start.source),
       destinationJson: JSON.stringify(start.destination),
       status: "running",
       startedAt: new Date(),
@@ -117,13 +120,18 @@ function parseJson<Value>(jsonText: string, fallback: Value): Value {
 }
 
 export function toRunSummary(runRow: BackupRunRow): BackupRunSummary {
+  const { memory, ...source } = parseJson<BackupEndpoint & { label: string; memory?: BackupMemory }>(
+    runRow.sourceJson,
+    { storageId: "", path: "", label: "" },
+  );
   return {
     id: runRow.id,
     jobId: runRow.jobId,
     profileId: runRow.profileId,
     name: runRow.name,
     mode: runRow.mode,
-    source: parseJson(runRow.sourceJson, { storageId: "", path: "", label: "" }),
+    source,
+    ...(memory ? { memory } : {}),
     destination: parseJson(runRow.destinationJson, { storageId: "", path: "", label: "" }),
     status: runRow.status,
     startedAt: runRow.startedAt.toISOString(),

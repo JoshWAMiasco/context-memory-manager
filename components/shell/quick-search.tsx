@@ -20,7 +20,7 @@ import { StorageKindIcon } from "@/components/icons/storage-kind-icon";
 import type { StorageSummary } from "@/lib/api-types";
 import { MINIMUM_SEARCH_LENGTH, useStorageSearch, useStorages } from "@/lib/client/fs";
 import { buildStorageHref, parseStorageHref } from "@/lib/client/routes";
-import { formatShortcut, isCommandShortcut } from "@/lib/client/shortcuts";
+import { isCommandShortcut, useShortcutLabel } from "@/lib/client/shortcuts";
 import { mergeClassNames } from "@/utilities/merge-class-names";
 
 /** ⌘K (Ctrl+K elsewhere) opens quick search. */
@@ -277,6 +277,7 @@ export function QuickSearch({
   iconButtonClassName?: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const searchShortcutLabel = useShortcutLabel(QUICK_SEARCH_SHORTCUT);
 
   useEffect(() => {
     const handleKeyDown = (keyEvent: KeyboardEvent) => {
@@ -298,7 +299,7 @@ export function QuickSearch({
       >
         <Search className="h-[18px] w-[18px] flex-none stroke-[1]" />
         <span className="mr-auto ml-2.5 truncate">Search drives and files…</span>
-        <kbd className="font-sans text-xs">{formatShortcut(QUICK_SEARCH_SHORTCUT)}</kbd>
+        <kbd className="font-sans text-xs">{searchShortcutLabel}</kbd>
       </button>
       <button
         type="button"

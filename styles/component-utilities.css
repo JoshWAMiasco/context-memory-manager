@@ -1,6 +1,6 @@
 /*
  * Small component classes the markup relies on: .box (card surface), .box--stacked (card with a
- * second card peeking out below), .image-fit, .scrollbar-hidden, .typing-dots and .zoom-in.
+ * second card peeking out below), .image-fit, .scrollbar-hidden, .scrollbar-visible, .typing-dots and .zoom-in.
  */
 @utility box {
   position: relative;
@@ -43,6 +43,44 @@
   .scrollbar-hidden::-webkit-scrollbar {
     width: 0;
     background-color: transparent;
+  }
+
+  /*
+   * A scrollbar that is always shown, track and thumb, for short scrolling lists such as menus
+   * (macOS otherwise shows one only while scrolling). Chromium styles ::-webkit-scrollbar only when
+   * scrollbar-color is auto, so the theme's global scrollbar-color is reset here; Firefox, which has
+   * no ::-webkit-scrollbar, gets the standard properties.
+   */
+  .scrollbar-visible {
+    scrollbar-color: auto;
+    scrollbar-width: auto;
+  }
+
+  @supports not selector(::-webkit-scrollbar) {
+    .scrollbar-visible {
+      scrollbar-color: var(--color-line-strong) var(--color-surface-muted);
+      scrollbar-width: thin;
+    }
+  }
+
+  .scrollbar-visible::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  .scrollbar-visible::-webkit-scrollbar-track {
+    margin-block: 4px;
+    border-radius: 9999px;
+    background-color: var(--color-surface-muted);
+  }
+
+  .scrollbar-visible::-webkit-scrollbar-thumb {
+    border: 2px solid var(--color-surface-muted);
+    border-radius: 9999px;
+    background-color: var(--color-line-strong);
+  }
+
+  .scrollbar-visible::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-foreground-faint);
   }
 
   .typing-dots span {

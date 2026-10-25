@@ -21,7 +21,7 @@ export const POST = withApi(
     if (input.mode === "mirror" && input.autoRunOnConnect) {
       await requirePasswordConfirm({ user: auth.user, password: password ?? "", ip: client.ip });
     }
-    return NextResponse.json({ profile: createProfile(actor, input) }, { status: 201 });
+    return NextResponse.json({ profile: await createProfile(actor, input) }, { status: 201 });
   },
   { body: createBodySchema },
 );

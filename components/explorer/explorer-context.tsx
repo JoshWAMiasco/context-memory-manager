@@ -245,7 +245,7 @@ export function ExplorerProvider({
   }
 
   const canWrite = storage.access === "write";
-  const readOnlyReason = canWrite ? undefined : "You can only view files in this storage.";
+  const readOnlyReason = canWrite ? undefined : (storage.readOnlyReason ?? "You can only view files in this storage.");
 
   // A memory's own folder isn't in a loaded listing there (its parent isn't shown), so its stat stands in.
   const findEntry = useCallback(

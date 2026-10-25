@@ -14,6 +14,7 @@ export const QUERY_KEYS = {
   memoryTemplates: () => ["memory-templates"] as const,
   /** The memory folders found on internal storages, for the dashboard. */
   memories: () => ["memories"] as const,
+  terminals: () => ["terminals"] as const,
   /** Encryption status of one entry; `encryption()` covers every folder. */
   encryption: (storageId?: string, entryPath?: string) =>
     storageId === undefined

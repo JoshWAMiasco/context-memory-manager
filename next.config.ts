@@ -12,6 +12,7 @@ const SERVER_EXTERNAL_PACKAGES = [
   "simple-git",
   "trash",
   "archiver",
+  "node-pty",
 ];
 
 const nextConfig: NextConfig = {

@@ -25,6 +25,7 @@ import { findRootRefusal } from "@/server/runtime/root-refusal";
 import { installOfflineGuardFromEnvironment } from "@/server/security/offline-guard";
 import { applyTrustedHeaders } from "@/server/security/trusted-headers";
 import { startBackgroundServices, stopBackgroundServices } from "@/server/services";
+import { handleTerminalUpgrade, isTerminalSocketRequest } from "@/server/terminal/socket";
 
 // Settings named CCM_… (before the rename to CMM) still apply.
 adoptLegacyEnvironment(process.env);
@@ -173,10 +174,16 @@ async function main(): Promise<void> {
   const address = await listen(server, config.port, config.bindHost);
 
   const upgradeRelay = new EventEmitter();
-  /* Upgraded sockets (dev HMR) leave the server's connection tracking, so shutdown closes them itself. */
+  /* Upgraded sockets (terminals, dev HMR) leave the server's connection tracking, so shutdown closes them itself. */
   const upgradedSockets = new Set<import("node:stream").Duplex>();
   server.on("upgrade", (request: http.IncomingMessage, socket: import("node:stream").Duplex, head: Buffer) => {
     applyTrustedHeaders(request);
+    if (isTerminalSocketRequest(request)) {
+      upgradedSockets.add(socket);
+      socket.once("close", () => upgradedSockets.delete(socket));
+      handleTerminalUpgrade(request, socket, head, { config, expectedLaunchToken });
+      return;
+    }
     const isAllowed =
       isDevelopment && (config.mode !== "desktop" || hasValidLaunchToken(request.headers.cookie, expectedLaunchToken));
     if (!isAllowed) {

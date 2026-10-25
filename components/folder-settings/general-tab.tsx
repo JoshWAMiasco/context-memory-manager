@@ -1,6 +1,8 @@
 "use client";
 
 import dayjs from "dayjs";
+import { HardDriveUpload } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/primitives/button";
 import { FormLabel } from "@/components/primitives/form-field";
@@ -10,6 +12,7 @@ import { announce, announceError, useExplorer } from "@/components/explorer/expl
 import { MemoryAppearanceFields } from "@/components/memory/memory-appearance-fields";
 import { useStat } from "@/lib/client/fs";
 import { useMemory, useMemoryMutations } from "@/lib/client/memory";
+import { buildMemoryBackupHref } from "@/lib/client/routes";
 import type { MemoryColor, MemoryIcon, MemorySummary } from "@/lib/memory";
 import { LoadingSkeleton } from "@/components/primitives/loading-skeleton";
 
@@ -114,8 +117,42 @@ function MemoryForm({
 }
 
 /**
+ * Backing the folder up into a new memory on another storage or drive: opens the Backup page's
+ * editor on it, or on every selected folder when it is one of several selected in the tree.
+ */
+function BackupSection({ folderPath, isMemory }: { folderPath: string; isMemory: boolean }) {
+  const explorer = useExplorer();
+  const router = useRouter();
+  const selectedFolders = explorer
+    .readActionPaths(folderPath)
+    .filter((actionPath) => actionPath === folderPath || explorer.findEntry(actionPath)?.type === "directory");
+  const otherCount = selectedFolders.length - 1;
+  return (
+    <div className="rounded-md border border-line bg-surface-subtle p-4" data-testid="folder-backup-section">
+      <div className="font-medium">Backup</div>
+      <p className="mt-1 text-sm text-foreground-muted">
+        Copy this {isMemory ? "memory" : "folder"}
+        {otherCount > 0 ? ` and the ${otherCount} other selected folder${otherCount === 1 ? "" : "s"}` : ""} into a new
+        memory on another drive. Plug the drive into another computer with CMM to find the memory there and copy it onto
+        that computer the same way.
+      </p>
+      <Button
+        variant="outline-primary"
+        className="mt-3"
+        leadingIcon={<HardDriveUpload className="h-4 w-4" />}
+        onClick={() => router.push(buildMemoryBackupHref(explorer.storage.id, selectedFolders))}
+        data-testid="folder-backup-button"
+      >
+        {otherCount > 0 ? `Back up ${selectedFolders.length} folders…` : "Back up to a new memory…"}
+      </Button>
+    </div>
+  );
+}
+
+/**
  * The General tab of Folder settings: a memory's name, description, icon and colour (or
- * Convert to memory for a plain folder), plus where the folder is and when it was created.
+ * Convert to memory for a plain folder), backing it up into a new memory, plus where the folder
+ * is and when it was created.
  *
  * @example
  * <GeneralTab path="persona" />
@@ -150,6 +187,7 @@ export function GeneralTab({ path: folderPath }: { path: string }) {
           </Button>
         </div>
       )}
+      {!isPending && <BackupSection folderPath={folderPath} isMemory={memory !== undefined} />}
       <dl className="grid grid-cols-[9rem_1fr] gap-y-2 text-sm">
         <dt className="text-foreground-subtle">Location</dt>
         <dd className="break-all">

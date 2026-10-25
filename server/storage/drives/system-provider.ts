@@ -26,6 +26,8 @@ export interface FileSystemSizeInfo {
   size: number;
   used: number;
   mount: string;
+  /** False for a read-only mount, null when the OS doesn't say (Windows). */
+  rw?: boolean | null;
 }
 
 const BLOCK_DEVICE_REFRESH_MILLISECONDS = 30_000;
@@ -111,6 +113,7 @@ interface DriveCandidate {
  *   "Mount". Unmounted partitions under 32 MB (boot and helper partitions) are ignored.
  * - A volume without a label is named after the drive model and size ("UDisk 4 GB"), never the
  *   device path.
+ * - A volume mounted read-only (macOS mounts NTFS that way) is `readOnly`.
  */
 export function classifyDrives(
   platform: NodeJS.Platform,
@@ -167,6 +170,7 @@ export function classifyDrives(
         removable: blockDevice.removable,
         protocol,
         device,
+        readOnly: fileSystemSize?.rw === false,
       },
     });
   }

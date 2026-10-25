@@ -10,7 +10,8 @@ import { goToSessionPage } from "@/lib/client/session-channel";
 
 /**
  * Starts the tab's server-event stream and turns events into cache invalidations: `fs.changed`
- * refreshes the folder listing, the entry and folder state, `drive.*` the storage list and trash,
+ * refreshes the folder listing, the entry and folder state, `drive.*` the storage list and trash
+ * (and the memories, when a drive is plugged in or out),
  * `job.*` update the cached jobs (so progress bars move live), `encryption.changed` (an unlock,
  * lock or job in an encrypted folder) every listing and file of that storage, `versioning.changed`
  * its history and undo state (and badges when versioning was turned on or off).
@@ -33,6 +34,9 @@ export function useServerEventInvalidation(): void {
         void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.stat(storageId, path) });
         if (change !== "changed") void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.trash() });
         void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.folderState(storageId) });
+      }),
+      eventsClient.on("memories.changed", () => {
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.memories() });
       }),
       eventsClient.on("protection.violation", ({ storageId, path }) => {
         void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.folderState(storageId) });
@@ -60,13 +64,19 @@ export function useServerEventInvalidation(): void {
         eventsClient.on(eventName, () => {
           void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.storages() });
           void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.trash() });
+          // A drive's memories come and go with it (capacity updates don't change them).
+          if (eventName !== "drive.updated") void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.memories() });
         }),
       ),
       eventsClient.on("job.progress", ({ jobId, progress }) => applyJobProgress(queryClient, jobId, progress)),
       eventsClient.on("job.state", ({ job }) => {
         applyJobState(queryClient, job);
         void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.jobs() });
-        if (job.type === "backup.run") void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.backup() });
+        if (job.type === "backup.run") {
+          void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.backup() });
+          // A memory backup makes a memory on its destination.
+          if (job.transfer?.memory) void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.memories() });
+        }
       }),
       eventsClient.on("session.locked", () => goToSessionPage("/lock")),
       eventsClient.on("session.destroyed", () => goToSessionPage("/login")),

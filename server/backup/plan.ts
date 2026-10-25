@@ -7,6 +7,7 @@ import { LEGACY_PART_SUFFIX } from "@/lib/fs/legacy-names";
 import { isSystemMetadataName } from "@/lib/fs/system-files";
 import { hashFile, PART_SUFFIX } from "@/server/backup/copy";
 import { walkTree, type TreeEntry } from "@/server/storage/copy-tree";
+import { joinStoragePath } from "@/server/storage/storage-path";
 
 /** FAT and exFAT keep modification times to 2 seconds, so closer than that counts as equal. */
 export const MTIME_TOLERANCE_MILLISECONDS = 2000;
@@ -37,6 +38,8 @@ export interface PlanEntry {
   mode: number;
   /** Bytes of the destination file this one replaces (they are freed by the copy). */
   replacesBytes: number;
+  /** Which source folder of a memory backup it comes from (`buildPartsPlan`); 0 for a folder backup. */
+  part?: number;
 }
 
 export interface PlanDeletion {
@@ -424,4 +427,87 @@ function toPlanEntry(sourceEntry: TreeEntry, targetPath: string, replacesBytes: 
     mode: sourceEntry.mode,
     replacesBytes,
   };
+}
+
+/** One source folder of a run, and the folder inside the run's target it goes into ("" for the target itself). */
+export interface PlanPart {
+  sourceAbsolutePath: string;
+  folder: string;
+}
+
+export interface BuildPartsPlanInput extends Omit<BuildPlanInput, "source"> {
+  parts: readonly PlanPart[];
+}
+
+function prefixPath(folder: string, relativePath: string): string {
+  return folder === "" ? relativePath : `${folder}/${relativePath}`;
+}
+
+/**
+ * Plans a run over several source folders, each into its own folder inside the target (a memory
+ * backup), as one plan: each folder is planned by `buildPlan`, then destination paths are made
+ * relative to the target, each copy entry notes its source folder (`part`), warnings name the
+ * folder they belong to, and free space is checked for the whole run. A single part that writes
+ * into the target itself plans exactly as `buildPlan`.
+ *
+ * @example
+ * const plan = await buildPartsPlan({ parts: [{ sourceAbsolutePath, folder: "notes" }, …], dest, mode, options });
+ */
+export async function buildPartsPlan({ parts, dest, onScan, ...input }: BuildPartsPlanInput): Promise<BackupPlan> {
+  const [onlyPart] = parts;
+  if (parts.length === 1 && onlyPart?.folder === "") {
+    return buildPlan({ ...input, source: { absolutePath: onlyPart.sourceAbsolutePath }, dest, onScan });
+  }
+  const merged: BackupPlan = {
+    copy: [],
+    skip: 0,
+    delete: [],
+    replace: [],
+    staleParts: [],
+    bytesTotal: 0,
+    filesTotal: 0,
+    warnings: [],
+    requiredBytes: 0,
+    freeBytes: dest.freeBytes,
+    insufficientSpace: false,
+    hash: "",
+  };
+  const hash = createHash("sha256").update(input.mode);
+  let scannedBefore = 0;
+  for (const [partIndex, part] of parts.entries()) {
+    let scannedInPart = 0;
+    const plan = await buildPlan({
+      ...input,
+      source: { absolutePath: part.sourceAbsolutePath },
+      dest: { ...dest, absolutePath: joinStoragePath(dest.absolutePath, ...part.folder.split("/")) },
+      onScan: (entryCount) => {
+        scannedInPart = entryCount;
+        onScan?.(scannedBefore + entryCount);
+      },
+    });
+    scannedBefore += scannedInPart;
+    const toTarget = (relativePath: string) => prefixPath(part.folder, relativePath);
+    for (const entry of plan.copy)
+      merged.copy.push({ ...entry, targetPath: toTarget(entry.targetPath), part: partIndex });
+    for (const deletion of plan.delete) merged.delete.push({ ...deletion, targetPath: toTarget(deletion.targetPath) });
+    for (const replacement of plan.replace) {
+      merged.replace.push({ ...replacement, targetPath: toTarget(replacement.targetPath) });
+    }
+    merged.staleParts.push(...plan.staleParts.map(toTarget));
+    for (const warning of plan.warnings) {
+      merged.warnings.push({
+        ...warning,
+        path: toTarget(warning.path),
+        ...(warning.targetPath === undefined ? {} : { targetPath: toTarget(warning.targetPath) }),
+      });
+    }
+    merged.skip += plan.skip;
+    merged.bytesTotal += plan.bytesTotal;
+    merged.filesTotal += plan.filesTotal;
+    merged.requiredBytes += plan.requiredBytes;
+    hash.update(`\0${part.folder}\0${plan.hash}`);
+  }
+  merged.insufficientSpace = merged.requiredBytes > dest.freeBytes;
+  merged.hash = hash.digest("hex");
+  return merged;
 }

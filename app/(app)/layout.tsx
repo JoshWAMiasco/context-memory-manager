@@ -1,6 +1,7 @@
 import { ApplicationShell } from "@/components/layout-shell/application-shell";
 import { SessionProviders } from "@/components/security/session-providers";
 import { UploadQueuePanel } from "@/components/explorer/upload-queue";
+import { TerminalDock } from "@/components/terminal/terminal-dock";
 import { ROLE_LABELS } from "@/lib/auth/policy";
 import { requirePageSession } from "@/server/auth/page-guard";
 import { getAutoLockSeconds } from "@/server/settings/store";
@@ -14,6 +15,7 @@ export default async function SignedInLayout({ children }: LayoutProps<"/">) {
         {children}
       </ApplicationShell>
       <UploadQueuePanel />
+      <TerminalDock />
     </SessionProviders>
   );
 }

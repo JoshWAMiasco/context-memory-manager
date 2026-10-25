@@ -6,7 +6,7 @@ import { Tooltip } from "@/components/interactive/tooltip";
 import { BrainIcon } from "@/components/icons/cmm-icons";
 import { useExplorer } from "@/components/explorer/explorer-context";
 import { TREE_TOGGLE_SHORTCUT, useTreeVisibility } from "@/components/explorer/tree-visibility";
-import { formatShortcut } from "@/lib/client/shortcuts";
+import { useShortcutLabel } from "@/lib/client/shortcuts";
 
 function ToolbarButton({
   label,
@@ -47,6 +47,7 @@ function ToolbarButton({
 export function TreeToolbar() {
   const explorer = useExplorer();
   const { toggleTree } = useTreeVisibility();
+  const hideShortcutLabel = useShortcutLabel(TREE_TOGGLE_SHORTCUT);
   const writeReason = explorer.readWriteReason(explorer.readTargetFolder());
   return (
     <div
@@ -96,7 +97,7 @@ export function TreeToolbar() {
         onClick={explorer.collapseAll}
       />
       <ToolbarButton
-        label={`Hide file tree (${formatShortcut(TREE_TOGGLE_SHORTCUT)})`}
+        label={`Hide file tree (${hideShortcutLabel})`}
         icon={PanelLeftClose}
         testId="tree-hide"
         onClick={toggleTree}

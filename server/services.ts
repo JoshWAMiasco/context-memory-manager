@@ -6,6 +6,7 @@ import { createProtectionService } from "@/server/protection/tamper";
 import { createLegacyNamesService } from "@/server/storage/legacy-service";
 import { createStorageService } from "@/server/storage/storage-service";
 import { createUploadCleanupService } from "@/server/storage/upload";
+import { createTerminalService } from "@/server/terminal";
 import { createTrashAutoPurgeService } from "@/server/trash";
 import { createVersioningService } from "@/server/versioning";
 
@@ -27,6 +28,7 @@ const BACKGROUND_SERVICES: BackgroundService[] = [
   createBackupService(),
   createUploadCleanupService(),
   createTrashAutoPurgeService(),
+  createTerminalService(),
 ];
 
 const startedServices: BackgroundService[] = [];

@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/primitives/empty-state";
 import { Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/components/primitives/table";
 import { formatFileSize } from "@/components/page-sections/applications/file-manager/format-file-size";
 import type { BackupRunSummary } from "@/lib/api-types";
+import { readMemoryFolderName } from "@/lib/backup";
 
 const STATUS_TONES: Record<BackupRunSummary["status"], BadgeTone> = {
   running: "primary",
@@ -64,8 +65,15 @@ export function RunDetailsModal({ run, onClose }: { run: BackupRunSummary; onClo
               {run.source.label}
               {run.source.path ? ` / ${run.source.path}` : ""} → {run.destination.label}
               {run.destination.path ? ` / ${run.destination.path}` : ""}
+              {run.memory ? ` / ${readMemoryFolderName(run.memory.name)}` : ""}
             </span>
           </div>
+          {run.memory && (
+            <p className="text-foreground-muted" data-testid="run-memory-sources">
+              Memory &ldquo;{run.memory.name}&rdquo; from{" "}
+              {run.memory.paths.map((memoryPath) => memoryPath || run.source.label).join(", ")}
+            </p>
+          )}
           <dl className="grid grid-cols-2 gap-x-6 gap-y-1 sm:grid-cols-3">
             <dt className="text-foreground-subtle">Started</dt>
             <dd className="sm:col-span-2">{formatTime(run.startedAt)}</dd>

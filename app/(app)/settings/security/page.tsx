@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { SettingNumberPanel } from "@/components/settings/setting-number-panel";
 import { ActiveSessionsPanel, ChangePasswordPanel, StepUpActionsPanel } from "@/components/settings/security-panels";
+import { TerminalSettingPanel } from "@/components/settings/terminal-setting-panel";
 import { requirePageSession } from "@/server/auth/page-guard";
 import { getConfig } from "@/server/config";
 import { getSetting } from "@/server/settings/store";
@@ -57,6 +58,12 @@ export default async function SecuritySettingsPage() {
       )}
       {isAdmin && getConfig().mode === "server" && (
         <StepUpActionsPanel initialActions={getSetting("security.stepUpActions")} />
+      )}
+      {isAdmin && (
+        <TerminalSettingPanel
+          initialValue={getSetting("terminal.enabled")}
+          needsPasswordToEnable={getConfig().mode === "server"}
+        />
       )}
       <ActiveSessionsPanel />
     </>

@@ -46,7 +46,7 @@ export function JobProgressDetails({
   const isPaused = job.status === "paused";
   return (
     <div
-      className={mergeClassNames("grid gap-1.5", className)}
+      className={mergeClassNames("grid grid-cols-1 gap-1.5", className)}
       data-testid="job-progress"
       data-job-id={job.id}
       data-status={job.status}

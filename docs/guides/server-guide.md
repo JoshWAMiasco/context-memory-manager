@@ -163,7 +163,7 @@ You need the pair that matches your server. Copy both files.
 If the server is reachable over SSH from the computer with the package, `scp` works just as well:
 
 ```bash
-scp cmm-server-1.0.0-linux-x64.tar.gz cmm-server-1.0.0-linux-x64.tar.gz.sha256 admin@cmm-server:
+scp cmm-server-1.1.0-linux-x64.tar.gz cmm-server-1.1.0-linux-x64.tar.gz.sha256 admin@cmm-server:
 ```
 
 ## Check the download
@@ -173,13 +173,13 @@ The `.sha256` file holds the SHA-256 checksum of the tarball. Check it before yo
 1. Go to the folder with both files and run:
 
    ```bash
-   sha256sum -c cmm-server-1.0.0-linux-x64.tar.gz.sha256
+   sha256sum -c cmm-server-1.1.0-linux-x64.tar.gz.sha256
    ```
 
 2. You should see:
 
    ```text
-   cmm-server-1.0.0-linux-x64.tar.gz: OK
+   cmm-server-1.1.0-linux-x64.tar.gz: OK
    ```
 
 > [!WARNING]
@@ -191,8 +191,8 @@ The `.sha256` file holds the SHA-256 checksum of the tarball. Check it before yo
 1. Unpack the tarball and go into the package folder:
 
    ```bash
-   tar -xzf cmm-server-1.0.0-linux-x64.tar.gz
-   cd cmm-server-1.0.0-linux-x64
+   tar -xzf cmm-server-1.1.0-linux-x64.tar.gz
+   cd cmm-server-1.1.0-linux-x64
    ```
 
    Unpacking prints nothing when all is well.
@@ -222,7 +222,7 @@ configuration, the Caddy example and the USB permission rules. `BUILD-INFO.txt` 
 2. Confirm when it asks:
 
    ```text
-   Install CMM 1.0.0 (x64) as the systemd service "cmm"? [y/N] y
+   Install CMM 1.1.0 (x64) as the systemd service "cmm"? [y/N] y
    ```
 
 3. Wait for the summary box. The installer starts the service and waits up to 60 seconds for it to answer.
@@ -281,14 +281,14 @@ installer; the others come from tools it calls):
 
 ```text
 cmm-install: created the system user cmm
-cmm-install: installed CMM 1.0.0 in /opt/cmm/1.0.0
+cmm-install: installed CMM 1.1.0 in /opt/cmm/1.1.0
 cmm-install: wrote /etc/cmm/config.json
 cmm-install: installed /etc/systemd/system/cmm.service and its storage drop-in
 cmm-install: installed the udisks2 polkit rule (CMM can mount and eject USB drives)
 Created symlink /etc/systemd/system/multi-user.target.wants/cmm.service → /etc/systemd/system/cmm.service.
 
 +----------------------------------------------------------------------------+
-| CMM 1.0.0 is installed and running.                                        |
+| CMM 1.1.0 is installed and running.                                        |
 |                                                                            |
 | Open CMM in a browser:                                                     |
 |   http://192.168.1.20:7420                                                 |
@@ -321,9 +321,9 @@ The first line of the box tells you how it went:
 
 | First line | Meaning |
 |---|---|
-| `CMM 1.0.0 is installed and running.` | All good. |
-| `CMM 1.0.0 is installed (not started: sudo systemctl start cmm).` | You used `--no-start`. |
-| `CMM 1.0.0 is installed, but it is not answering yet (sudo cmm logs).` | The service didn't answer within 60 seconds. See *Logs and troubleshooting*. |
+| `CMM 1.1.0 is installed and running.` | All good. |
+| `CMM 1.1.0 is installed (not started: sudo systemctl start cmm).` | You used `--no-start`. |
+| `CMM 1.1.0 is installed, but it is not answering yet (sudo cmm logs).` | The service didn't answer within 60 seconds. See *Logs and troubleshooting*. |
 
 > [!WARNING]
 > The setup code lets whoever has it create the first admin account. Treat it like a password: don't paste it
@@ -336,10 +336,10 @@ sudo cmm status
 ```
 
 ```text
-CMM:       1.0.0
-Installed: 1.0.0
+CMM:       1.1.0
+Installed: 1.1.0
 Service:   active
-Health:    ok (server mode, version 1.0.0, SQLite 3.53.4, argon2 ok)
+Health:    ok (server mode, version 1.1.0, SQLite 3.53.4, argon2 ok)
 Listening: http://0.0.0.0:7420
 Open:      http://192.168.1.20:7420
 Storages:  1
@@ -971,6 +971,15 @@ Encrypted folders work the same on a server as on the desktop, and the server ne
 
 So a stolen server disk, or a backup of it, holds only ciphertext for encrypted folders.
 
+# Terminals
+
+CMM can open terminals in folders, docked along the bottom of the browser window, to run commands or command-line
+agents such as Claude Code. On a server they are **off** until an admin turns them on in **Settings › Security ›
+Terminals**, which asks for the admin's password.
+
+A terminal is a shell on the server, running as the `cmm` service user, inside the limits of its systemd service. Anyone
+who can open one can do anything that user can, so only admins can open terminals. Leave them off unless you need them.
+
 # Users and roles
 
 ## Roles
@@ -1200,10 +1209,10 @@ from elsewhere too, run `sudo cmm add-storage <path>` for each one to re-apply a
 Each version is installed in its own folder, with two links:
 
 ```text
-/opt/cmm/1.0.0
-/opt/cmm/1.0.1
-/opt/cmm/current  -> 1.0.1     what the service runs
-/opt/cmm/previous -> 1.0.0     what cmm rollback goes back to
+/opt/cmm/1.1.0
+/opt/cmm/1.1.0
+/opt/cmm/current  -> 1.1.0     what the service runs
+/opt/cmm/previous -> 1.1.0     what cmm rollback goes back to
 ```
 
 The installer keeps the current and the previous version and removes anything older.
@@ -1215,15 +1224,15 @@ The installer keeps the current and the previous version and removes anything ol
 2. Unpack it and run its installer:
 
    ```bash
-   tar -xzf cmm-server-1.0.1-linux-x64.tar.gz
-   cd cmm-server-1.0.1-linux-x64
+   tar -xzf cmm-server-1.1.0-linux-x64.tar.gz
+   cd cmm-server-1.1.0-linux-x64
    sudo ./install.sh
    ```
 
 3. Look for the upgrade line:
 
    ```text
-   cmm-install: upgrading from 1.0.0 to 1.0.1 (roll back with: sudo cmm rollback)
+   cmm-install: upgrading from 1.1.0 to 1.1.0 (roll back with: sudo cmm rollback)
    ```
 
 4. Check the result:
@@ -1232,7 +1241,7 @@ The installer keeps the current and the previous version and removes anything ol
    sudo cmm status
    ```
 
-   `Installed` should read `1.0.1 (previous: 1.0.0)`.
+   `Installed` should read `1.1.0 (previous: 1.1.0)`.
 
 The upgrade keeps `/etc/cmm/config.json`, `/var/lib/cmm` and the storages. It replaces `cmm.service` and rewrites
 the storage drop-in from the config. When CMM starts, it updates its database to the new version by itself.
@@ -1258,7 +1267,7 @@ sudo cmm rollback
 ```
 
 ```text
-Switched CMM from 1.0.1 to 1.0.0. Run `sudo cmm rollback` again to go back to 1.0.1.
+Switched CMM from 1.1.0 to 1.1.0. Run `sudo cmm rollback` again to go back to 1.1.0.
 Restarted CMM (if it was running).
 ```
 

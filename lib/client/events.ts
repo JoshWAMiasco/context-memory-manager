@@ -13,6 +13,7 @@ export interface ServerEventMap {
   "encryption.changed": { storageId: string; path: string; folderId: string; change: "unlocked" | "locked" | "state" };
   "versioning.changed": { storageId: string; path: string; change: "enabled" | "disabled" | "commit" };
   "backup.triggered": { profileId: string; name: string; jobId: string; storageId: string };
+  "memories.changed": { storageId: string };
 }
 
 export type ServerEventName = keyof ServerEventMap;
@@ -32,6 +33,7 @@ const EVENT_NAMES = Object.keys({
   "encryption.changed": 0,
   "versioning.changed": 0,
   "backup.triggered": 0,
+  "memories.changed": 0,
 } satisfies Record<ServerEventName, 0>) as ServerEventName[];
 
 const MAXIMUM_BACKOFF_MILLISECONDS = 30_000;

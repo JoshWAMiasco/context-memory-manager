@@ -14,13 +14,15 @@ import {
 } from "@/server/auth/session";
 import { getConfig, type CmmConfig } from "@/server/config";
 import { ApiRouteError, forbidden, unauthenticated } from "@/server/http/api-error";
-import { isSecureRequest, isTrustedProxy, normalizeIp, resolveClientIp } from "@/server/security/client-ip";
+import { isSecureRequest, resolveClientIp } from "@/server/security/client-ip";
 import { hasValidLaunchToken, readExpectedLaunchToken } from "@/server/security/launch-token";
 import { classifyClient } from "@/server/security/network";
+import { isSameOriginRequest } from "@/server/security/same-origin";
 import { ACTION_TOKEN_HEADER, ACTION_TOKEN_QUERY_PARAMETER, requireStepUp } from "@/server/security/step-up";
-import { CLIENT_IP_HEADER } from "@/server/security/trusted-headers";
 import type { FileActor } from "@/server/storage/pipeline";
 import { requireStorageAccess, type ActiveStorage } from "@/server/storage/roots";
+
+export { isSameOriginRequest };
 
 const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
@@ -46,29 +48,6 @@ export function readRequestClient(requestHeaders: Headers, config: CmmConfig = g
     isSecure: isSecureRequest(requestHeaders, Boolean(config.tls), config.trustedProxies),
     userAgent: requestHeaders.get("user-agent"),
   };
-}
-
-/**
- * CSRF check for mutating requests: `Origin`, when sent, must name this host. Browsers always send
- * it on cross-site POSTs; non-browser clients (CLI, scripts) send none and can't ride a session
- * cookie anyway, because the cookie is SameSite=Strict.
- */
-export function isSameOriginRequest(requestHeaders: Headers, config: CmmConfig = getConfig()): boolean {
-  const origin = requestHeaders.get("origin");
-  if (origin === null) {
-    const fetchSite = requestHeaders.get("sec-fetch-site");
-    return fetchSite === null || fetchSite === "same-origin" || fetchSite === "none";
-  }
-  let originHost: string;
-  try {
-    originHost = new URL(origin).host;
-  } catch {
-    return false;
-  }
-  const acceptedHosts = [requestHeaders.get("host")];
-  const peerAddress = normalizeIp(requestHeaders.get(CLIENT_IP_HEADER) ?? "");
-  if (isTrustedProxy(peerAddress, config.trustedProxies)) acceptedHosts.push(requestHeaders.get("x-forwarded-host"));
-  return acceptedHosts.includes(originHost);
 }
 
 interface BaseApiOptions<Body, Query> {
@@ -137,7 +116,14 @@ const FILE_SYSTEM_ERRORS: Record<string, () => ApiRouteError> = {
   ENOTDIR: () => new ApiRouteError(400, "VALIDATION_FAILED", "Part of that path is a file, not a folder."),
   EISDIR: () => new ApiRouteError(400, "VALIDATION_FAILED", "That path is a folder, not a file."),
   EACCES: () => new ApiRouteError(403, "FORBIDDEN", "The operating system denied access to that file or folder."),
-  EPERM: () => new ApiRouteError(403, "FORBIDDEN", "The operating system does not allow that operation."),
+  EPERM: () =>
+    new ApiRouteError(
+      403,
+      "FORBIDDEN",
+      process.platform === "darwin"
+        ? "macOS didn't let CMM do that. If it asked whether CMM may open this drive or folder, allow it in System Settings › Privacy & Security › Files and Folders, then try again."
+        : "The operating system does not allow that operation.",
+    ),
   EROFS: () => new ApiRouteError(403, "FORBIDDEN", "That drive is read-only."),
   ENOSPC: () => new ApiRouteError(507, "INSUFFICIENT_SPACE", "There is not enough free space on that drive."),
   ENAMETOOLONG: () => new ApiRouteError(400, "VALIDATION_FAILED", "That name is too long."),

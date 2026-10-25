@@ -10,6 +10,11 @@ export interface FileSystemChangedEvent {
   change: "added" | "changed" | "removed";
 }
 
+/** The dashboard's search found memories it hadn't shown yet (it kept looking after answering). */
+export interface MemoriesChangedEvent {
+  storageId: string;
+}
+
 export interface DriveEvent {
   storageId: string;
   label: string;
@@ -99,13 +104,14 @@ export interface CmmEventMap {
   "encryption.changed": [EncryptionChangedEvent];
   "versioning.changed": [VersioningChangedEvent];
   "backup.triggered": [BackupTriggeredEvent];
+  "memories.changed": [MemoriesChangedEvent];
 }
 
 export type CmmEventName = keyof CmmEventMap;
 
 /** The SSE topics a client subscribes to (`/api/events?topics=fs,drives`) and the events in each. */
 export const EVENT_TOPICS = {
-  fs: ["fs.changed", "protection.violation", "encryption.changed", "versioning.changed"],
+  fs: ["fs.changed", "protection.violation", "encryption.changed", "versioning.changed", "memories.changed"],
   drives: ["drive.added", "drive.removed", "drive.updated"],
   jobs: ["job.progress", "job.state", "backup.triggered"],
   session: ["session.locked", "session.destroyed"],

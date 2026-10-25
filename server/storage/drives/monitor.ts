@@ -26,7 +26,7 @@ export function toDriveStorageId(driveId: string): string {
   return `ext-${driveId.replaceAll(/[^\w-]/g, "_")}`;
 }
 
-/** Compares two drive lists by id: plugged in, unplugged, and changed (mount, label or capacity). */
+/** Compares two drive lists by id: plugged in, unplugged, and changed (mount, label, capacity or read-only). */
 export function diffDrives(previousDrives: ReadonlyMap<string, Drive>, nextDrives: readonly Drive[]): DriveChanges {
   const changes: DriveChanges = { added: [], removed: [], updated: [] };
   const nextIds = new Set<string>();
@@ -41,6 +41,7 @@ export function diffDrives(previousDrives: ReadonlyMap<string, Drive>, nextDrive
       previousDrive.mountPath !== nextDrive.mountPath ||
       previousDrive.label !== nextDrive.label ||
       previousDrive.size !== nextDrive.size ||
+      previousDrive.readOnly !== nextDrive.readOnly ||
       Math.abs(previousDrive.used - nextDrive.used) >= CAPACITY_CHANGE_BYTES
     ) {
       changes.updated.push(nextDrive);

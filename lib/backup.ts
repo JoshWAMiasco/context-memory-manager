@@ -4,6 +4,7 @@
  */
 import { z } from "zod";
 import type { BackupMode } from "@/lib/api-types";
+import { slugifyMemoryName } from "@/lib/memory";
 
 export const BACKUP_MODES = ["copy", "mirror", "snapshot"] as const satisfies readonly BackupMode[];
 
@@ -27,10 +28,29 @@ export const ADHOC_BACKUP_NAME = "Ad-hoc backup";
 
 const MAX_PATH_LENGTH = 4096;
 const MAX_EXCLUDES = 100;
+const MAX_MEMORY_FOLDERS = 100;
+
+/**
+ * The folder a memory backup creates inside its destination, named like a new memory's.
+ *
+ * @example
+ * readMemoryFolderName("Agent memory"); // "agent-memory"
+ */
+export function readMemoryFolderName(memoryName: string): string {
+  return slugifyMemoryName(memoryName.trim());
+}
 
 export const backupEndpointSchema = z.object({
   storageId: z.string().min(1, "Choose a storage."),
   path: z.string().max(MAX_PATH_LENGTH).default(""),
+});
+
+export const backupMemorySchema = z.object({
+  name: z.string().trim().min(1, "Name the memory.").max(100),
+  paths: z
+    .array(z.string().max(MAX_PATH_LENGTH))
+    .min(1, "Choose at least one folder to back up.")
+    .max(MAX_MEMORY_FOLDERS, `Back up at most ${MAX_MEMORY_FOLDERS} folders at once.`),
 });
 
 export const backupOptionsSchema = z.object({
@@ -50,6 +70,7 @@ export const backupProfileInputSchema = backupOptionsSchema.extend({
   source: backupEndpointSchema,
   destination: backupEndpointSchema,
   mode: z.enum(BACKUP_MODES),
+  memory: backupMemorySchema.optional(),
   autoRunOnConnect: z.boolean().default(false),
   autoResume: z.boolean().default(true),
 });
@@ -59,6 +80,7 @@ export const adhocBackupSchema = backupOptionsSchema.extend({
   source: backupEndpointSchema,
   destination: backupEndpointSchema,
   mode: z.enum(BACKUP_MODES),
+  memory: backupMemorySchema.optional(),
   autoResume: z.boolean().default(true),
 });
 

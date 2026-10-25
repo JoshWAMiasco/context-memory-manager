@@ -18,6 +18,8 @@ const EXTERNAL_PACKAGES = [
   "simple-git",
   "trash",
   "archiver",
+  "node-pty",
+  "ws",
 ];
 
 async function bundle(entryPoint: string, outfile: string): Promise<void> {

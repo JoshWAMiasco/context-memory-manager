@@ -10,12 +10,14 @@ const fakeDrivesSchema = z.array(
     dir: z.string().min(1).nullable(),
     /** The file system to report ("vfat" to try FAT32 limits); "fake" when left out. */
     fsType: z.string().min(1).optional(),
+    /** Report the drive as mounted read-only. */
+    readOnly: z.boolean().optional(),
   }),
 );
 
 /**
  * Test drives from the JSON file named by `CMM_TEST_FAKE_DRIVES_FILE`: a list of
- * `{ id, label, dir, fsType? }`, where `dir` is the folder that stands in for the mount point (null for a
+ * `{ id, label, dir, fsType?, readOnly? }`, where `dir` is the folder that stands in for the mount point (null for a
  * drive that is plugged in but not mounted). The file is re-read when its modification time
  * changes; a missing file means no drives.
  */
@@ -55,6 +57,7 @@ export class FakeDriveProvider implements DriveProvider {
             removable: true,
             protocol: "usb",
             device: `fake:${fakeDrive.id}`,
+            readOnly: fakeDrive.readOnly ?? false,
           };
         }),
       );

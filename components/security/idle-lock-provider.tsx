@@ -101,7 +101,10 @@ export function IdleLockProvider({ autoLockSeconds, children }: { autoLockSecond
       }
     };
 
-    for (const eventName of ACTIVITY_EVENTS) window.addEventListener(eventName, handleUserActivity, { passive: true });
+    // Capture phase: a terminal or editor stops the keys it handles from bubbling, and they still count.
+    for (const eventName of ACTIVITY_EVENTS) {
+      window.addEventListener(eventName, handleUserActivity, { passive: true, capture: true });
+    }
     document.addEventListener("visibilitychange", handleVisibilityChange);
     sessionChannel?.addEventListener("message", handleChannelMessage);
     const idleTimer = window.setInterval(() => {
@@ -127,7 +130,9 @@ export function IdleLockProvider({ autoLockSeconds, children }: { autoLockSecond
     }, IDLE_CHECK_INTERVAL_MILLISECONDS);
 
     return () => {
-      for (const eventName of ACTIVITY_EVENTS) window.removeEventListener(eventName, handleUserActivity);
+      for (const eventName of ACTIVITY_EVENTS) {
+        window.removeEventListener(eventName, handleUserActivity, { capture: true });
+      }
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       sessionChannel?.removeEventListener("message", handleChannelMessage);
       sessionChannel?.close();

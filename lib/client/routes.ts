@@ -42,3 +42,33 @@ export function parseStorageHref(pathname: string): { storageId: string; path: s
   };
   return { storageId: decode(pathSegments[1]), path: pathSegments.slice(2).map(decode).join("/") };
 }
+
+/** The search parameters that open the Backup page's editor on a new memory backup of some folders. */
+export const BACKUP_STORAGE_PARAMETER = "storage";
+export const BACKUP_FOLDER_PARAMETER = "folder";
+
+/**
+ * The Backup page, opening the editor on a new memory backup of these folders of one storage:
+ * `/backup?storage=<id>&folder=<path>&folder=<path>`.
+ *
+ * @example
+ * buildMemoryBackupHref("home", ["notes", "persona"]); // "/backup?storage=home&folder=notes&folder=persona"
+ */
+export function buildMemoryBackupHref(storageId: string, folderPaths: readonly string[]): string {
+  const searchParameters = new URLSearchParams({ [BACKUP_STORAGE_PARAMETER]: storageId });
+  for (const folderPath of folderPaths) searchParameters.append(BACKUP_FOLDER_PARAMETER, folderPath);
+  return `/backup?${searchParameters}`;
+}
+
+/** Reads `{ storageId, paths }` back from the Backup page's search parameters, or undefined when there are none. */
+export function parseMemoryBackupSearch(
+  searchParameters: Record<string, string | string[] | undefined>,
+): { storageId: string; paths: string[] } | undefined {
+  const storageId = searchParameters[BACKUP_STORAGE_PARAMETER];
+  const folderParameter = searchParameters[BACKUP_FOLDER_PARAMETER];
+  const paths = (Array.isArray(folderParameter) ? folderParameter : [folderParameter]).filter(
+    (folderPath): folderPath is string => typeof folderPath === "string",
+  );
+  if (typeof storageId !== "string" || storageId === "" || paths.length === 0) return undefined;
+  return { storageId, paths: [...new Set(paths)] };
+}

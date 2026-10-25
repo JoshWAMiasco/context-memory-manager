@@ -20,6 +20,8 @@ next-env.d.ts
 
 # local data
 /.cmm-dev-data/
+# this machine's settings for install:desktop (its code signing identity)
+/.cmm-local.json
 
 # misc
 .DS_Store

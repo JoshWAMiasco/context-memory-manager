@@ -23,7 +23,7 @@ export const PATCH = withApi(
     if (becomesUnattendedMirror) {
       await requirePasswordConfirm({ user: auth.user, password: password ?? "", ip: client.ip });
     }
-    return NextResponse.json({ profile: updateProfile(actor, profileId, input) });
+    return NextResponse.json({ profile: await updateProfile(actor, profileId, input) });
   },
   { body: updateBodySchema },
 );

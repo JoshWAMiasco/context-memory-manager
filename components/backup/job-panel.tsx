@@ -7,7 +7,8 @@ import { Button } from "@/components/primitives/button";
 import { Card } from "@/components/primitives/card";
 import { EmptyState } from "@/components/primitives/empty-state";
 import { StaticAlert } from "@/components/primitives/static-alert";
-import type { BackupPhase, JobSummary, StorageSummary } from "@/lib/api-types";
+import type { BackupPhase, JobSummary, JobTransfer, StorageSummary } from "@/lib/api-types";
+import { readMemoryFolderName } from "@/lib/backup";
 import { isActiveJob, useJobControls } from "@/lib/client/jobs";
 
 const PHASE_LABELS: Record<BackupPhase, string> = {
@@ -21,6 +22,21 @@ const PHASE_LABELS: Record<BackupPhase, string> = {
 function describeEndpoint(storages: readonly StorageSummary[], storageId: string, endpointPath: string): string {
   const label = storages.find((storage) => storage.id === storageId)?.label ?? "Unplugged drive";
   return endpointPath === "" ? label : `${label} / ${endpointPath}`;
+}
+
+/** A transfer's source: its folder, or a memory backup's folders ("Home: 3 folders"). */
+function describeSource(storages: readonly StorageSummary[], transfer: JobTransfer): string {
+  const paths = transfer.memory?.paths;
+  if (!paths || paths.length === 1) {
+    return describeEndpoint(storages, transfer.source.storageId, paths?.[0] ?? transfer.source.path);
+  }
+  return `${describeEndpoint(storages, transfer.source.storageId, "")}: ${paths.length} folders`;
+}
+
+/** A transfer's destination, with a memory backup's memory folder. */
+function describeDestination(storages: readonly StorageSummary[], transfer: JobTransfer): string {
+  const destination = describeEndpoint(storages, transfer.destination.storageId, transfer.destination.path);
+  return transfer.memory ? `${destination} / ${readMemoryFolderName(transfer.memory.name)}` : destination;
 }
 
 function readStatusText(job: JobSummary): string {
@@ -58,7 +74,7 @@ export function BackupJobPanel({ jobs, storages }: { jobs: JobSummary[]; storage
         return (
           <Card
             key={job.id}
-            className="grid gap-3 p-4"
+            className="grid grid-cols-1 gap-3 p-4"
             data-testid="backup-job-card"
             data-job-id={job.id}
             data-status={job.status}
@@ -66,13 +82,9 @@ export function BackupJobPanel({ jobs, storages }: { jobs: JobSummary[]; storage
             <div className="flex flex-wrap items-center gap-2 text-sm">
               {transfer && (
                 <>
-                  <span className="min-w-0 truncate font-medium">
-                    {describeEndpoint(storages, transfer.source.storageId, transfer.source.path)}
-                  </span>
+                  <span className="min-w-0 truncate font-medium">{describeSource(storages, transfer)}</span>
                   <ArrowRight className="h-4 w-4 flex-none text-foreground-subtle" aria-hidden />
-                  <span className="min-w-0 truncate font-medium">
-                    {describeEndpoint(storages, transfer.destination.storageId, transfer.destination.path)}
-                  </span>
+                  <span className="min-w-0 truncate font-medium">{describeDestination(storages, transfer)}</span>
                   <BackupModeBadge mode={transfer.mode} />
                 </>
               )}

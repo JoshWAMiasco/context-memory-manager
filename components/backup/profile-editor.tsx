@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Eye, Play, Save, X } from "lucide-react";
+import { AlertTriangle, Eye, Folder, FolderPlus, Play, Save, X } from "lucide-react";
 import { useState, type KeyboardEvent } from "react";
 import { FolderPicker } from "@/components/explorer/folder-picker";
 import { Slideover } from "@/components/interactive/slideover";
@@ -13,22 +13,34 @@ import { PasswordInput } from "@/components/primitives/password-input";
 import { StaticAlert } from "@/components/primitives/static-alert";
 import { FormErrorAlert } from "@/components/security/form-error-alert";
 import { formatFileSize } from "@/components/page-sections/applications/file-manager/format-file-size";
-import type { BackupEndpoint, BackupPreview, BackupProfile, BackupProfileInput, StorageSummary } from "@/lib/api-types";
+import type {
+  BackupEndpoint,
+  BackupMemory,
+  BackupPreview,
+  BackupProfile,
+  BackupProfileInput,
+  StorageSummary,
+} from "@/lib/api-types";
 import {
   BACKUP_MODE_DESCRIPTIONS,
   BACKUP_MODE_LABELS,
   BACKUP_MODES,
   backupProfileInputSchema,
   MIRROR_WARNING,
+  readMemoryFolderName,
 } from "@/lib/backup";
 import { useBackupMutations } from "@/lib/client/backup";
 import { readBaseName } from "@/lib/client/query-keys";
 
-/** What the editor starts with: a profile to edit, or endpoints from a drag on the topology. */
+/**
+ * What the editor starts with: a profile to edit, endpoints from a drag on the topology, or folders
+ * chosen in the explorer for a memory backup (`memory`, its name still empty).
+ */
 export interface ProfileEditorSeed {
   profile?: BackupProfile;
   source?: Partial<BackupEndpoint>;
   destination?: Partial<BackupEndpoint>;
+  memory?: BackupMemory;
 }
 
 function toInput(profile: BackupProfile): BackupProfileInput {
@@ -37,6 +49,7 @@ function toInput(profile: BackupProfile): BackupProfileInput {
     source: { storageId: profile.source.storageId, path: profile.source.path },
     destination: { storageId: profile.destination.storageId, path: profile.destination.path },
     mode: profile.mode,
+    ...(profile.memory ? { memory: profile.memory } : {}),
     compare: profile.compare,
     verify: profile.verify,
     includeGit: profile.includeGit,
@@ -47,16 +60,32 @@ function toInput(profile: BackupProfile): BackupProfileInput {
   };
 }
 
+/**
+ * Where a backup from `sourceStorageId` goes by default: a drive for this computer's folders, this
+ * computer for a drive's (restoring a backup made elsewhere), else any other storage it can write to.
+ */
+function pickDestination(storages: readonly StorageSummary[], sourceStorageId: string): string {
+  const sourceIsInternal =
+    (storages.find((storage) => storage.id === sourceStorageId)?.kind ?? "internal") === "internal";
+  const writable = storages.filter(
+    (storage) => storage.available && storage.access === "write" && storage.id !== sourceStorageId,
+  );
+  const preferred = writable.find((storage) => (storage.kind === "internal") !== sourceIsInternal);
+  return (preferred ?? writable[0])?.id ?? "";
+}
+
 function buildInitialInput(seed: ProfileEditorSeed, storages: readonly StorageSummary[]): BackupProfileInput {
   if (seed.profile) return toInput(seed.profile);
   const firstInternal = storages.find((storage) => storage.kind === "internal" && storage.available);
-  const firstDrive = storages.find(
-    (storage) => storage.kind !== "internal" && storage.available && storage.access === "write",
-  );
+  const sourceStorageId = seed.source?.storageId ?? firstInternal?.id ?? "";
   return {
     name: "",
-    source: { storageId: seed.source?.storageId ?? firstInternal?.id ?? "", path: seed.source?.path ?? "" },
-    destination: { storageId: seed.destination?.storageId ?? firstDrive?.id ?? "", path: seed.destination?.path ?? "" },
+    source: { storageId: sourceStorageId, path: seed.source?.path ?? "" },
+    destination: {
+      storageId: seed.destination?.storageId ?? pickDestination(storages, sourceStorageId),
+      path: seed.destination?.path ?? "",
+    },
+    ...(seed.memory ? { memory: seed.memory } : {}),
     mode: "copy",
     compare: "size-mtime",
     verify: false,
@@ -76,11 +105,16 @@ function readFieldErrors(input: BackupProfileInput): Record<string, string> {
   return fieldErrors;
 }
 
+/**
+ * A storage, then a folder in it. For a destination (`needsWrite`), drives mounted read-only are
+ * listed but can't be chosen, so it's clear why they aren't offered.
+ */
 function EndpointField({
   idPrefix,
   label,
   endpoint,
   storages,
+  needsWrite = false,
   errorMessage,
   onChange,
 }: {
@@ -88,10 +122,12 @@ function EndpointField({
   label: string;
   endpoint: BackupEndpoint;
   storages: readonly StorageSummary[];
+  needsWrite?: boolean;
   errorMessage?: string;
   onChange: (endpoint: BackupEndpoint) => void;
 }) {
   const storage = storages.find((candidate) => candidate.id === endpoint.storageId);
+  const isReadOnly = (candidate: StorageSummary) => needsWrite && candidate.access !== "write";
   return (
     <div className="grid gap-2">
       <FormLabel htmlFor={`${idPrefix}-storage`}>{label}</FormLabel>
@@ -105,13 +141,18 @@ function EndpointField({
           Choose a storage
         </option>
         {storages.map((candidate) => (
-          <option key={candidate.id} value={candidate.id}>
+          <option key={candidate.id} value={candidate.id} disabled={isReadOnly(candidate)}>
             {candidate.label}
             {candidate.available ? "" : " (not connected)"}
+            {isReadOnly(candidate) ? " (read-only)" : ""}
           </option>
         ))}
       </FormSelect>
-      {storage?.available ? (
+      {storage && isReadOnly(storage) ? (
+        <StaticAlert tone="warning" variant="soft" data-testid={`${idPrefix}-read-only`}>
+          {storage.readOnlyReason ?? `You can only view files in "${storage.label}".`}
+        </StaticAlert>
+      ) : storage?.available ? (
         <FolderPicker
           storageId={storage.id}
           storageLabel={storage.label}
@@ -129,6 +170,97 @@ function EndpointField({
           />
         )
       )}
+      <FormErrorMessage message={errorMessage} />
+    </div>
+  );
+}
+
+/**
+ * A memory backup's folders, all in one storage: each can be removed (one must stay), and more
+ * can be added from a folder picker.
+ */
+function MemorySourcesField({
+  storage,
+  paths,
+  errorMessage,
+  onChange,
+}: {
+  storage?: StorageSummary;
+  paths: string[];
+  errorMessage?: string;
+  onChange: (paths: string[]) => void;
+}) {
+  const [pickedPath, setPickedPath] = useState<string>();
+  const isPicking = pickedPath !== undefined;
+  const canAddPicked = isPicking && pickedPath !== "" && !paths.includes(pickedPath);
+  return (
+    <div className="grid grid-cols-1 gap-2" data-testid="backup-memory-sources">
+      <FormLabel>
+        Back up {paths.length === 1 ? "this folder" : `these ${paths.length} folders`} from{" "}
+        {storage?.label ?? "an unknown storage"}
+      </FormLabel>
+      <ul className="grid grid-cols-1 gap-1 rounded-md border border-line p-1.5 text-sm">
+        {paths.map((folderPath) => (
+          <li
+            key={folderPath}
+            className="flex items-center gap-2 rounded px-1.5 py-1 hover:bg-surface-muted"
+            data-testid="backup-memory-source"
+          >
+            <Folder className="h-4 w-4 flex-none text-foreground-subtle" aria-hidden />
+            <span className="min-w-0 flex-1 truncate" title={folderPath}>
+              {folderPath === "" ? storage?.label : folderPath}
+            </span>
+            {paths.length > 1 && (
+              <button
+                type="button"
+                aria-label={`Leave out ${readBaseName(folderPath) || storage?.label}`}
+                className="rounded p-0.5 text-foreground-subtle hover:text-danger"
+                onClick={() => onChange(paths.filter((existing) => existing !== folderPath))}
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+      {storage?.available &&
+        (isPicking ? (
+          <div className="grid gap-2">
+            <FolderPicker
+              storageId={storage.id}
+              storageLabel={storage.label}
+              value={pickedPath}
+              onChange={setPickedPath}
+              testId="backup-memory-folder-picker"
+            />
+            <div className="flex justify-end gap-2">
+              <Button size="small" variant="secondary" onClick={() => setPickedPath(undefined)}>
+                Cancel
+              </Button>
+              <Button
+                size="small"
+                variant="primary"
+                disabled={!canAddPicked}
+                onClick={() => {
+                  onChange([...paths, pickedPath ?? ""]);
+                  setPickedPath(undefined);
+                }}
+              >
+                {canAddPicked ? `Add "${readBaseName(pickedPath ?? "")}"` : "Open a folder to add it"}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            size="small"
+            variant="secondary"
+            className="justify-self-start"
+            leadingIcon={<FolderPlus className="h-3.5 w-3.5" />}
+            onClick={() => setPickedPath("")}
+          >
+            Add a folder
+          </Button>
+        ))}
       <FormErrorMessage message={errorMessage} />
     </div>
   );
@@ -206,6 +338,8 @@ function PreviewSummary({ preview, isMirror }: { preview: BackupPreview; isMirro
  * folder), mode with what it does (mirror shows its Trash warning), options (verify, include
  * `.git`, excludes, auto-run on connect, auto-resume, snapshots to keep), a dry-run Preview, and
  * Save or "Save and run". Mirror asks for the password to run, and to save when it runs on its own.
+ * A memory backup (folders chosen in the explorer) names a new memory instead of the profile, and
+ * lists its folders instead of the source picker.
  *
  * @example
  * <ProfileEditor seed={{ destination: { storageId: "ext-USB" } }} storages={storages} onClose={close} onStarted={showJobs} />
@@ -231,8 +365,11 @@ export function ProfileEditor({
   const [busyAction, setBusyAction] = useState<"preview" | "save" | "run">();
   const editedProfile = seed.profile;
   const sources = storages.filter((storage) => storage.access === "read" || storage.access === "write");
-  const destinations = storages.filter((storage) => storage.access === "write");
+  // Drives mounted read-only are listed too, unselectable, with the reason when one is chosen.
+  const destinations = storages.filter((storage) => storage.access === "write" || storage.readOnlyReason);
   const isMirror = input.mode === "mirror";
+  const memory = input.memory;
+  const memoryFolderName = memory && memory.name.trim() !== "" ? readMemoryFolderName(memory.name) : undefined;
   const needsPasswordToSave =
     isMirror && input.autoRunOnConnect && !(editedProfile?.mode === "mirror" && editedProfile.autoRunOnConnect);
 
@@ -242,6 +379,7 @@ export function ProfileEditor({
   };
 
   const readName = () => {
+    if (memory) return memory.name.trim();
     if (input.name.trim() !== "") return input.name.trim();
     const sourceStorage = storages.find((storage) => storage.id === input.source.storageId);
     const destinationStorage = storages.find((storage) => storage.id === input.destination.storageId);
@@ -280,6 +418,7 @@ export function ProfileEditor({
               excludes: validInput.excludes,
               keepSnapshots: validInput.keepSnapshots,
               autoResume: validInput.autoResume,
+              ...(validInput.memory ? { memory: validInput.memory } : {}),
             },
           }),
         );
@@ -317,42 +456,83 @@ export function ProfileEditor({
     <Slideover
       isOpen
       onOpenChange={(isOpen) => !isOpen && busyAction === undefined && onClose()}
-      title={editedProfile ? `Edit "${editedProfile.name}"` : "New backup profile"}
+      title={editedProfile ? `Edit "${editedProfile.name}"` : memory ? "Back up to a new memory" : "New backup profile"}
       size="large"
     >
-      <div className="grid gap-5 p-5" data-testid="backup-profile-editor">
+      <div className="grid grid-cols-1 gap-5 p-5" data-testid="backup-profile-editor">
         <FormErrorAlert message={errorMessage} />
-        <div className="grid gap-1.5">
-          <FormLabel htmlFor="backup-name">Name</FormLabel>
-          <FormInput
-            id="backup-name"
-            value={input.name}
-            placeholder={readName()}
-            hasError={Boolean(fieldErrors.name)}
-            onChange={(changeEvent) => update({ name: changeEvent.target.value })}
-          />
-          <FormErrorMessage message={fieldErrors.name} />
-        </div>
+        {memory ? (
+          <div className="grid gap-1.5">
+            <FormLabel htmlFor="backup-memory-name">Memory name</FormLabel>
+            <FormInput
+              id="backup-memory-name"
+              value={memory.name}
+              placeholder="Agent memory"
+              autoFocus
+              hasError={Boolean(fieldErrors["memory.name"])}
+              onChange={(changeEvent) => update({ memory: { ...memory, name: changeEvent.target.value } })}
+            />
+            <FormHelpText>
+              The backup is a new memory with this name, so CMM recognises it on any computer the drive is plugged into.
+            </FormHelpText>
+            <FormErrorMessage message={fieldErrors["memory.name"]} />
+          </div>
+        ) : (
+          <div className="grid gap-1.5">
+            <FormLabel htmlFor="backup-name">Name</FormLabel>
+            <FormInput
+              id="backup-name"
+              value={input.name}
+              placeholder={readName()}
+              hasError={Boolean(fieldErrors.name)}
+              onChange={(changeEvent) => update({ name: changeEvent.target.value })}
+            />
+            <FormErrorMessage message={fieldErrors.name} />
+          </div>
+        )}
 
-        <EndpointField
-          idPrefix="backup-source"
-          label="Back up this folder"
-          endpoint={input.source}
-          storages={sources}
-          errorMessage={fieldErrors["source.storageId"] ?? fieldErrors["source.path"]}
-          onChange={(source) => update({ source })}
-        />
+        {memory ? (
+          <MemorySourcesField
+            storage={storages.find((storage) => storage.id === input.source.storageId)}
+            paths={memory.paths}
+            errorMessage={fieldErrors["memory.paths"] ?? fieldErrors["source.storageId"]}
+            onChange={(paths) => update({ memory: { ...memory, paths } })}
+          />
+        ) : (
+          <EndpointField
+            idPrefix="backup-source"
+            label="Back up this folder"
+            endpoint={input.source}
+            storages={sources}
+            errorMessage={fieldErrors["source.storageId"] ?? fieldErrors["source.path"]}
+            onChange={(source) => update({ source })}
+          />
+        )}
         <EndpointField
           idPrefix="backup-destination"
-          label="Into this folder"
+          label={memory ? "Create the memory in this folder" : "Into this folder"}
           endpoint={input.destination}
           storages={destinations}
+          needsWrite
           errorMessage={fieldErrors["destination.storageId"] ?? fieldErrors["destination.path"]}
           onChange={(destination) => update({ destination })}
         />
-        <FormHelpText className="-mt-3">
-          Files go into a folder named after the source inside it
-          {input.mode === "snapshot" ? ", with a new dated folder for each snapshot" : ""}.
+        <FormHelpText className="-mt-3" data-testid="backup-target-help">
+          {memory ? (
+            <>
+              {memory.paths.length === 1
+                ? "The folder's files go straight into"
+                : "Each folder goes into a folder of its own inside"}{" "}
+              {editedProfile ? "the memory folder" : "a new memory folder"}{" "}
+              {memoryFolderName ? <span className="font-mono">{memoryFolderName}</span> : "named after the memory"}
+              {input.mode === "snapshot" ? ", in a new dated folder for each snapshot" : ""}.
+            </>
+          ) : (
+            <>
+              Files go into a folder named after the source inside it
+              {input.mode === "snapshot" ? ", with a new dated folder for each snapshot" : ""}.
+            </>
+          )}
         </FormHelpText>
 
         <div className="grid gap-1.5">

@@ -9,6 +9,8 @@ export interface AuthenticationFrameProps {
   headline?: ReactNode;
   pitch?: ReactNode;
   communityCaption?: ReactNode;
+  /** The app's version, shown under the form ("CMM 1.1.0"). */
+  version?: string;
   className?: string;
   children: ReactNode;
 }
@@ -42,6 +44,7 @@ export function AuthenticationFrame({
   ),
   pitch = "CMM keeps the memory folders, prompts and training data of your LLM tools on your own machine or homelab: encrypted, versioned and backed up, with no cloud in between.",
   communityCaption = "Runs fully offline.",
+  version,
   className,
   children,
 }: AuthenticationFrameProps) {
@@ -62,6 +65,11 @@ export function AuthenticationFrame({
               {notice}
               <div className="mt-6">{children}</div>
             </div>
+            {version && (
+              <div className="mt-10 text-xs text-foreground-subtle" data-testid="app-version">
+                CMM {version}
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -12,8 +12,10 @@
  * The entry bundle keeps native and Node-only packages external (see build-entry.ts). Next's
  * standalone trace only includes the files Next's own chunks load (often the ESM build), so the
  * entry and the CLI are traced separately with @vercel/nft and the files they `require` are copied in too.
+ * node-pty (terminals) finds its native binary by a computed path the tracer can't follow, so it
+ * is copied whole.
  */
-import { copyFileSync, cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
+import { chmodSync, copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import path from "node:path";
 
 interface FileTraceResult {
@@ -45,6 +47,31 @@ copyFileSync(path.join(projectRoot, "dist", "server", "entry.js"), path.join(app
 copyFileSync(path.join(projectRoot, "dist", "server", "entry.js.map"), path.join(applicationDirectory, "entry.js.map"));
 copyFileSync(path.join(projectRoot, "dist", "cli", "cmm.js"), path.join(applicationDirectory, "cli.js"));
 copyFileSync(path.join(projectRoot, "dist", "cli", "cmm.js.map"), path.join(applicationDirectory, "cli.js.map"));
+copyNodePty();
+
+/**
+ * Copies node-pty's JavaScript, its license and its native files: the prebuilds (macOS, Windows)
+ * or the binary built at install (Linux). Its `spawn-helper` must be executable, and node-pty
+ * 1.1.0's prebuilds ship it without that bit; a signed app can't fix it at run time.
+ */
+function copyNodePty(): void {
+  const sourceDirectory = path.join(projectRoot, "node_modules", "node-pty");
+  const targetDirectory = path.join(applicationDirectory, "node_modules", "node-pty");
+  rmSync(targetDirectory, { recursive: true, force: true });
+  for (const entryName of ["package.json", "LICENSE", "lib", "prebuilds", path.join("build", "Release")]) {
+    const sourcePath = path.join(sourceDirectory, entryName);
+    if (existsSync(sourcePath)) cpSync(sourcePath, path.join(targetDirectory, entryName), { recursive: true });
+  }
+  for (const nativeDirectory of [
+    path.join(targetDirectory, "build", "Release"),
+    path.join(targetDirectory, "prebuilds"),
+  ]) {
+    if (!existsSync(nativeDirectory)) continue;
+    for (const entry of readdirSync(nativeDirectory, { recursive: true, withFileTypes: true })) {
+      if (entry.isFile() && entry.name === "spawn-helper") chmodSync(path.join(entry.parentPath, entry.name), 0o755);
+    }
+  }
+}
 
 async function copyEntryDependencies(): Promise<number> {
   const { nodeFileTrace } = (await import(NFT_MODULE)) as { nodeFileTrace: NodeFileTrace };

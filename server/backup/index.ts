@@ -2,9 +2,9 @@ import "server-only";
 import type { BackupMode, BackupPreview, JobSummary } from "@/lib/api-types";
 import { ADHOC_BACKUP_NAME, type AdhocBackup } from "@/lib/backup";
 import { BACKUP_JOB_TYPE, ensureBackupJobType, type BackupJobPayload } from "@/server/backup/job";
-import { buildPlan } from "@/server/backup/plan";
-import { requireProfile, toBackupSpec, type BackupSpec } from "@/server/backup/profiles";
-import { resolveBackupTarget } from "@/server/backup/target";
+import { buildPartsPlan } from "@/server/backup/plan";
+import { requireProfile, requireSourceAccess, toBackupSpec, type BackupSpec } from "@/server/backup/profiles";
+import { readRunOptions, resolveBackupTarget, toPlanParts } from "@/server/backup/target";
 import { registerBackupTriggers } from "@/server/backup/triggers";
 import { ApiRouteError } from "@/server/http/api-error";
 import { getJobQueue } from "@/server/jobs/queue";
@@ -30,8 +30,10 @@ export function resolveBackupRequest(actor: FileActor, request: BackupRequest): 
     const profileRow = requireProfile(actor, request.profileId);
     return { spec: toBackupSpec(profileRow), name: profileRow.name, profileId: profileRow.id };
   }
-  const { source, destination, mode, autoResume, ...options } = request.adhoc;
-  return { spec: { source, destination, mode, options, autoResume }, name: ADHOC_BACKUP_NAME };
+  const { source, destination, mode, autoResume, memory, ...options } = request.adhoc;
+  const spec: BackupSpec = { source, destination, mode, options, autoResume };
+  if (memory) spec.memory = requireSourceAccess(actor, { source, memory });
+  return { spec, name: memory?.name.trim() ?? ADHOC_BACKUP_NAME };
 }
 
 /** The mode a request would run in (mirror runs need the password). */
@@ -49,11 +51,11 @@ export function readRequestMode(actor: FileActor, request: BackupRequest): Backu
 export async function previewBackup(actor: FileActor, request: BackupRequest): Promise<BackupPreview> {
   const { spec } = resolveBackupRequest(actor, request);
   const target = await resolveBackupTarget(actor, spec);
-  const plan = await buildPlan({
-    source: { absolutePath: target.source.absolutePath },
+  const plan = await buildPartsPlan({
+    parts: toPlanParts(target),
     dest: { absolutePath: target.targetAbsolutePath, ...target.volume },
     mode: spec.mode,
-    options: spec.options,
+    options: readRunOptions(target, spec.options),
   });
   const removals = [...plan.replace, ...plan.delete];
   return {

@@ -70,6 +70,11 @@ function checkNativeBinaries(platform: string, arch: string): void {
   if (!argonPackages.some((packageName) => packageName.startsWith(argonPrefix))) {
     problems.push(`@node-rs/${argonPrefix}* is not installed (npm installs only the build machine's own package)`);
   }
+  const ptyDirectory = path.join(applicationDirectory, "node_modules", "node-pty");
+  const hasPtyBinary =
+    existsSync(path.join(ptyDirectory, "prebuilds", `${platform}-${arch}`, "pty.node")) ||
+    existsSync(path.join(ptyDirectory, "build", "Release", "pty.node"));
+  if (!hasPtyBinary) problems.push(`node-pty has no ${platform}-${arch} binary, so terminals can't start`);
   if (problems.length > 0) {
     throw new Error(
       `dist/app can't run on ${platform}-${arch}:\n  - ${problems.join("\n  - ")}\n` +

@@ -84,7 +84,7 @@ function DriveCard({
           ) : (
             <div className="truncate font-medium">{storage.label}</div>
           )}
-          <div className="mt-0.5 truncate text-xs text-foreground-subtle">
+          <div className="mt-0.5 truncate text-xs text-foreground-subtle" title={storage.readOnlyReason}>
             {storage.available ? details.join(" · ") || "Ready" : "Not mounted"}
           </div>
         </div>
@@ -156,8 +156,9 @@ function MemoryCard({ location }: { location: MemoryLocation }) {
 }
 
 /**
- * The memories on the internal storages, each a card that opens the memory's own explorer, below
- * the internal storages. A storage too big to search completely gets a note.
+ * The memories on the internal storages and plugged-in drives (each card names its storage), each a
+ * card that opens the memory's own explorer, below the internal storages. A storage too big to
+ * search completely gets a note.
  */
 function MemoriesSection({ filter }: { filter: string }) {
   const { data: listing, isLoading } = useMemories();
@@ -168,7 +169,7 @@ function MemoriesSection({ filter }: { filter: string }) {
   return (
     <section aria-label="Memories" data-testid="memories-group">
       <h2 className="mb-3 text-xs font-medium tracking-wide text-foreground-muted uppercase">Memories</h2>
-      {isLoading ? (
+      {isLoading || (memories.length === 0 && listing?.isSearching) ? (
         <p className="text-sm text-foreground-muted">Looking for memories…</p>
       ) : memories.length === 0 ? (
         <Card className="flex items-center gap-3.5 p-4" data-testid="no-memories">
@@ -184,10 +185,19 @@ function MemoriesSection({ filter }: { filter: string }) {
           ))}
         </div>
       )}
-      {listing && !listing.isComplete && (
-        <p className="mt-2 text-xs text-foreground-subtle" data-testid="memories-incomplete">
-          Some folders were too many or too deep to search, so a memory may be missing here. Its storage still has it.
+      {listing?.isSearching && memories.length > 0 ? (
+        <p className="mt-2 text-xs text-foreground-subtle" data-testid="memories-searching">
+          Still looking for memories; more may appear here in a moment.
         </p>
+      ) : (
+        listing &&
+        !listing.isSearching &&
+        !listing.isComplete && (
+          <p className="mt-2 text-xs text-foreground-subtle" data-testid="memories-incomplete">
+            Some folders were too many, too deep or too slow to search, so a memory may be missing here. Its storage
+            still has it.
+          </p>
+        )
       )}
     </section>
   );
@@ -227,14 +237,14 @@ function SystemCard({
  * The home page after sign-in: every storage the user can open as a card, grouped into internal
  * storages, external drives and USB / flash drives, live over drive events (a new drive is
  * highlighted for a moment), with free space, eject and mount. The memories on the internal
- * storages follow the internal storages as cards of their own, each opening the memory's own
+ * storages and plugged-in drives follow the internal storages as cards of their own, each opening the memory's own
  * explorer. A filter box appears once there are many storages. Backup, Trash and Settings sit
  * below. Opening a drive card goes to that storage's explorer.
  *
  * @example
- * <DrivesDashboard isAdmin={user.role === "admin"} />
+ * <DrivesDashboard isAdmin={user.role === "admin"} version={packageManifest.version} />
  */
-export function DrivesDashboard({ isAdmin }: { isAdmin: boolean }) {
+export function DrivesDashboard({ isAdmin, version }: { isAdmin: boolean; version: string }) {
   const { data: storages = [], isLoading } = useStorages();
   const { data: trash } = useTrash();
   const { ejectDrive, mountDrive } = useDriveActions();
@@ -271,7 +281,16 @@ export function DrivesDashboard({ isAdmin }: { isAdmin: boolean }) {
     <div className="flex flex-col gap-8" data-testid="drives-dashboard">
       <div className="flex flex-wrap items-center gap-3">
         <div className="mr-auto">
-          <h1 className="font-display text-xl font-medium">Drives</h1>
+          <div className="flex items-baseline gap-2.5">
+            <h1 className="font-display text-xl font-medium">Drives</h1>
+            <span
+              className="rounded-full border border-line px-2 py-0.5 text-[11px] text-foreground-subtle"
+              title={`CMM version ${version}`}
+              data-testid="app-version"
+            >
+              CMM {version}
+            </span>
+          </div>
           <p className="mt-0.5 text-sm text-foreground-muted">
             {isLoading
               ? "Loading…"

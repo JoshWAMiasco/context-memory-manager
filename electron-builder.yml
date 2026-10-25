@@ -63,6 +63,13 @@ mac:
   gatekeeperAssess: false
   entitlements: electron/entitlements.mac.plist
   entitlementsInherit: electron/entitlements.mac.plist
+  # What macOS shows when it asks to let CMM open these places; a denied request reaches CMM as EPERM.
+  extendInfo:
+    NSRemovableVolumesUsageDescription: CMM shows, edits and backs up the files on drives you plug in.
+    NSNetworkVolumesUsageDescription: CMM shows, edits and backs up the files on network drives.
+    NSDocumentsFolderUsageDescription: CMM shows and edits the files in your Documents folder.
+    NSDesktopFolderUsageDescription: CMM shows and edits the files on your Desktop.
+    NSDownloadsFolderUsageDescription: CMM shows and edits the files in your Downloads folder.
   # Notarization runs in build/notarize.cjs, only when APPLE_ID and APPLE_TEAM_ID are set.
   notarize: false
 

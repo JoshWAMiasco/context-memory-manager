@@ -4,10 +4,16 @@ import path from "node:path";
 import type { BackupPhase, JobProgress } from "@/lib/api-types";
 import { ADHOC_BACKUP_NAME } from "@/lib/backup";
 import { BackupCopyError, classifyCopyError, copyFile, ThroughputMeter } from "@/server/backup/copy";
-import { buildPlan, SNAPSHOT_FOLDER_PATTERN } from "@/server/backup/plan";
+import { buildPartsPlan, SNAPSHOT_FOLDER_PATTERN } from "@/server/backup/plan";
 import { markProfileRun, type BackupSpec } from "@/server/backup/profiles";
 import { recordRunCounters, recordRunStart, syncRunWithJob, type RunCounters } from "@/server/backup/runs";
-import { resolveBackupTarget, type BackupTarget } from "@/server/backup/target";
+import {
+  ensureMemoryFolder,
+  readRunOptions,
+  resolveBackupTarget,
+  toPlanParts,
+  type BackupTarget,
+} from "@/server/backup/target";
 import { getEventBus, type DriveEvent } from "@/server/events/bus";
 import { ApiRouteError } from "@/server/http/api-error";
 import {
@@ -171,6 +177,7 @@ async function runBackup({
     mode: spec.mode,
     source: { ...spec.source, label: payload.sourceLabel },
     destination: { ...spec.destination, label: payload.destinationLabel },
+    memory: spec.memory,
     createdBy: actor.id,
   });
   if (isFirstAttempt && payload.profileId) markProfileRun(payload.profileId);
@@ -217,11 +224,11 @@ async function runBackup({
     if (missingAtStart) throw new DriveDisconnected(missingAtStart);
     target = await resolveBackupTarget(actor, spec, { snapshotName: state.snapshotName });
     state.snapshotName = target.snapshotName;
-    const plan = await buildPlan({
-      source: { absolutePath: target.source.absolutePath },
+    const plan = await buildPartsPlan({
+      parts: toPlanParts(target),
       dest: { absolutePath: target.targetAbsolutePath, ...target.volume },
       mode: spec.mode,
-      options: spec.options,
+      options: readRunOptions(target, spec.options),
       signal: runSignal,
       onScan: (entryCount) => {
         currentItem = `${entryCount.toLocaleString("en-US")} items scanned`;
@@ -247,11 +254,15 @@ async function runBackup({
     filesTotal = plan.filesTotal;
     save(true);
 
-    const sourceRoot = target.source.absolutePath;
+    const sourceRoots = target.parts.map((part) => part.source.absolutePath);
     const targetRoot = target.targetAbsolutePath;
     const toAbsolute = (rootPath: string, relativePath: string) =>
       joinStoragePath(rootPath, ...relativePath.split("/"));
+    if (spec.memory) await ensureMemoryFolder(target, spec.memory);
     await mkdir(targetRoot, { recursive: true });
+    for (const part of target.parts) {
+      if (part.folder !== "") await mkdir(toAbsolute(targetRoot, part.folder), { recursive: true });
+    }
     for (const stalePart of plan.staleParts) await rm(toAbsolute(targetRoot, stalePart), { force: true });
     for (const replacement of plan.replace) {
       runSignal.throwIfAborted();
@@ -267,7 +278,7 @@ async function runBackup({
       runSignal.throwIfAborted();
       const entry = plan.copy[entryIndex];
       if (!entry) break;
-      const sourcePath = toAbsolute(sourceRoot, entry.sourcePath);
+      const sourcePath = toAbsolute(sourceRoots[entry.part ?? 0] ?? "", entry.sourcePath);
       const targetPath = toAbsolute(targetRoot, entry.targetPath);
       if (entry.type === "directory") {
         await mkdir(targetPath, { recursive: true, mode: (entry.mode & 0o777) | 0o200 });
@@ -357,7 +368,7 @@ async function runBackup({
     if (target) {
       getEventBus().emit("fs.changed", {
         storageId: target.destinationStorage.id,
-        path: target.targetPath,
+        path: target.memoryPath ?? target.targetPath,
         change: "changed",
       });
     }
@@ -382,11 +393,21 @@ function readResumeBlocker(jobId: string): string | undefined {
   return undefined;
 }
 
+/** "notes", or "3 folders", for a memory backup's job title. */
+function describeMemorySources(paths: readonly string[], sourceLabel: string): string {
+  if (paths.length !== 1) return `${paths.length} folders`;
+  return describeEndpoint(sourceLabel, paths[0] ?? "");
+}
+
 export const backupJob: JobDefinition<BackupJobPayload, BackupJobCheckpoint> = {
   run: runBackup,
   // One backup per destination volume at a time.
   readVolumeKeys: (payload) => [payload.spec.destination.storageId],
   describe: (payload) => {
+    const { memory } = payload.spec;
+    if (memory) {
+      return `Back up ${describeMemorySources(memory.paths, payload.sourceLabel)} into the memory "${memory.name}" on ${describeEndpoint(payload.destinationLabel, payload.spec.destination.path)}`;
+    }
     const subject = `Back up ${describeEndpoint(payload.sourceLabel, payload.spec.source.path)} to ${describeEndpoint(payload.destinationLabel, payload.spec.destination.path)}`;
     return payload.name === ADHOC_BACKUP_NAME
       ? subject
@@ -397,6 +418,7 @@ export const backupJob: JobDefinition<BackupJobPayload, BackupJobCheckpoint> = {
     destination: payload.spec.destination,
     mode: payload.spec.mode,
     ...(payload.profileId ? { profileId: payload.profileId } : {}),
+    ...(payload.spec.memory ? { memory: payload.spec.memory } : {}),
   }),
   readResumeBlocker,
 };

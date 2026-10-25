@@ -67,7 +67,9 @@ export interface MemoryLocation {
 
 export interface MemoryListing {
   memories: MemoryLocation[];
-  /** False when a storage was too big to search completely, so some memories may be missing. */
+  /** A storage is still being searched; `memories.changed` follows when it is done. */
+  isSearching: boolean;
+  /** False when a storage was too big (or a folder too slow) to search completely, so some memories may be missing. */
   isComplete: boolean;
 }
 

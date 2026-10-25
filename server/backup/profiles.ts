@@ -1,14 +1,23 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
+import { lstat } from "node:fs/promises";
 import { desc, eq, or } from "drizzle-orm";
-import type { BackupEndpoint, BackupMode, BackupOptions, BackupProfile, BackupProfileInput } from "@/lib/api-types";
+import type {
+  BackupEndpoint,
+  BackupMemory,
+  BackupMode,
+  BackupOptions,
+  BackupProfile,
+  BackupProfileInput,
+} from "@/lib/api-types";
 import type { StorageAccessLevel } from "@/lib/api-types";
+import { readMemoryFolderName } from "@/lib/backup";
 import { readLatestRun } from "@/server/backup/runs";
 import { getDatabase } from "@/server/db/client";
 import { backupProfiles, storages } from "@/server/db/schema";
-import { forbidden, notFound } from "@/server/http/api-error";
-import { normalizeRelativePath } from "@/server/security/path-jail";
-import { findActiveStorage, readAccessLevel, type StorageActor } from "@/server/storage/roots";
+import { ApiRouteError, forbidden, notFound } from "@/server/http/api-error";
+import { joinRelativePath, normalizeRelativePath, resolveInStorage } from "@/server/security/path-jail";
+import { findActiveStorage, readAccessLevel, readReadOnlyReason, type StorageActor } from "@/server/storage/roots";
 
 export type BackupProfileRow = typeof backupProfiles.$inferSelect;
 
@@ -19,6 +28,8 @@ export interface BackupSpec {
   mode: BackupMode;
   options: BackupOptions;
   autoResume: boolean;
+  /** A memory backup: these folders of the source storage go into a new memory folder (`source.path` is unused). */
+  memory?: BackupMemory;
 }
 
 function readStorageLabel(storageId: string): string {
@@ -37,8 +48,23 @@ export function readExcludes(profileRow: BackupProfileRow): string[] {
   }
 }
 
+function readMemory(profileRow: BackupProfileRow): BackupMemory | undefined {
+  if (profileRow.memoryName === null || profileRow.memoryPathsJson === null) return undefined;
+  try {
+    const paths: unknown = JSON.parse(profileRow.memoryPathsJson);
+    if (!Array.isArray(paths)) return undefined;
+    return {
+      name: profileRow.memoryName,
+      paths: paths.filter((memoryPath): memoryPath is string => typeof memoryPath === "string"),
+    };
+  } catch {
+    return undefined;
+  }
+}
+
 /** The run settings saved in a profile. */
 export function toBackupSpec(profileRow: BackupProfileRow): BackupSpec {
+  const memory = readMemory(profileRow);
   return {
     source: { storageId: profileRow.sourceStorageId, path: profileRow.sourcePath },
     destination: { storageId: profileRow.destinationStorageId, path: profileRow.destinationPath },
@@ -51,6 +77,7 @@ export function toBackupSpec(profileRow: BackupProfileRow): BackupSpec {
       keepSnapshots: profileRow.keepSnapshots,
     },
     autoResume: profileRow.autoResume,
+    ...(memory ? { memory } : {}),
   };
 }
 
@@ -69,6 +96,7 @@ export function toBackupProfile(profileRow: BackupProfileRow): BackupProfile {
     destination: describeEndpoint(spec.destination),
     mode: profileRow.mode,
     ...spec.options,
+    ...(spec.memory ? { memory: spec.memory } : {}),
     autoRunOnConnect: profileRow.autoRunOnConnect,
     autoResume: profileRow.autoResume,
     lastRunAt: profileRow.lastRunAt?.toISOString() ?? null,
@@ -83,7 +111,8 @@ export function toBackupProfile(profileRow: BackupProfileRow): BackupProfile {
 /**
  * Checks that `actor` may use a storage for a backup: `read` on the source, `write` on the
  * destination. A drive that is unplugged right now still counts (a profile can name it), so this
- * reads the saved storage, not the plugged-in list. The path must be a valid storage path.
+ * reads the saved storage, not the plugged-in list; a plugged-in drive mounted read-only can't be
+ * a destination. The path must be a valid storage path.
  */
 export function requireEndpointAccess(actor: StorageActor, endpoint: BackupEndpoint, level: StorageAccessLevel): void {
   const storageRow = getDatabase().orm.select().from(storages).where(eq(storages.id, endpoint.storageId)).get();
@@ -92,14 +121,70 @@ export function requireEndpointAccess(actor: StorageActor, endpoint: BackupEndpo
   if (!grantedLevel) throw forbidden(`You don't have access to "${storageRow.label}".`);
   if (level === "write" && grantedLevel !== "write")
     throw forbidden(`You can only read files in "${storageRow.label}".`);
+  const activeStorage = level === "write" ? findActiveStorage(endpoint.storageId) : undefined;
+  const readOnlyReason = activeStorage ? readReadOnlyReason(activeStorage) : undefined;
+  if (readOnlyReason) throw forbidden(readOnlyReason);
   normalizeRelativePath(endpoint.path);
+}
+
+/**
+ * Checks a request's source: `read` on the source storage, and every folder path of a memory
+ * backup valid. Returns the request's memory with its paths normalized and duplicates removed.
+ */
+export function requireSourceAccess(
+  actor: StorageActor,
+  { source, memory }: { source: BackupEndpoint; memory?: BackupMemory },
+): BackupMemory | undefined {
+  requireEndpointAccess(actor, source, "read");
+  if (!memory) return undefined;
+  const paths = [...new Set(memory.paths.map((memoryPath) => normalizeRelativePath(memoryPath).join("/")))];
+  return { name: memory.name.trim(), paths };
+}
+
+/**
+ * A memory backup creates its memory folder on its first run, so a new memory (or one renamed, or
+ * moved to another destination) can't take the name of a folder that is already there. Checked
+ * only while the destination is plugged in.
+ */
+async function requireNewMemoryFolder(input: BackupProfileInput): Promise<void> {
+  if (!input.memory) return;
+  const destinationStorage = findActiveStorage(input.destination.storageId);
+  if (!destinationStorage?.available) return;
+  const folderName = readMemoryFolderName(input.memory.name);
+  const memoryPath = joinRelativePath(normalizeRelativePath(input.destination.path).join("/"), folderName);
+  const { absolutePath } = await resolveInStorage(destinationStorage, memoryPath, { forCreate: true });
+  if (
+    await lstat(absolutePath).then(
+      () => true,
+      () => false,
+    )
+  ) {
+    throw new ApiRouteError(
+      409,
+      "ALREADY_EXISTS",
+      `"${destinationStorage.label}" already has a folder named "${folderName}" there. Give the memory another name, or choose another destination folder.`,
+    );
+  }
+}
+
+/** Whether saving `input` over `profileRow` points the memory backup at another memory folder. */
+function movesMemoryFolder(profileRow: BackupProfileRow, input: BackupProfileInput): boolean {
+  const saved = readMemory(profileRow);
+  if (!input.memory || !saved) return input.memory !== undefined;
+  return (
+    readMemoryFolderName(saved.name) !== readMemoryFolderName(input.memory.name) ||
+    profileRow.destinationStorageId !== input.destination.storageId ||
+    profileRow.destinationPath !== normalizeRelativePath(input.destination.path).join("/")
+  );
 }
 
 function toProfileValues(input: BackupProfileInput) {
   return {
     name: input.name.trim(),
     sourceStorageId: input.source.storageId,
-    sourcePath: normalizeRelativePath(input.source.path).join("/"),
+    sourcePath: input.memory ? "" : normalizeRelativePath(input.source.path).join("/"),
+    memoryName: input.memory?.name.trim() ?? null,
+    memoryPathsJson: input.memory ? JSON.stringify(input.memory.paths) : null,
     destinationStorageId: input.destination.storageId,
     destinationPath: normalizeRelativePath(input.destination.path).join("/"),
     mode: input.mode,
@@ -134,30 +219,42 @@ export function requireProfile(actor: StorageActor, profileId: string): BackupPr
 }
 
 /**
- * Saves a new profile after checking `read` on its source and `write` on its destination.
+ * Saves a new profile after checking `read` on its source and `write` on its destination. A
+ * memory backup's memory folder must not exist yet.
  *
  * @example
- * createProfile(actor, { name: "Notes → USB", source, destination, mode: "copy", … });
+ * await createProfile(actor, { name: "Notes → USB", source, destination, mode: "copy", … });
  */
-export function createProfile(actor: StorageActor, input: BackupProfileInput): BackupProfile {
-  requireEndpointAccess(actor, input.source, "read");
+export async function createProfile(actor: StorageActor, input: BackupProfileInput): Promise<BackupProfile> {
+  const memory = requireSourceAccess(actor, input);
   requireEndpointAccess(actor, input.destination, "write");
+  const checkedInput = { ...input, memory };
+  await requireNewMemoryFolder(checkedInput);
   const profileRow = getDatabase()
     .orm.insert(backupProfiles)
-    .values({ id: randomUUID(), ...toProfileValues(input), createdBy: actor.id })
+    .values({ id: randomUUID(), ...toProfileValues(checkedInput), createdBy: actor.id })
     .returning()
     .get();
   return toBackupProfile(profileRow);
 }
 
-/** Replaces a profile's settings (the editor always sends all of them). */
-export function updateProfile(actor: StorageActor, profileId: string, input: BackupProfileInput): BackupProfile {
-  requireProfile(actor, profileId);
-  requireEndpointAccess(actor, input.source, "read");
+/**
+ * Replaces a profile's settings (the editor always sends all of them). A memory backup that would
+ * now write to another memory folder must not find one there yet.
+ */
+export async function updateProfile(
+  actor: StorageActor,
+  profileId: string,
+  input: BackupProfileInput,
+): Promise<BackupProfile> {
+  const savedRow = requireProfile(actor, profileId);
+  const memory = requireSourceAccess(actor, input);
   requireEndpointAccess(actor, input.destination, "write");
+  const checkedInput = { ...input, memory };
+  if (movesMemoryFolder(savedRow, checkedInput)) await requireNewMemoryFolder(checkedInput);
   const profileRow = getDatabase()
     .orm.update(backupProfiles)
-    .set(toProfileValues(input))
+    .set(toProfileValues(checkedInput))
     .where(eq(backupProfiles.id, profileId))
     .returning()
     .get();
