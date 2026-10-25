@@ -1,0 +1,59 @@
+# CMM behind nginx, reachable only over Tailscale (see the Server Guide, "Option D: nginx with Tailscale").
+#
+#   https://<machine>.<tailnet>.ts.net:7420  ->  nginx on <tailscale ip>:7420  ->  CMM on 127.0.0.1:17420
+#
+# 1. Install CMM on loopback:   sudo ./install.sh --bind 127.0.0.1 --port 17420
+#    and in /etc/cmm/config.json set   "trustedProxies": ["127.0.0.1"]   (keep "tls": null),
+#    then: sudo systemctl restart cmm
+# 2. Fetch the Tailscale certificate into /etc/nginx/tls (sudo tailscale cert ...).
+# 3. Copy this file to /etc/nginx/sites-available/cmm.conf, replace the three REPLACE_WITH_ values,
+#    link it into sites-enabled and run: sudo nginx -t && sudo systemctl reload nginx
+#
+# MagicDNS gives a machine one name and no subdomains, so each app behind nginx gets its own port.
+
+server {
+    # The machine's Tailscale address (tailscale ip -4): nginx answers on the tailnet only, not on the LAN.
+    listen REPLACE_WITH_TAILSCALE_IP:7420 ssl;
+    http2 on;
+    server_name REPLACE_WITH_MAGICDNS_NAME;
+
+    ssl_certificate     /etc/nginx/tls/ts.crt;
+    ssl_certificate_key /etc/nginx/tls/ts.key;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    add_header Strict-Transport-Security "max-age=63072000" always;
+
+    # File manager: uploads and downloads stream straight through instead of buffering on disk,
+    # and live updates (Server-Sent Events) arrive as they happen.
+    client_max_body_size 10g;
+    proxy_request_buffering off;
+    proxy_buffering off;
+    proxy_read_timeout 1h;
+    proxy_send_timeout 1h;
+
+    # Host must carry the port. CMM compares the browser's Origin (https://<name>:7420) with Host, and
+    # nginx's usual "Host $host" drops the port, so every change and every terminal would get a 403.
+    proxy_http_version 1.1;
+    proxy_set_header Host              $host:$server_port;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $remote_addr;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host  $host:$server_port;
+    proxy_set_header Connection        "";
+
+    location / {
+        proxy_pass http://127.0.0.1:REPLACE_WITH_CMM_PORT;
+    }
+
+    # In-app terminal (WebSocket). A location with its own proxy_set_header inherits none, so all are repeated.
+    location ~ ^/api/terminals/[^/]+/socket$ {
+        proxy_pass http://127.0.0.1:REPLACE_WITH_CMM_PORT;
+        proxy_set_header Host              $host:$server_port;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host  $host:$server_port;
+        proxy_set_header Upgrade           $http_upgrade;
+        proxy_set_header Connection        "upgrade";
+        proxy_read_timeout 1d;
+    }
+}

@@ -94,12 +94,30 @@ c) Caddy as a reverse proxy (HTTPS from Caddy's own local authority):
      would look like the server itself. Restart CMM.
    - Use /opt/cmm/current/deploy/Caddyfile.example as /etc/caddy/Caddyfile and reload Caddy.
 
+d) nginx with Tailscale (only devices on your tailnet can reach CMM, with a real certificate):
+   - Install with: sudo ./install.sh --bind 127.0.0.1 --port 17420
+     In /etc/cmm/config.json set "trustedProxies": ["127.0.0.1"] (keep "tls": null), restart CMM.
+   - In the Tailscale admin console, turn on MagicDNS and HTTPS Certificates, then:
+     sudo mkdir -p /etc/nginx/tls && sudo tailscale cert --cert-file /etc/nginx/tls/ts.crt \
+       --key-file /etc/nginx/tls/ts.key <machine>.<tailnet>.ts.net
+   - Use /opt/cmm/current/deploy/nginx-tailscale.conf.example as
+     /etc/nginx/sites-available/cmm.conf, fill in its REPLACE_WITH_ values, link it into
+     /etc/nginx/sites-enabled/ and run: sudo nginx -t && sudo systemctl reload nginx
+   - Open https://<machine>.<tailnet>.ts.net:7420. If ufw is active, allow 7420 on the Tailscale
+     interface only (section 5), never on the LAN.
+   The Server Guide ("Option D: nginx with Tailscale") covers certificate renewal and starting
+   nginx after Tailscale at boot.
+
 
 5. Firewall
 -----------
 If ufw is active, allow CMM's port (or 443 with Caddy):
 
     sudo ufw allow 7420/tcp
+
+With nginx and Tailscale, allow it on the Tailscale interface only:
+
+    sudo ufw allow in on tailscale0 to any port 7420 proto tcp
 
 
 6. Storages and permissions

@@ -21,8 +21,8 @@ terminal, `sudo` and editing a text file. You don't need to know how CMM works i
   npm or other packages.
 - **Browsers.** Anyone who can reach the port opens CMM in a browser and signs in with a CMM account. CMM accounts
   are separate from the Linux accounts on the server.
-- **An optional reverse proxy.** You can put Caddy (or another proxy) in front of CMM to serve HTTPS. CMM can
-  also serve HTTPS itself.
+- **An optional reverse proxy.** You can put Caddy, nginx (for example with Tailscale) or another proxy in front of
+  CMM to serve HTTPS. CMM can also serve HTTPS itself.
 - **Storages.** The folders CMM may show and change. A fresh install creates `/srv/cmm`. You add more with
   `sudo cmm add-storage`. USB drives plugged into the server appear as storages too.
 
@@ -41,7 +41,7 @@ protection, encryption, versioning, backups). The differences are about who can 
 | Listens on | `127.0.0.1` only, a random port | `0.0.0.0:7420` (configurable) |
 | First run | Create the admin account | Create the admin account, after entering a **setup code** |
 | Password confirmation | Never | Once per session from the local network; for every protected action from other networks |
-| HTTPS | Not needed | Recommended: built-in, your own certificate, or Caddy |
+| HTTPS | Not needed | Recommended: built-in, your own certificate, Caddy, or nginx with Tailscale |
 | Storages | Any folder the user can reach | Folders opened to the service with `cmm add-storage` |
 | Moving files to the OS trash | Available | Not available (Trash stays inside CMM) |
 | Forgotten admin password | Reset CMM | `sudo cmm reset-admin` |
@@ -423,14 +423,15 @@ Your next steps:
 Without HTTPS, passwords, session cookies and files cross the network unencrypted. Anyone who can watch the
 network can read them. On anything other than a network you fully control, turn HTTPS on.
 
-There are three ways:
+There are four ways:
 
-| | Self-signed (`cmm gen-cert`) | Your own certificate | Caddy |
-|---|---|---|---|
-| Effort | One command | Copy two files, edit the config | Install Caddy, edit two configs |
-| Works offline | Yes | Yes | Yes (`tls internal`) |
-| Browser warning | Yes, until you accept it | No, if your clients trust the issuer | No, once clients trust Caddy's local authority |
-| Port | 7420 | 7420 | 443 |
+| | Self-signed (`cmm gen-cert`) | Your own certificate | Caddy | nginx with Tailscale |
+|---|---|---|---|---|
+| Effort | One command | Copy two files, edit the config | Install Caddy, edit two configs | Tailscale, a certificate, one nginx site |
+| Works offline | Yes | Yes | Yes (`tls internal`) | Needs Tailscale's servers to issue the certificate |
+| Browser warning | Yes, until you accept it | No, if your clients trust the issuer | No, once clients trust Caddy's local authority | No: a public certificate |
+| Port | 7420 | 7420 | 443 | 7420 on the tailnet |
+| Who can connect | Your network | Your network | Your network | Only devices on your tailnet |
 
 ## Option A: a self-signed certificate with cmm gen-cert
 
@@ -612,6 +613,194 @@ To stop the browser warning, make the clients trust Caddy's local authority: cop
 `/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt` to each client and import it into the system
 or browser certificate store.
 
+## Option D: nginx with Tailscale
+
+[Tailscale](https://tailscale.com) joins your devices into a private network, a *tailnet*, wherever they are. With
+this option CMM is reachable only from devices signed in to your tailnet, at an address like
+`https://my-server.tail1234.ts.net:7420`, with a real certificate and no browser warning. Nothing on your local
+network or the internet can reach it. Use it to open CMM from your laptop or phone away from home, or if nginx
+already serves other apps on the server.
+
+```text
+browser on the tailnet --https--> nginx on 100.x.y.z:7420 --http--> CMM on 127.0.0.1:17420
+```
+
+Tailscale's MagicDNS gives each machine exactly one name, with no subdomains. So each app behind nginx gets its own
+port on that name: for example another app on 443 and CMM on 7420. CMM itself listens on a different port
+(17420) on `127.0.0.1` only, so the only way in is through nginx.
+
+> [!NOTE]
+> Tailscale's servers issue the certificate, so the server needs internet access when you fetch it and when it is
+> renewed. CMM itself still works offline.
+
+### What you need
+
+1. Tailscale installed on the server and signed in (`tailscale status` lists the machine), and on every device that
+   should open CMM.
+2. In the Tailscale admin console, under **DNS**: **MagicDNS** and **HTTPS Certificates** turned on.
+3. nginx: `sudo apt install nginx`.
+4. The server's two Tailscale details:
+
+   ```bash
+   tailscale ip -4                                           # the address, for example 100.101.102.103
+   tailscale status --json | grep -m1 '"DNSName"'            # the name, for example my-server.tail1234.ts.net.
+   ```
+
+   Leave out the trailing dot of the name. Below, `my-server.tail1234.ts.net` and `100.101.102.103` stand for yours.
+
+### Install CMM on loopback
+
+1. Install with CMM bound to the server itself, on port 17420:
+
+   ```bash
+   sudo ./install.sh --bind 127.0.0.1 --port 17420
+   ```
+
+   Ignore the `sudo ufw allow` hint at the end: that would open CMM beyond the tailnet.
+2. Edit `/etc/cmm/config.json` and set:
+
+   ```json
+   "trustedProxies": ["127.0.0.1"]
+   ```
+
+   Leave `"tls": null`: nginx does HTTPS. `trustedProxies` matters for the same reasons as with Caddy (see the warning
+   in *Option C*): CMM then believes the client address and the `https` scheme nginx passes on.
+3. Restart CMM:
+
+   ```bash
+   sudo systemctl restart cmm
+   ```
+
+### Get the certificate
+
+1. Fetch it into a folder for nginx:
+
+   ```bash
+   sudo mkdir -p /etc/nginx/tls
+   sudo tailscale cert --cert-file /etc/nginx/tls/ts.crt --key-file /etc/nginx/tls/ts.key my-server.tail1234.ts.net
+   sudo chmod 600 /etc/nginx/tls/ts.key
+   ```
+
+2. The certificate lasts 90 days. Renew it every week with a systemd timer. Create
+   `/etc/systemd/system/tailscale-cert-renew.service`:
+
+   ```ini
+   [Unit]
+   Description=Renew the Tailscale TLS certificate for nginx
+   After=network-online.target tailscaled.service
+   Wants=network-online.target
+
+   [Service]
+   Type=oneshot
+   ExecStart=tailscale cert --cert-file /etc/nginx/tls/ts.crt --key-file /etc/nginx/tls/ts.key my-server.tail1234.ts.net
+   ExecStartPost=chmod 600 /etc/nginx/tls/ts.key
+   ExecStartPost=systemctl try-reload-or-restart nginx.service
+   ```
+
+   and `/etc/systemd/system/tailscale-cert-renew.timer`:
+
+   ```ini
+   [Unit]
+   Description=Renew the Tailscale TLS certificate weekly
+
+   [Timer]
+   OnCalendar=weekly
+   Persistent=yes
+
+   [Install]
+   WantedBy=timers.target
+   ```
+
+   Then turn the timer on:
+
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl enable --now tailscale-cert-renew.timer
+   ```
+
+### Start nginx after Tailscale
+
+nginx listens on the Tailscale address, which only exists once Tailscale is up. At boot nginx can start first and
+fail with `cannot assign requested address`. Two small settings prevent that:
+
+1. Let programs listen on an address the machine doesn't have yet:
+
+   ```bash
+   printf 'net.ipv4.ip_nonlocal_bind = 1\nnet.ipv6.ip_nonlocal_bind = 1\n' | sudo tee /etc/sysctl.d/60-nonlocal-bind.conf
+   sudo sysctl --system
+   ```
+
+2. Start nginx after Tailscale:
+
+   ```bash
+   sudo mkdir -p /etc/systemd/system/nginx.service.d
+   printf '[Unit]\nAfter=tailscaled.service\nWants=tailscaled.service\n' | sudo tee /etc/systemd/system/nginx.service.d/after-tailscale.conf
+   sudo systemctl daemon-reload
+   ```
+
+If nginx already serves other apps on the Tailscale address, these may already be in place.
+
+### Configure nginx
+
+1. Copy the example that ships with CMM:
+
+   ```bash
+   sudo cp /opt/cmm/current/deploy/nginx-tailscale.conf.example /etc/nginx/sites-available/cmm.conf
+   ```
+
+2. Edit `/etc/nginx/sites-available/cmm.conf` and replace the three placeholders:
+
+   | Placeholder | Replace with | Example |
+   |---|---|---|
+   | `REPLACE_WITH_TAILSCALE_IP` | The address from `tailscale ip -4` | `100.101.102.103` |
+   | `REPLACE_WITH_MAGICDNS_NAME` | The machine's MagicDNS name | `my-server.tail1234.ts.net` |
+   | `REPLACE_WITH_CMM_PORT` (twice) | CMM's port | `17420` |
+
+3. Turn the site on, check the configuration and reload nginx:
+
+   ```bash
+   sudo ln -sf /etc/nginx/sites-available/cmm.conf /etc/nginx/sites-enabled/
+   sudo nginx -t && sudo systemctl reload nginx
+   ```
+
+   `nginx -t` checks every site first, so a mistake never takes down the other apps nginx serves.
+
+> [!WARNING]
+> Keep `proxy_set_header Host $host:$server_port;` as it is in the example. Before CMM accepts a change (saving a
+> file, signing in, opening a terminal) it checks that the browser's address, `https://my-server.tail1234.ts.net:7420`,
+> matches the `Host` nginx passes on. nginx's usual `Host $host` leaves out the port, and then every change fails with
+> `Cross-origin requests are not allowed.`
+
+The example also streams large uploads and downloads without buffering them on disk (up to 10 GB per upload; raise
+`client_max_body_size` for more), lets CMM's live updates through, and carries the terminal's WebSocket.
+
+### Firewall and Tailscale access rules
+
+- `ufw`: CMM's own port needs no rule, because CMM only listens on `127.0.0.1`. If `ufw` is active, allow 7420 on the
+  Tailscale interface only, never for every network:
+
+  ```bash
+  sudo ufw allow in on tailscale0 to any port 7420 proto tcp
+  ```
+
+- Tailscale access rules: if your tailnet policy only allows certain ports to this machine, add 7420 in the admin
+  console under **Access controls**.
+
+### Check it
+
+1. Open `https://my-server.tail1234.ts.net:7420` on a device on your tailnet. You see CMM's setup page with a valid
+   certificate.
+2. Get the setup code and create the admin account (see *First-run setup with the setup code*):
+
+   ```bash
+   sudo cmm setup-code
+   ```
+
+3. Check that nothing else can reach CMM. `sudo ss -ltnp | grep -E ':(7420|17420)\b'` must show nginx on the
+   Tailscale address (`100.x.y.z:7420`) and CMM on `127.0.0.1:17420`, and nothing on `0.0.0.0`. From another
+   computer on your local network that isn't on the tailnet, `http://<server's LAN address>:17420` and
+   `https://<server's LAN address>:7420` must both fail to connect.
+
 # Firewall
 
 Ubuntu's firewall, `ufw`, is off by default. Check:
@@ -638,6 +827,12 @@ rule, because CMM only listens on `127.0.0.1`:
 ```bash
 sudo ufw allow 443/tcp
 sudo ufw allow 80/tcp
+```
+
+With nginx and Tailscale, allow CMM's public port on the Tailscale interface only (see *Option D*):
+
+```bash
+sudo ufw allow in on tailscale0 to any port 7420 proto tcp
 ```
 
 If you used `--port`, use that number instead of 7420.
@@ -1369,6 +1564,11 @@ default) or restart CMM, which clears it: `sudo systemctl restart cmm`.
 - Is CMM listening on `127.0.0.1` only? `Listening:` in `cmm status` shows it. That is right behind Caddy, but then
   browsers must use Caddy's address.
 - Are you using the right scheme? After `cmm gen-cert`, only `https://` works.
+
+**Every change fails with `Cross-origin requests are not allowed.` behind a proxy.** Pages open, but saving,
+uploading, signing in or opening a terminal fails. The proxy passes a `Host` without the port the browser uses. In
+nginx, set `proxy_set_header Host $host:$server_port;` (and the same for `X-Forwarded-Host`) in every `location`,
+as in `deploy/nginx-tailscale.conf.example`, then `sudo nginx -t && sudo systemctl reload nginx`.
 
 **`Health: not reachable … (not listening)` right after a start.** CMM takes a few seconds to start. Use
 `sudo cmm status --wait 30`.
