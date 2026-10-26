@@ -477,7 +477,9 @@ For a folder, choose **Download as zip**. CMM puts the whole folder into one `.z
 ## Other useful commands
 
 - **Reveal in Finder** (Mac), **Reveal in Explorer** (Windows) or **Reveal in Files** (Linux) opens your computer's own
-  file manager at that file.
+  file manager at that file or folder, with it selected.
+- **Open in Finder**, **Open in Explorer** or **Open in Files**, on a folder (or on the empty space below the tree, for
+  the whole storage), opens that folder itself in your file manager so you see what's inside.
 - **Copy path**, in the **⋯** menu at the top of the file pane, copies the file's location inside its storage.
 - **Properties** shows a file's name, kind, size, location, when it was created and changed, and its status.
 

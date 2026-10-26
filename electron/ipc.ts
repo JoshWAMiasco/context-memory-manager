@@ -3,7 +3,7 @@
  * comes from the app's own page and validates its arguments before touching the dialog or the
  * shell.
  */
-import { access } from "node:fs/promises";
+import { access, stat } from "node:fs/promises";
 import { BrowserWindow, dialog, ipcMain, shell, type IpcMainInvokeEvent } from "electron";
 import { DESKTOP_CHANNELS, isBridgePath, isExternalLink } from "@/lib/desktop-bridge";
 import { describeExternalLink } from "./navigation";
@@ -76,6 +76,19 @@ export function registerDesktopIpc(readAppOrigin: () => string | undefined): voi
     if (!exists) return false;
     shell.showItemInFolder(absolutePath);
     return true;
+  });
+
+  // Folders only: `shell.openPath` on a file would launch it with its default app.
+  ipcMain.handle(DESKTOP_CHANNELS.openFolder, async (event, absolutePath: unknown) => {
+    assertAppSender(event);
+    if (!isBridgePath(absolutePath)) return false;
+    const isFolder = await stat(absolutePath).then(
+      (pathStats) => pathStats.isDirectory(),
+      () => false,
+    );
+    if (!isFolder) return false;
+    // Resolves to an error message, empty on success (Finder, Explorer, or xdg-open's file manager).
+    return (await shell.openPath(absolutePath)) === "";
   });
 
   ipcMain.handle(DESKTOP_CHANNELS.openExternal, async (event, url: unknown) => {

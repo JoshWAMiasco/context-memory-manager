@@ -14,6 +14,8 @@ export interface CmmDesktopBridge {
   pickFolder: () => Promise<string | null>;
   /** Shows a file or folder in Finder, Explorer or the file manager. False when the path is gone. */
   revealPath: (absolutePath: string) => Promise<boolean>;
+  /** Opens a folder itself in Finder, Explorer or the file manager. False when it is gone or not a folder. */
+  openFolder: (absolutePath: string) => Promise<boolean>;
   /** Opens an http(s) or mailto link in the default browser, after the user confirms. False when declined. */
   openExternal: (url: string) => Promise<boolean>;
 }
@@ -22,6 +24,7 @@ export interface CmmDesktopBridge {
 export const DESKTOP_CHANNELS = {
   pickFolder: "cmm:pick-folder",
   revealPath: "cmm:reveal-path",
+  openFolder: "cmm:open-folder",
   openExternal: "cmm:open-external",
 } as const;
 

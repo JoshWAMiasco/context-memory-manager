@@ -1,6 +1,6 @@
 /*
  * The desktop window's preload. Runs sandboxed with context isolation and exposes only
- * `window.cmmDesktop`: platform facts and three calls that go to the main process through
+ * `window.cmmDesktop`: platform facts and four calls that go to the main process through
  * `ipcRenderer.invoke`, with their arguments checked here first.
  */
 import { contextBridge, ipcRenderer } from "electron";
@@ -23,6 +23,10 @@ const bridge: CmmDesktopBridge = {
   revealPath: async (absolutePath) => {
     if (!isBridgePath(absolutePath)) return false;
     return (await ipcRenderer.invoke(DESKTOP_CHANNELS.revealPath, absolutePath)) === true;
+  },
+  openFolder: async (absolutePath) => {
+    if (!isBridgePath(absolutePath)) return false;
+    return (await ipcRenderer.invoke(DESKTOP_CHANNELS.openFolder, absolutePath)) === true;
   },
   openExternal: async (url) => {
     if (!isExternalLink(url)) return false;

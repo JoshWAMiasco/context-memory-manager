@@ -94,9 +94,27 @@ export async function pickFolder(): Promise<string | null | undefined> {
 export async function revealInFileManager(storageId: string, entryPath: string): Promise<boolean> {
   const bridge = readDesktopBridge();
   if (!bridge) return false;
+  return bridge.revealPath(await readEntryAbsolutePath(storageId, entryPath));
+}
+
+/**
+ * Opens a storage folder itself in Finder, Explorer or the file manager, showing its contents
+ * (where `revealInFileManager` shows the folder selected inside its parent). False outside the
+ * desktop app or when the folder is gone.
+ *
+ * @example
+ * await openInFileManager(storageId, "notes");
+ */
+export async function openInFileManager(storageId: string, folderPath: string): Promise<boolean> {
+  const bridge = readDesktopBridge();
+  if (!bridge) return false;
+  return bridge.openFolder(await readEntryAbsolutePath(storageId, folderPath));
+}
+
+async function readEntryAbsolutePath(storageId: string, entryPath: string): Promise<string> {
   const query = new URLSearchParams({ storageId, path: entryPath });
   const { absolutePath } = await requestJson<{ absolutePath: string }>(`/api/fs/abs-path?${query}`);
-  return bridge.revealPath(absolutePath);
+  return absolutePath;
 }
 
 /**

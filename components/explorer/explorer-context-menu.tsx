@@ -21,6 +21,7 @@ import {
   Download,
   FilePlus,
   FolderOpen,
+  FolderOpenDot,
   FolderPlus,
   HardDriveUpload,
   Info,
@@ -40,7 +41,7 @@ import { announce, announceError, useExplorer } from "@/components/explorer/expl
 import { useOpenTerminal } from "@/components/terminal/use-open-terminal";
 import { useMemoryMutations } from "@/lib/client/memory";
 import { useFileClipboard } from "@/lib/client/clipboard";
-import { isDesktopApp, readFileManagerName, revealInFileManager } from "@/lib/client/desktop";
+import { isDesktopApp, openInFileManager, readFileManagerName, revealInFileManager } from "@/lib/client/desktop";
 import { readParentPath } from "@/lib/client/query-keys";
 import { buildMemoryBackupHref, buildMemoryHref } from "@/lib/client/routes";
 import { mergeClassNames } from "@/utilities/merge-class-names";
@@ -237,19 +238,32 @@ export function ExplorerContextMenu() {
   }
   if (explorer.mode === "desktop") {
     const revealPath = entry?.path ?? explorer.rootPath;
+    const desktopReason = isDesktopApp() ? undefined : "Open CMM in its desktop app to reveal files.";
+    const showInFileManager = (show: () => Promise<boolean>, failure: string) => {
+      show().then(
+        (isShown) => {
+          if (!isShown) announceError(failure, new Error("It is no longer on disk."));
+        },
+        (showError: unknown) => announceError(failure, showError),
+      );
+    };
+    if (!entry || entry.type === "directory") {
+      actions.push({
+        key: "open-in-file-manager",
+        label: `Open in ${readFileManagerName()}`,
+        icon: FolderOpenDot,
+        onSelect: () =>
+          showInFileManager(() => openInFileManager(explorer.storage.id, folderPath), "Couldn't open the folder"),
+        disabledReason: desktopReason,
+      });
+    }
     actions.push({
       key: "reveal",
       label: `Reveal in ${readFileManagerName()}`,
       icon: SquareArrowOutUpRight,
-      onSelect: () => {
-        revealInFileManager(explorer.storage.id, revealPath).then(
-          (isShown) => {
-            if (!isShown) announceError("Couldn't reveal it", new Error("It is no longer on disk."));
-          },
-          (revealError: unknown) => announceError("Couldn't reveal it", revealError),
-        );
-      },
-      disabledReason: isDesktopApp() ? undefined : "Open CMM in its desktop app to reveal files.",
+      onSelect: () =>
+        showInFileManager(() => revealInFileManager(explorer.storage.id, revealPath), "Couldn't reveal it"),
+      disabledReason: desktopReason,
     });
   }
   if (entry?.type === "directory") {
