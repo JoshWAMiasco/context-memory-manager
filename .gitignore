@@ -22,6 +22,8 @@ next-env.d.ts
 /.cmm-dev-data/
 # this machine's settings for install:desktop (its code signing identity)
 /.cmm-local.json
+# CMM's own storage manifest when this repo is added as a storage
+/.cmm/
 
 # misc
 .DS_Store
