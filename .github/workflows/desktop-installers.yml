@@ -1,0 +1,84 @@
+# Builds the desktop installers on runners of their own platform: the native modules (better-sqlite3,
+# @node-rs/argon2, node-pty) are installed for the machine that runs `npm ci`, so they can't be built from a Mac.
+# Windows: NSIS setup (x64). Linux: AppImage and deb (x64). Run it from the Actions tab or
+# `gh workflow run desktop-installers.yml -f tag=v1.1.0 -f platform=all`; the installers are kept as workflow
+# artifacts, and also attached to the release of that tag when `attach` is on.
+name: Desktop installers
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag or branch to build (e.g. v1.1.0)
+        required: true
+        default: main
+      platform:
+        description: Installers to build
+        type: choice
+        options: [all, windows, linux]
+        default: all
+      attach:
+        description: Attach the installers to the GitHub release of that tag
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows
+            runner: windows-latest
+            files: dist/desktop/*.exe
+          - platform: linux
+            runner: ubuntu-latest
+            files: |
+              dist/desktop/*.AppImage
+              dist/desktop/*.deb
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Skip unless selected
+        id: selected
+        shell: bash
+        run: echo "build=${{ inputs.platform == 'all' || inputs.platform == matrix.platform }}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        if: steps.selected.outputs.build == 'true'
+        with:
+          ref: ${{ inputs.tag }}
+
+      - uses: actions/setup-node@v4
+        if: steps.selected.outputs.build == 'true'
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - if: steps.selected.outputs.build == 'true'
+        run: npm ci
+
+      - name: Install Chromium for the PDF guides
+        if: steps.selected.outputs.build == 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Build the installers
+        if: steps.selected.outputs.build == 'true'
+        run: npm run build:desktop -- --arch x64
+
+      - uses: actions/upload-artifact@v4
+        if: steps.selected.outputs.build == 'true'
+        with:
+          name: CMM-${{ matrix.platform }}-x64
+          path: ${{ matrix.files }}
+          if-no-files-found: error
+
+      - name: Attach to the release
+        if: steps.selected.outputs.build == 'true' && inputs.attach
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ inputs.tag }}" ${{ matrix.platform == 'windows' && 'dist/desktop/*.exe' || 'dist/desktop/*.AppImage dist/desktop/*.deb' }} --clobber

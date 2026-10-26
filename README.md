@@ -197,6 +197,11 @@ Build each installer on its own operating system and architecture: the native mo
 only), `--skip-build`, `--arch x64`, `--targets AppImage`. Without a signing certificate the apps are unsigned (ad-hoc
 on macOS).
 
+The **Desktop installers** workflow (`.github/workflows/desktop-installers.yml`) builds the Windows and Linux (x64)
+installers on GitHub's runners of each platform, so they can be made from a Mac:
+`gh workflow run desktop-installers.yml -f tag=v1.1.0 -f platform=all -f attach=true` builds a tag and attaches them to
+its release.
+
 ### Server package for Ubuntu
 
 ```bash
