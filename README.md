@@ -226,9 +226,11 @@ dependency's license is listed in the app under **Settings › About**.
 
 ## Contributing
 
-CMM is shared as is, and this repository does not take contributions: pull requests and feature requests won't be
-reviewed or merged. If you want to change something or fix a bug, **fork it** and make it your own version; the MIT
-license lets you use, change and publish your fork freely.
+Contributions are welcome: bug reports, fixes, features and better docs. Read [CONTRIBUTING.md](CONTRIBUTING.md) for
+setting up, how the code is organised and what a pull request needs, then pick an
+[open issue](https://github.com/JoshWAMiasco/context-memory-manager/issues) or open one to discuss your idea. Please
+report security problems privately through
+[Report a vulnerability](https://github.com/JoshWAMiasco/context-memory-manager/security/advisories/new).
 
 ## License
 

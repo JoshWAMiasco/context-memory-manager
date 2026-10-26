@@ -1,0 +1,48 @@
+name: Bug report
+description: Something in CMM doesn't work as it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for reporting a bug. Please report security problems privately through the Security tab instead.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead. Screenshots help.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open a memory on a USB drive
+        2. Click …
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: How you run CMM
+      options:
+        - Desktop app on macOS
+        - Desktop app on Windows
+        - Desktop app on Linux
+        - Server on Ubuntu
+        - From source (npm run dev)
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: CMM version
+      description: Shown on the sign-in page and the Drives page.
+      placeholder: "1.1.0"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or error messages
+      render: text
