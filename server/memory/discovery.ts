@@ -1,5 +1,5 @@
 import "server-only";
-import { lstat, readdir } from "node:fs/promises";
+import { lstat, readdir, realpath } from "node:fs/promises";
 import path from "node:path";
 import { and, eq } from "drizzle-orm";
 import { isSystemMetadataName } from "@/lib/fs/system-files";
@@ -281,14 +281,27 @@ export async function listMemories(actor: StorageActor): Promise<MemoryListing> 
       return { memories: [...memories.values()], isSearching, isComplete: walk.isComplete };
     }),
   );
-  const memories = discoveries
-    .flatMap((discovery, storageIndex) =>
-      discovery.memories.map((location) => ({ ...location, storageLabel: storages[storageIndex]?.label ?? "" })),
-    )
-    .toSorted(
-      (first, second) =>
-        first.memory.name.localeCompare(second.memory.name) || first.storageLabel.localeCompare(second.storageLabel),
-    );
+  const storageRoots = await Promise.all(
+    storages.map((storage) => realpath(storage.rootPath).catch(() => path.resolve(storage.rootPath))),
+  );
+  /*
+   * Storages can overlap (a Home storage holds the Documents storage), so one folder can be found by
+   * several walks. It is listed once, from the storage nearest to it (the shortest path).
+   */
+  const memoriesByFolder = new Map<string, MemoryLocation>();
+  discoveries.forEach((discovery, storageIndex) => {
+    const storageRoot = storageRoots[storageIndex] ?? "";
+    for (const location of discovery.memories) {
+      const absoluteFolder = path.join(storageRoot, ...location.path.split("/"));
+      const listed = memoriesByFolder.get(absoluteFolder);
+      if (listed && listed.path.length <= location.path.length) continue;
+      memoriesByFolder.set(absoluteFolder, { ...location, storageLabel: storages[storageIndex]?.label ?? "" });
+    }
+  });
+  const memories = [...memoriesByFolder.values()].toSorted(
+    (first, second) =>
+      first.memory.name.localeCompare(second.memory.name) || first.storageLabel.localeCompare(second.storageLabel),
+  );
   return {
     memories,
     isSearching: discoveries.some((discovery) => discovery.isSearching),

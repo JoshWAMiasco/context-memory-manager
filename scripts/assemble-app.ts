@@ -39,6 +39,8 @@ rmSync(applicationDirectory, { recursive: true, force: true });
 copyDirectory(path.join(projectRoot, ".next", "standalone"), applicationDirectory);
 // The tracer can pick up tsconfig.json files from earlier build output (dist/desktop); none of dist/ belongs here.
 rmSync(path.join(applicationDirectory, "dist"), { recursive: true, force: true });
+// Nor does the checkout's own storage manifest: a copy of it makes dist/app show up as a second memory.
+rmSync(path.join(applicationDirectory, ".cmm"), { recursive: true, force: true });
 copyDirectory(path.join(projectRoot, ".next", "static"), path.join(applicationDirectory, ".next", "static"));
 copyDirectory(path.join(projectRoot, "public"), path.join(applicationDirectory, "public"));
 copyDirectory(path.join(projectRoot, "server", "db", "migrations"), path.join(applicationDirectory, "migrations"));
