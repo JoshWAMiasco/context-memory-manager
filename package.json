@@ -3,11 +3,27 @@
   "version": "1.1.0",
   "private": true,
   "description": "CMM (Context Memory Manager): a self-hosted file manager for LLM context, memories and private files.",
+  "keywords": [
+    "context-memory-manager",
+    "ai-memory",
+    "llm",
+    "claude-code",
+    "gemini-cli",
+    "codex",
+    "file-manager",
+    "self-hosted",
+    "offline-first",
+    "encryption",
+    "backup",
+    "electron"
+  ],
+  "homepage": "https://joshwamiasco.github.io/context-memory-manager/",
+  "bugs": "https://github.com/JoshWAMiasco/context-memory-manager/issues",
   "license": "MIT",
   "author": "Joshua Miasco",
   "repository": {
     "type": "git",
-    "url": "https://github.com/JoshWAMiasco/context_memory_manager.git"
+    "url": "https://github.com/JoshWAMiasco/context-memory-manager.git"
   },
   "scripts": {
     "dev": "tsx scripts/clear-stale-dev-cache.ts && tsx scripts/copy-pdfjs-assets.ts && cross-env NEXT_TELEMETRY_DISABLED=1 tsx scripts/build-entry.ts && cross-env NEXT_TELEMETRY_DISABLED=1 CMM_MODE=server CMM_DATA_DIR=.cmm-dev-data CMM_CONFIG=.cmm-dev-data/config.json node dist/server/entry.js --dev",

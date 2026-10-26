@@ -10,6 +10,13 @@
 </p>
 
 <p align="center">
+  <a href="https://joshwamiasco.github.io/context-memory-manager/"><strong>Website</strong></a> ·
+  <a href="https://github.com/JoshWAMiasco/context-memory-manager/releases/latest"><strong>Download</strong></a> ·
+  <a href="docs/guides/desktop-guide.md">Desktop Guide</a> ·
+  <a href="docs/guides/server-guide.md">Server Guide</a>
+</p>
+
+<p align="center">
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-4cc9f0"></a>
   <img alt="Desktop: macOS, Windows, Linux" src="https://img.shields.io/badge/desktop-macOS%20%7C%20Windows%20%7C%20Linux-0d2233">
   <img alt="Server: Ubuntu" src="https://img.shields.io/badge/server-Ubuntu%2022.04%2B-0d2233">

@@ -1,0 +1,59 @@
+# Publishes site/ (the CMM website) to GitHub Pages. The screenshots, logo and fonts come from the app, and the
+# __SITE_URL__, __REPO_URL__, __VERSION__ and __LASTMOD__ placeholders are filled in here, so the site follows a repo
+# rename or a new version on its own.
+name: Website
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - site/**
+      - public/icons/cmm/logo.svg
+      - styles/fonts/**
+      - package.json
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Assemble the site
+        env:
+          SITE_URL: ${{ steps.pages.outputs.base_url }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          mkdir -p _site/fonts
+          cp -R site/. _site/
+          cp public/icons/cmm/logo.svg _site/logo.svg
+          cp styles/fonts/*.woff2 styles/fonts/*-license.txt _site/fonts/
+          version=$(node -p "require('./package.json').version")
+          lastmod=$(git log -1 --format=%cs)
+          find _site \( -name '*.html' -o -name '*.xml' -o -name '*.txt' \) -exec sed -i \
+            -e "s#__SITE_URL__#${SITE_URL%/}#g" \
+            -e "s#__REPO_URL__#${REPO_URL}#g" \
+            -e "s#__VERSION__#${version}#g" \
+            -e "s#__LASTMOD__#${lastmod}#g" {} +
+          ! grep -rn '__[A-Z_]*__' _site --include='*.html' --include='*.xml' --include='*.txt'
+
+      - uses: actions/upload-pages-artifact@v3
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

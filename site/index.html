@@ -1,0 +1,951 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CMM — Context Memory Manager: a file manager for AI agent memory</title>
+    <meta
+      name="description"
+      content="CMM (Context Memory Manager) is a free, open-source, self-hosted file manager for the memory folders, prompts and private files of AI tools like Claude Code, Gemini CLI and Codex. Encrypted, versioned, backed up to your own drives, fully offline."
+    />
+    <meta
+      name="keywords"
+      content="Context Memory Manager, CMM, AI memory, LLM memory, agent memory, Claude Code, Gemini CLI, Codex, prompt manager, self-hosted, offline, file manager, encryption, backup"
+    />
+    <meta name="author" content="Joshua Miasco" />
+    <link rel="canonical" href="__SITE_URL__/" />
+    <meta name="theme-color" content="#04101a" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="logo.svg" type="image/svg+xml" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="CMM — Context Memory Manager" />
+    <meta property="og:title" content="CMM — Context Memory Manager" />
+    <meta
+      property="og:description"
+      content="A self-hosted file manager for the memory folders, prompts and private files of your AI tools. Encrypted, versioned and backed up on your own drives. Runs fully offline."
+    />
+    <meta property="og:url" content="__SITE_URL__/" />
+    <meta property="og:image" content="__SITE_URL__/og-image.png" />
+    <meta property="og:image:width" content="1280" />
+    <meta property="og:image:height" content="640" />
+    <meta property="og:image:alt" content="CMM — Context Memory Manager logo and the Drives page" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="CMM — Context Memory Manager" />
+    <meta
+      name="twitter:description"
+      content="A self-hosted, offline file manager for the memory folders of Claude Code, Gemini CLI, Codex and other AI tools."
+    />
+    <meta name="twitter:image" content="__SITE_URL__/og-image.png" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "CMM — Context Memory Manager",
+        "alternateName": ["CMM", "Context Memory Manager"],
+        "description": "A self-hosted file manager for the memory folders, prompts and private files of LLM tools. Encrypted, versioned and backed up on your own drives. Runs fully offline.",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "macOS, Windows, Linux, Ubuntu Server",
+        "softwareVersion": "__VERSION__",
+        "url": "__SITE_URL__/",
+        "downloadUrl": "__REPO_URL__/releases",
+        "codeRepository": "__REPO_URL__",
+        "license": "https://opensource.org/licenses/MIT",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "author": { "@type": "Person", "name": "Joshua Miasco" },
+        "screenshot": "__SITE_URL__/screens/terminals.jpg",
+        "image": "__SITE_URL__/og-image.png"
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is CMM (Context Memory Manager)?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "CMM is a free, open-source file manager for the folders where AI agents and chat tools keep their memory: personas, project knowledge, scratchpads, prompts and notes. You browse and edit them in one app, mark folders as memories, run agent CLIs inside them, encrypt the sensitive ones, keep a history of every change and back them up to your own drives."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does CMM send my files to the cloud?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. CMM runs fully offline. There is no account, no cloud service and no telemetry; your files stay on your computer or on your own server."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Which AI tools does CMM work with?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Any tool that keeps its memory in folders. CMM's terminals run any agent CLI inside a memory folder, such as Claude Code, Gemini CLI, Codex, opencode or Aider, so the agent reads and writes that memory directly."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Which platforms does CMM run on?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "CMM is a desktop app for macOS, Windows and Linux, and a server for Ubuntu 22.04 or later that you open from any browser on your network."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is CMM free?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Yes. CMM is open source under the MIT license." }
+          }
+        ]
+      }
+    </script>
+
+    <link rel="preload" href="fonts/oxanium-latin-variable-weight.woff2" as="font" type="font/woff2" crossorigin />
+    <style>
+      @font-face {
+        font-family: "Oxanium";
+        src: url("fonts/oxanium-latin-variable-weight.woff2") format("woff2");
+        font-weight: 200 800;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Martian Mono";
+        src: url("fonts/martian-mono-latin-variable-weight.woff2") format("woff2");
+        font-weight: 100 800;
+        font-display: swap;
+      }
+
+      /* The same palette as the app (styles/design-tokens.css). */
+      :root {
+        --canvas: #04101a;
+        --surface: #0a1c2b;
+        --surface-muted: #10263a;
+        --surface-strong: #153049;
+        --line: #1b3a52;
+        --line-strong: #275070;
+        --fg-strong: #eef8ff;
+        --fg: #d8f1ff;
+        --fg-muted: #9ab8cf;
+        --fg-subtle: #7b9bb5;
+        --brand: #4cc9f0;
+        --accent: #b388ff;
+        --success: #5ef0b4;
+        --on-brand: #04101a;
+        --font-display: "Oxanium", ui-sans-serif, system-ui, sans-serif;
+        --font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        --font-mono: "Martian Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+        --radius: 4px;
+        --gutter: 16px;
+        color-scheme: dark;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        background: var(--canvas);
+        color: var(--fg);
+        font: 16px/1.65 var(--font-body);
+        -webkit-font-smoothing: antialiased;
+      }
+      img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+      }
+      a {
+        color: var(--brand);
+        text-decoration-thickness: 1px;
+        text-underline-offset: 3px;
+      }
+      h1,
+      h2,
+      h3 {
+        font-family: var(--font-display);
+        color: var(--fg-strong);
+        line-height: 1.15;
+        margin: 0;
+      }
+      p {
+        margin: 0;
+      }
+      kbd {
+        font: 0.8em var(--font-mono);
+        border: 1px solid var(--line-strong);
+        border-bottom-width: 2px;
+        border-radius: var(--radius);
+        padding: 0.05em 0.4em;
+        background: var(--surface-muted);
+      }
+
+      .wrap {
+        width: 100%;
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 0 var(--gutter);
+      }
+      .eyebrow {
+        font: 500 12px/1 var(--font-mono);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--brand);
+      }
+
+      /* Header */
+      .site-header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: rgb(4 16 26 / 0.85);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--line);
+      }
+      .site-header .wrap {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        height: 60px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--fg-strong);
+        text-decoration: none;
+        font: 700 20px var(--font-display);
+      }
+      .brand img {
+        width: 30px;
+        height: 30px;
+      }
+      .site-nav {
+        margin-left: auto;
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        font-size: 14px;
+      }
+      .site-nav a {
+        color: var(--fg-muted);
+        text-decoration: none;
+      }
+      .site-nav a:hover {
+        color: var(--fg-strong);
+      }
+      @media (max-width: 640px) {
+        .site-nav .optional {
+          display: none;
+        }
+      }
+
+      /* Buttons */
+      .button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 20px;
+        border-radius: var(--radius);
+        font: 600 15px var(--font-display);
+        letter-spacing: 0.02em;
+        text-decoration: none;
+        border: 1px solid var(--line-strong);
+        color: var(--fg-strong);
+        background: var(--surface);
+      }
+      .button:hover {
+        border-color: var(--brand);
+      }
+      .button.primary {
+        background: var(--brand);
+        border-color: var(--brand);
+        color: var(--on-brand);
+      }
+      .button.primary:hover {
+        background: #7dd8f5;
+      }
+      .site-nav .button {
+        padding: 7px 14px;
+        font-size: 14px;
+        color: var(--fg-strong);
+      }
+
+      /* Hero */
+      .hero {
+        padding: 72px 0 40px;
+        text-align: center;
+        background: radial-gradient(60% 50% at 50% 0%, rgb(76 201 240 / 0.14), transparent 70%);
+      }
+      .hero .logo {
+        width: 96px;
+        height: 96px;
+        margin: 0 auto 24px;
+      }
+      .hero h1 {
+        font-size: clamp(34px, 6vw, 60px);
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+      .hero h1 span {
+        color: var(--brand);
+      }
+      .hero .lede {
+        max-width: 680px;
+        margin: 20px auto 0;
+        font-size: clamp(17px, 2.2vw, 20px);
+        color: var(--fg-muted);
+      }
+      .hero .actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 32px;
+      }
+      .hero .meta {
+        margin-top: 18px;
+        font: 12px var(--font-mono);
+        color: var(--fg-subtle);
+      }
+      .shot {
+        border: 1px solid var(--line-strong);
+        border-radius: 6px;
+        overflow: hidden;
+        background: var(--surface);
+        box-shadow:
+          0 30px 60px -30px rgb(0 0 0 / 0.9),
+          0 0 0 1px rgb(76 201 240 / 0.08);
+      }
+      .hero .shot {
+        margin-top: 56px;
+      }
+      figcaption {
+        padding: 10px 14px;
+        font-size: 13px;
+        color: var(--fg-subtle);
+        border-top: 1px solid var(--line);
+        text-align: left;
+      }
+
+      /* Works with */
+      .works-with {
+        padding: 28px 0;
+        border-block: 1px solid var(--line);
+        background: var(--surface);
+      }
+      .works-with .wrap {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 10px 28px;
+      }
+      .works-with .eyebrow {
+        color: var(--fg-subtle);
+      }
+      .works-with ul {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px 24px;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        font: 500 15px var(--font-mono);
+        color: var(--fg-strong);
+      }
+
+      /* Sections */
+      section {
+        padding: 88px 0;
+      }
+      .section-head {
+        max-width: 720px;
+        margin-bottom: 48px;
+      }
+      .section-head h2 {
+        font-size: clamp(28px, 4vw, 40px);
+        margin-top: 12px;
+      }
+      .section-head p {
+        margin-top: 16px;
+        color: var(--fg-muted);
+        font-size: 18px;
+      }
+
+      .feature {
+        display: grid;
+        grid-template-columns: 5fr 7fr;
+        gap: 48px;
+        align-items: center;
+      }
+      .feature + .feature {
+        margin-top: 88px;
+      }
+      .feature:nth-of-type(even) {
+        grid-template-columns: 7fr 5fr;
+      }
+      .feature:nth-of-type(even) .feature-text {
+        order: 2;
+      }
+      .feature h3 {
+        font-size: 26px;
+        margin-top: 10px;
+      }
+      .feature p {
+        margin-top: 14px;
+        color: var(--fg-muted);
+      }
+      .feature ul {
+        margin: 16px 0 0;
+        padding: 0;
+        list-style: none;
+        color: var(--fg);
+      }
+      .feature li {
+        padding-left: 22px;
+        position: relative;
+        margin-top: 8px;
+        font-size: 15px;
+      }
+      .feature li::before {
+        content: "";
+        position: absolute;
+        left: 2px;
+        top: 0.6em;
+        width: 8px;
+        height: 8px;
+        border-radius: 2px;
+        background: var(--brand);
+      }
+      @media (max-width: 860px) {
+        .feature,
+        .feature:nth-of-type(even) {
+          grid-template-columns: 1fr;
+          gap: 24px;
+        }
+        .feature:nth-of-type(even) .feature-text {
+          order: 0;
+        }
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 16px;
+      }
+      .card {
+        padding: 24px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--surface);
+      }
+      .card h3 {
+        font-size: 19px;
+      }
+      .card p {
+        margin-top: 10px;
+        color: var(--fg-muted);
+        font-size: 15px;
+      }
+      .card .icon {
+        width: 36px;
+        height: 36px;
+        margin-bottom: 16px;
+        color: var(--brand);
+      }
+
+      .alt {
+        background: var(--surface);
+        border-block: 1px solid var(--line);
+      }
+      .alt .card {
+        background: var(--canvas);
+      }
+      .run-ways {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      }
+      .run-ways .card {
+        padding: 32px;
+      }
+      .run-ways .card p {
+        font-size: 16px;
+      }
+      .run-ways .card a {
+        display: inline-block;
+        margin-top: 18px;
+        font-weight: 600;
+      }
+
+      .privacy {
+        text-align: center;
+      }
+      .privacy .section-head {
+        margin: 0 auto 40px;
+      }
+      .pills {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px;
+      }
+      .pill {
+        padding: 10px 18px;
+        border-radius: 999px;
+        border: 1px solid var(--line-strong);
+        font: 500 14px var(--font-mono);
+        color: var(--success);
+        background: rgb(94 240 180 / 0.06);
+      }
+
+      /* FAQ */
+      .faq {
+        max-width: 800px;
+      }
+      details {
+        border-bottom: 1px solid var(--line);
+      }
+      details:first-of-type {
+        border-top: 1px solid var(--line);
+      }
+      summary {
+        cursor: pointer;
+        padding: 20px 32px 20px 0;
+        position: relative;
+        list-style: none;
+        font: 600 18px var(--font-display);
+        color: var(--fg-strong);
+      }
+      summary::-webkit-details-marker {
+        display: none;
+      }
+      summary::after {
+        content: "+";
+        position: absolute;
+        right: 4px;
+        top: 16px;
+        font: 400 24px var(--font-mono);
+        color: var(--brand);
+      }
+      details[open] summary::after {
+        content: "–";
+      }
+      details p {
+        padding: 0 0 22px;
+        color: var(--fg-muted);
+      }
+
+      /* Footer */
+      .cta {
+        text-align: center;
+      }
+      .cta h2 {
+        font-size: clamp(28px, 4vw, 40px);
+      }
+      .cta p {
+        margin-top: 14px;
+        color: var(--fg-muted);
+      }
+      .cta .actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 28px;
+      }
+      .site-footer {
+        padding: 32px 0;
+        border-top: 1px solid var(--line);
+        font-size: 14px;
+        color: var(--fg-subtle);
+      }
+      .site-footer .wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px 24px;
+        justify-content: space-between;
+      }
+      .site-footer a {
+        color: var(--fg-muted);
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="wrap">
+        <a class="brand" href="./"><img src="logo.svg" alt="" width="30" height="30" />CMM</a>
+        <nav class="site-nav" aria-label="Main">
+          <a class="optional" href="#features">Features</a>
+          <a class="optional" href="#run">Install</a>
+          <a class="optional" href="#faq">FAQ</a>
+          <a class="button" href="__REPO_URL__">GitHub</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <div class="hero">
+        <div class="wrap">
+          <img class="logo" src="logo.svg" alt="CMM logo: a brain wired into a hard drive" width="96" height="96" />
+          <h1>CMM <span>—</span> Context Memory Manager</h1>
+          <p class="lede">
+            A self-hosted file manager for the memory folders, prompts and private files of your AI tools. Encrypted,
+            versioned and backed up on your own drives. Runs fully offline.
+          </p>
+          <div class="actions">
+            <a class="button primary" href="__REPO_URL__/releases/latest">Download CMM</a>
+            <a class="button" href="__REPO_URL__">View the source on GitHub</a>
+          </div>
+          <p class="meta">Free and open source (MIT) · macOS, Windows, Linux · Ubuntu server</p>
+          <figure class="shot">
+            <img
+              src="screens/terminals.jpg"
+              width="1600"
+              height="1000"
+              fetchpriority="high"
+              alt="CMM running Claude Code, Gemini CLI and opencode in a memory folder's terminals"
+            />
+            <figcaption>
+              Claude Code, Gemini CLI and opencode working inside a memory, each in its own terminal.
+            </figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="works-with">
+        <div class="wrap">
+          <span class="eyebrow">Works with any agent CLI</span>
+          <ul>
+            <li>Claude Code</li>
+            <li>Gemini CLI</li>
+            <li>Codex</li>
+            <li>opencode</li>
+            <li>Aider</li>
+            <li>your own scripts</li>
+          </ul>
+        </div>
+      </div>
+
+      <section id="features">
+        <div class="wrap">
+          <div class="section-head">
+            <span class="eyebrow">Why CMM</span>
+            <h2>Your AI's memory deserves a proper home</h2>
+            <p>
+              AI agents and chat tools keep their memory in plain folders: personas, project knowledge, scratchpads,
+              notes, datasets. CMM gives you one app to browse and edit those folders, run agents inside them, lock or
+              encrypt the sensitive ones, keep a history of every change and back them all up to a drive you own.
+            </p>
+          </div>
+
+          <article class="feature">
+            <div class="feature-text">
+              <span class="eyebrow">Memory folders</span>
+              <h3>Turn any folder into a memory</h3>
+              <p>
+                Give a folder a name, a colour and a description, or start one from a template: LLM persona, project
+                knowledge or agent scratchpad.
+              </p>
+              <ul>
+                <li>An overview with size, recent files and quick actions</li>
+                <li>A card on the Drives page, even for memories on a plugged-in drive</li>
+                <li>View-only and locked folders, so an agent can't change them</li>
+              </ul>
+            </div>
+            <figure class="shot">
+              <img
+                src="screens/memory-overview.jpg"
+                width="1600"
+                height="1000"
+                loading="lazy"
+                alt="The overview page of a memory folder in CMM"
+              />
+            </figure>
+          </article>
+
+          <article class="feature">
+            <div class="feature-text">
+              <span class="eyebrow">Explorer and editors</span>
+              <h3>Browse and edit every memory in one window</h3>
+              <p>
+                A file tree and a file pane, side by side. Markdown opens formatted and edits in a rich editor or as
+                source, code opens in a code editor, and images, PDFs and CSV tables have their own viewers.
+              </p>
+              <ul>
+                <li>Drag and drop, copy and paste across drives</li>
+                <li>Download as zip, and a trash you can restore from</li>
+              </ul>
+            </div>
+            <figure class="shot">
+              <img
+                src="screens/explorer.jpg"
+                width="1600"
+                height="1000"
+                loading="lazy"
+                alt="The CMM explorer with a file tree and a Markdown file open"
+              />
+            </figure>
+          </article>
+
+          <article class="feature">
+            <div class="feature-text">
+              <span class="eyebrow">Encryption</span>
+              <h3>AES-256 encryption with a key you keep</h3>
+              <p>
+                Encrypt a folder with AES-256-GCM. Its key lives in a key file you keep, for example on a USB stick.
+                Files stay encrypted on disk and in every backup, and the folder locks again on its own.
+              </p>
+            </div>
+            <figure class="shot">
+              <img
+                src="screens/encryption-unlock.jpg"
+                width="1600"
+                height="1000"
+                loading="lazy"
+                alt="Unlocking an encrypted folder in CMM with its key file"
+              />
+            </figure>
+          </article>
+
+          <article class="feature">
+            <div class="feature-text">
+              <span class="eyebrow">Version history</span>
+              <h3>Every save is a version you can restore</h3>
+              <p>
+                Turn on versioning and CMM keeps a Git history of the folder: compare and restore any version, undo and
+                redo, take named snapshots. There is nothing to learn about Git.
+              </p>
+            </div>
+            <figure class="shot">
+              <img
+                src="screens/versioning-history.jpg"
+                width="1600"
+                height="1000"
+                loading="lazy"
+                alt="The version history of a file with a diff in CMM"
+              />
+            </figure>
+          </article>
+
+          <article class="feature">
+            <div class="feature-text">
+              <span class="eyebrow">Backups</span>
+              <h3>Back up to a USB stick, clone onto another computer</h3>
+              <p>
+                Copy, mirror or take dated snapshots of any folder onto another drive. Back memories up with their
+                names, icons, encryption and history, then plug the drive into another computer and copy them onto it.
+              </p>
+              <ul>
+                <li>Profiles that run as soon as a drive is plugged in</li>
+                <li>Interrupted backups resume where they stopped</li>
+                <li>A live picture of your drives and every running transfer</li>
+              </ul>
+            </div>
+            <figure class="shot">
+              <img
+                src="screens/backup-to-memory.jpg"
+                width="1600"
+                height="1000"
+                loading="lazy"
+                alt="Backing up two memories into a new memory on a USB drive in CMM"
+              />
+            </figure>
+          </article>
+        </div>
+      </section>
+
+      <section class="alt" aria-labelledby="more-heading">
+        <div class="wrap">
+          <div class="section-head">
+            <span class="eyebrow">And more</span>
+            <h2 id="more-heading">Everything you need around your files</h2>
+          </div>
+          <div class="grid">
+            <div class="card">
+              <svg
+                class="icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                aria-hidden="true"
+              >
+                <rect x="3" y="4" width="18" height="16" rx="2" />
+                <path d="m7 9 3 3-3 3M12 15h5" />
+              </svg>
+              <h3>Terminals</h3>
+              <p>
+                Open a terminal on a memory and your agent starts there, with your own shell and tools. Dock several at
+                once.
+              </p>
+            </div>
+            <div class="card">
+              <svg
+                class="icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                aria-hidden="true"
+              >
+                <circle cx="11" cy="11" r="6" />
+                <path d="m20 20-4.5-4.5" />
+              </svg>
+              <h3>Quick search</h3>
+              <p>
+                Press <kbd>⌘</kbd>/<kbd>Ctrl</kbd>+<kbd>K</kbd> to switch drives, jump to a page or find any file by
+                name.
+              </p>
+            </div>
+            <div class="card">
+              <svg
+                class="icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                aria-hidden="true"
+              >
+                <rect x="3" y="6" width="18" height="12" rx="2" />
+                <path d="M7 14h.01M11 14h6" />
+              </svg>
+              <h3>Live drives</h3>
+              <p>Internal folders, external disks and USB sticks appear as you plug them in, and eject from CMM.</p>
+            </div>
+            <div class="card">
+              <svg
+                class="icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                aria-hidden="true"
+              >
+                <circle cx="9" cy="8" r="3.5" />
+                <path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 4.5a3.5 3.5 0 0 1 0 7M18 14c1.9.8 3 2.9 3 6" />
+              </svg>
+              <h3>Users and security</h3>
+              <p>Admin, editor and viewer accounts, sign-in lockout, auto-lock and HTTPS on the server.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="run">
+        <div class="wrap">
+          <div class="section-head">
+            <span class="eyebrow">Install</span>
+            <h2>Run it on your desktop or on your own server</h2>
+          </div>
+          <div class="run-ways grid">
+            <div class="card">
+              <h3>Desktop app</h3>
+              <p>For macOS, Windows and Linux. Your files stay where they already are on your computer.</p>
+              <a href="__REPO_URL__/blob/main/docs/guides/desktop-guide.md">Read the Desktop Guide →</a>
+            </div>
+            <div class="card">
+              <h3>Server for Ubuntu</h3>
+              <p>
+                A systemd service on a machine on your network, opened from any browser on the LAN, with user accounts
+                and HTTPS. Installs from an offline package.
+              </p>
+              <a href="__REPO_URL__/blob/main/docs/guides/server-guide.md">Read the Server Guide →</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="alt privacy">
+        <div class="wrap">
+          <div class="section-head">
+            <span class="eyebrow">Private by design</span>
+            <h2>Nothing leaves your machine</h2>
+            <p>CMM works without an internet connection. Your memories, prompts and keys stay on drives you own.</p>
+          </div>
+          <div class="pills">
+            <span class="pill">No account</span>
+            <span class="pill">No cloud</span>
+            <span class="pill">No telemetry</span>
+            <span class="pill">Fully offline</span>
+            <span class="pill">Open source, MIT</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="faq">
+        <div class="wrap">
+          <div class="section-head">
+            <span class="eyebrow">FAQ</span>
+            <h2>Questions</h2>
+          </div>
+          <div class="faq">
+            <details>
+              <summary>What is CMM (Context Memory Manager)?</summary>
+              <p>
+                CMM is a free, open-source file manager for the folders where AI agents and chat tools keep their
+                memory: personas, project knowledge, scratchpads, prompts and notes. You browse and edit them in one
+                app, mark folders as memories, run agent CLIs inside them, encrypt the sensitive ones, keep a history of
+                every change and back them up to your own drives.
+              </p>
+            </details>
+            <details>
+              <summary>Does CMM send my files to the cloud?</summary>
+              <p>
+                No. CMM runs fully offline. There is no account, no cloud service and no telemetry; your files stay on
+                your computer or on your own server.
+              </p>
+            </details>
+            <details>
+              <summary>Which AI tools does CMM work with?</summary>
+              <p>
+                Any tool that keeps its memory in folders. CMM's terminals run any agent CLI inside a memory folder,
+                such as Claude Code, Gemini CLI, Codex, opencode or Aider, so the agent reads and writes that memory
+                directly.
+              </p>
+            </details>
+            <details>
+              <summary>Which platforms does CMM run on?</summary>
+              <p>
+                CMM is a desktop app for macOS, Windows and Linux, and a server for Ubuntu 22.04 or later that you open
+                from any browser on your network.
+              </p>
+            </details>
+            <details>
+              <summary>Is CMM free?</summary>
+              <p>Yes. CMM is open source under the <a href="__REPO_URL__/blob/main/LICENSE">MIT license</a>.</p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <section class="alt cta">
+        <div class="wrap">
+          <h2>Give your AI's memory a home</h2>
+          <p>Download CMM, or build it from source in a few commands.</p>
+          <div class="actions">
+            <a class="button primary" href="__REPO_URL__/releases/latest">Download CMM</a>
+            <a class="button" href="__REPO_URL__#getting-started">Build from source</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <span>CMM — Context Memory Manager · MIT © 2026 Joshua Miasco</span>
+        <span
+          ><a href="__REPO_URL__">GitHub</a> · <a href="__REPO_URL__/releases">Releases</a> ·
+          <a href="__REPO_URL__/tree/main/docs/guides">Guides</a></span
+        >
+      </div>
+    </footer>
+  </body>
+</html>
