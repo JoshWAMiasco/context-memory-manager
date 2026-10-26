@@ -1,0 +1,54 @@
+# Builds the Windows installer (NSIS, x64) on a Windows runner: the native modules (better-sqlite3,
+# @node-rs/argon2, node-pty) are installed for the machine that runs `npm ci`, so it can't be built from a Mac.
+# Run it from the Actions tab or `gh workflow run desktop-windows.yml -f tag=v1.1.0`; the installer is kept as a
+# workflow artifact, and also attached to the release when `attach` is on.
+name: Windows installer
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag or branch to build (e.g. v1.1.0)
+        required: true
+        default: main
+      attach:
+        description: Attach the installer to the GitHub release of that tag
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Chromium for the PDF guides
+        run: npx playwright install chromium
+
+      - name: Build the installer
+        run: npm run build:desktop -- --arch x64
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CMM-Setup-windows-x64
+          path: dist/desktop/*.exe
+          if-no-files-found: error
+
+      - name: Attach to the release
+        if: ${{ inputs.attach }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ inputs.tag }}" dist/desktop/*.exe --clobber
