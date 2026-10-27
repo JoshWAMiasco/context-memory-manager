@@ -118,12 +118,13 @@ function PdfPage({
  * A read-only PDF preview, drawn to canvas by a locally bundled pdf.js (no browser plugin, no
  * `<iframe>`, `<embed>` or `<object>`). Pages render as they scroll into view, the file loads with
  * byte ranges, and a PDF's own JavaScript is never run. Fit to width, zoom 25%–500%, and a page
- * counter. `onFail` fires for damaged or password-protected files.
+ * counter. `onFail` fires for damaged or password-protected files. `source` is the PDF's URL, or
+ * its bytes when they were fetched already (an Office file converted on the server).
  *
  * @example
  * <PdfViewer source={buildRawUrl(storageId, "paper.pdf")} onFail={(reason) => setFailure(reason)} />
  */
-export function PdfViewer({ source, onFail }: { source: string; onFail: (reason: string) => void }) {
+export function PdfViewer({ source, onFail }: { source: string | ArrayBuffer; onFail: (reason: string) => void }) {
   const [loadState, setLoadState] = useState<PdfLoadState>({ status: "loading" });
   const [firstPageSize, setFirstPageSize] = useState({ width: 612, height: 792 });
   const [chosenScale, setChosenScale] = useState<number | "fit">("fit");
@@ -143,7 +144,8 @@ export function PdfViewer({ source, onFail }: { source: string; onFail: (reason:
       if (!isCurrent) return;
       pdfjs.GlobalWorkerOptions.workerSrc = `${PDFJS_ASSETS}/pdf.worker.min.mjs`;
       const loadingTask = pdfjs.getDocument({
-        url: source,
+        // pdf.js hands the bytes to its worker, so it gets a copy each time.
+        ...(typeof source === "string" ? { url: source } : { data: source.slice(0) }),
         cMapUrl: `${PDFJS_ASSETS}/cmaps/`,
         cMapPacked: true,
         standardFontDataUrl: `${PDFJS_ASSETS}/standard_fonts/`,

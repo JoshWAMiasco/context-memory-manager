@@ -31,7 +31,10 @@ import { CodeViewer } from "@/components/viewer/code-viewer";
 import { ContentError, ContentLoader } from "@/components/viewer/content-loader";
 import { CsvViewer } from "@/components/viewer/csv-viewer";
 import { ImageViewer } from "@/components/viewer/image-viewer";
+import { DocumentViewer } from "@/components/viewer/document-viewer";
+import { OfficeViewer } from "@/components/viewer/office-viewer";
 import { PdfViewer } from "@/components/viewer/pdf-viewer";
+import { SpreadsheetViewer } from "@/components/viewer/spreadsheet-viewer";
 import { MarkdownViewer } from "@/components/viewer/markdown-viewer";
 import { PaneAction, PaneHeader } from "@/components/viewer/pane-header";
 import { UndoRedoButtons } from "@/components/versioning/undo-redo-buttons";
@@ -51,9 +54,11 @@ import { mergeClassNames } from "@/utilities/merge-class-names";
 
 /** Images larger than this show the placeholder instead of being decoded. */
 const MAX_IMAGE_PREVIEW_BYTES = 50 * 1024 * 1024;
+/** Workbooks and Word documents larger than this aren't read in the browser. */
+const MAX_OFFICE_PREVIEW_BYTES = 25 * 1024 * 1024;
 const DEFAULT_LIMITS: ViewerLimits = { maxEditBytes: 5 * 1024 * 1024, csvMaxRows: 50_000 };
 
-type ViewKind = "markdown" | "code" | "csv" | "image" | "pdf" | "placeholder";
+type ViewKind = "markdown" | "code" | "csv" | "image" | "pdf" | "spreadsheet" | "document" | "office" | "placeholder";
 
 interface ViewPlan {
   viewKind: ViewKind;
@@ -71,6 +76,13 @@ function planView(entry: FileEntry, fileStat: FileStat): ViewPlan {
   const looksBinary = fileStat.sniff?.isBinary === true;
   const tooLargeMessage = "This file is too large to preview. Download it to open it.";
   if (kindInfo.kind === "pdf") return { viewKind: "pdf", isText: false };
+  if (kindInfo.kind === "office") return { viewKind: "office", isText: false };
+  if (kindInfo.kind === "spreadsheet" || kindInfo.kind === "document") {
+    if (entry.size > MAX_OFFICE_PREVIEW_BYTES) {
+      return { viewKind: "placeholder", isText: false, placeholderMessage: tooLargeMessage };
+    }
+    return { viewKind: kindInfo.kind, isText: false };
+  }
   if (kindInfo.kind === "image") {
     if (entry.size > MAX_IMAGE_PREVIEW_BYTES) {
       return { viewKind: "placeholder", isText: false, placeholderMessage: tooLargeMessage };
@@ -367,6 +379,21 @@ export function FileView({ entry, fileStat }: { entry: FileEntry; fileStat: File
     );
   } else if (viewPlan.viewKind === "placeholder") {
     body = placeholder(viewPlan.placeholderMessage);
+  } else if (viewPlan.viewKind === "spreadsheet") {
+    body = <SpreadsheetViewer entry={entry} source={rawSource} maxRows={limits.csvMaxRows} onDownload={download} />;
+  } else if (viewPlan.viewKind === "document") {
+    body = <DocumentViewer entry={entry} source={rawSource} onDownload={download} />;
+  } else if (viewPlan.viewKind === "office") {
+    body = (
+      <OfficeViewer
+        entry={entry}
+        storageId={storage.id}
+        etag={fileStat.etag}
+        mode={explorer.mode}
+        isEncrypted={isEncryptedFile}
+        onDownload={download}
+      />
+    );
   } else if (viewPlan.viewKind === "pdf") {
     body =
       pdfFailure === undefined ? (

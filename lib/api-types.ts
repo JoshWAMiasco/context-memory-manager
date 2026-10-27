@@ -46,6 +46,11 @@ export type ApiErrorCode =
   | "GIT_COMMAND_FAILED"
   | "BACKUP_RUNNING"
   | "TOO_MANY_TERMINALS"
+  | "OFFICE_UNAVAILABLE"
+  | "OFFICE_CONVERSION_FAILED"
+  | "OFFICE_TIMEOUT"
+  | "ENCRYPTED_NOT_CONVERTED"
+  | "TOO_LARGE"
   | "INTERNAL_ERROR";
 
 export interface ApiErrorBody {
@@ -306,8 +311,24 @@ export interface StorageAccessEntry {
 
 export type FileEntryType = "file" | "directory";
 
+/**
+ * `spreadsheet` (xlsx) and `document` (docx) are shown by viewers in the browser; `office` (pptx,
+ * the older doc/xls/ppt, OpenDocument, RTF) through LibreOffice on the server, as a PDF.
+ */
 export type FileKind =
-  "markdown" | "code" | "text" | "csv" | "image" | "video" | "audio" | "pdf" | "archive" | "binary";
+  | "markdown"
+  | "code"
+  | "text"
+  | "csv"
+  | "image"
+  | "video"
+  | "audio"
+  | "pdf"
+  | "spreadsheet"
+  | "document"
+  | "office"
+  | "archive"
+  | "binary";
 
 export interface FileBadges {
   isMemory: boolean;
@@ -668,4 +689,12 @@ export interface DownloadMeasurement {
   totalBytes: number;
   /** Files stored encrypted: they are decrypted into the zip. */
   encryptedFileCount: number;
+}
+
+/** Whether LibreOffice (which previews pptx and older Office files) is installed on the CMM computer. */
+export interface OfficeDetection {
+  installed: boolean;
+  version?: string;
+  path?: string;
+  checkedAt: string;
 }

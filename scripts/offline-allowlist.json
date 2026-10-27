@@ -135,6 +135,16 @@
       "reason": "Server package only: the pdf.js worker served from public/vendor/pdfjs names XML namespaces (XFA, Adobe XDP/XFDF/XMP) and its Apache licence; identifiers, never fetched",
       "files": "standalone/public/vendor/pdfjs/**",
       "urlPattern": "^https?://(www\\.xfa\\.org/schema/|ns\\.adobe\\.com/|www\\.apache\\.org/licenses/)"
+    },
+    {
+      "reason": "Office Open XML namespace and relationship-type URIs in the xlsx/docx readers (read-excel-file, docx-preview): identifiers compared with the file's XML, never fetched",
+      "files": "**",
+      "urlPattern": "^https?://(schemas\\.openxmlformats\\.org|schemas\\.microsoft\\.com/office|purl\\.oclc\\.org/ooxml)/"
+    },
+    {
+      "reason": "JSZip documentation link in an error message (bundled with docx-preview)",
+      "files": "**",
+      "urlPattern": "^https://stuk\\.github\\.io/jszip/"
     }
   ]
 }

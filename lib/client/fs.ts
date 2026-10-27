@@ -18,7 +18,7 @@ import type {
   StorageSummary,
   TrashItem,
 } from "@/lib/api-types";
-import { requestJson } from "@/lib/client/api";
+import { ApiError, handleSessionError, requestJson, toApiError } from "@/lib/client/api";
 import { joinEntryPath, QUERY_KEYS, readBaseName, readParentPath } from "@/lib/client/query-keys";
 import { getStepUpDownloadUrl } from "@/lib/client/step-up";
 import { describeFileKind } from "@/lib/file-kinds";
@@ -394,6 +394,27 @@ export async function downloadEntry(
   if (!downloadUrl) return false;
   startBrowserDownload(downloadUrl);
   return true;
+}
+
+/**
+ * A file's bytes for a viewer that reads them itself (spreadsheets, Word documents, converted
+ * Office files). Errors come back as `ApiError`s with the server's message.
+ *
+ * @example
+ * const buffer = await fetchBytes(`${buildRawUrl(storageId, path)}&v=${etag}`, signal);
+ */
+export async function fetchBytes(url: string, signal?: AbortSignal): Promise<ArrayBuffer> {
+  let response: Response;
+  try {
+    response = await fetch(url, { credentials: "same-origin", signal });
+  } catch (networkError) {
+    if (networkError instanceof DOMException && networkError.name === "AbortError") throw networkError;
+    throw new ApiError(0, "NETWORK_ERROR", "The CMM server could not be reached.");
+  }
+  if (response.ok) return response.arrayBuffer();
+  const apiError = toApiError(response.status, await response.json().catch(() => undefined));
+  handleSessionError(apiError);
+  throw apiError;
 }
 
 /** Starts a browser download of `url` (a same-origin attachment). */
