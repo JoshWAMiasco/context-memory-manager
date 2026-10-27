@@ -216,6 +216,7 @@ export function TerminalPanel({
       <div className={mergeClassNames("min-h-0 flex-1 bg-field py-1 pl-2", isCollapsed && "hidden")}>
         <TerminalView
           terminalId={terminal.id}
+          shell={terminal.shell}
           isVisible={!isCollapsed && !isHidden}
           onOutput={(isReplay) => {
             if (!isReplay && (isCollapsed || isHidden) && !layout.hasUnread) {

@@ -9,13 +9,11 @@ import { FileTreeNode, InlineNameInput, TREE_INDENT, TREE_ROW_HEIGHT } from "@/c
 import { FileIcon } from "@/components/explorer/file-icon";
 import type { DirectoryListing, FileEntry } from "@/lib/api-types";
 import { useFileClipboard } from "@/lib/client/clipboard";
+import { ENTRY_DRAG_TYPE, readDraggedEntries, type DraggedEntries } from "@/lib/client/entry-drag";
 import { getServerEventsClient } from "@/lib/client/events";
 import { directoryQueryOptions, loadMoreEntries, type StoragePath } from "@/lib/client/fs";
 import { isInsideFolder, readParentPath } from "@/lib/client/query-keys";
 import { mergeClassNames } from "@/utilities/merge-class-names";
-
-/** The drag data type of entries dragged inside CMM (`{ storageId, paths }`). */
-export const ENTRY_DRAG_TYPE = "application/x-cmm-entries";
 
 const OVERSCAN_ROWS = 8;
 const TYPE_AHEAD_RESET_MILLISECONDS = 600;
@@ -25,11 +23,6 @@ type TreeRow =
   | { kind: "draft"; key: string; depth: number; type: "file" | "directory" }
   | { kind: "loading"; key: string; depth: number }
   | { kind: "more"; key: string; depth: number; directoryPath: string };
-
-interface DraggedEntries {
-  storageId: string;
-  paths: string[];
-}
 
 function buildRows(
   rootPath: string,
@@ -55,15 +48,6 @@ function buildRows(
   };
   addFolder(rootPath, 0);
   return rows;
-}
-
-function readDraggedEntries(dataTransfer: DataTransfer): DraggedEntries | undefined {
-  try {
-    const parsed = JSON.parse(dataTransfer.getData(ENTRY_DRAG_TYPE)) as DraggedEntries;
-    return Array.isArray(parsed.paths) && typeof parsed.storageId === "string" ? parsed : undefined;
-  } catch {
-    return undefined;
-  }
 }
 
 /**

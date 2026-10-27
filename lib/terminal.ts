@@ -35,3 +35,59 @@ export function parseTerminalSocketPath(requestPath: string): string | undefined
     return undefined;
   }
 }
+
+/** How a terminal's shell wants a path quoted: POSIX shells, PowerShell, or cmd.exe. */
+export type ShellQuoting = "posix" | "powershell" | "cmd";
+
+/** Paths at most this many per drop, so a huge selection can't flood the prompt. */
+export const MAX_DROPPED_PATHS = 100;
+
+/** Characters a POSIX shell reads literally, so a path made only of them needs no quotes. */
+const POSIX_SAFE_PATH = /^[\w/.,:@%+=-]+$/;
+
+/**
+ * The quoting a terminal's shell needs, from its executable name (`TerminalSummary.shell`).
+ *
+ * @example
+ * readShellQuoting("zsh"); // "posix"
+ * readShellQuoting("cmd.exe"); // "cmd"
+ */
+export function readShellQuoting(shellName: string): ShellQuoting {
+  const name = shellName.toLowerCase();
+  if (name === "cmd" || name === "cmd.exe") return "cmd";
+  if (/^(powershell|pwsh)(\.exe)?$/.test(name)) return "powershell";
+  return "posix";
+}
+
+/**
+ * Quotes one path for a shell prompt, or returns undefined when it can't be pasted safely: control
+ * characters (a newline would run the line), and `"` or `%` for cmd.exe, which has no way to escape
+ * them inside quotes.
+ *
+ * @example
+ * quoteShellPath("/srv/cmm/notes/today.md", "posix"); // "/srv/cmm/notes/today.md"
+ * quoteShellPath("/srv/cmm/it's here", "posix"); // "'/srv/cmm/it'\''s here'"
+ */
+export function quoteShellPath(path: string, quoting: ShellQuoting): string | undefined {
+  if (path === "" || /[\u0000-\u001F\u007F]/.test(path)) return undefined;
+  if (quoting === "cmd") return /["%]/.test(path) ? undefined : /[\s&()^|<>,;=!]/.test(path) ? `"${path}"` : path;
+  if (quoting === "powershell") return `'${path.replaceAll("'", "''")}'`;
+  return POSIX_SAFE_PATH.test(path) ? path : `'${path.replaceAll("'", String.raw`'\''`)}'`;
+}
+
+/**
+ * The text a drop pastes at the prompt: the quoted paths separated by spaces, with a trailing
+ * space so the next word can be typed straight away. Never a newline, so nothing runs. Throws when
+ * a path can't be quoted safely.
+ *
+ * @example
+ * formatDroppedPaths(["/srv/a.md", "/srv/b c.md"], "posix"); // "/srv/a.md '/srv/b c.md' "
+ */
+export function formatDroppedPaths(paths: readonly string[], quoting: ShellQuoting): string {
+  const quoted = paths.map((path) => {
+    const quotedPath = quoteShellPath(path, quoting);
+    if (quotedPath === undefined) throw new Error(`"${path}" has characters that can't be pasted into this shell.`);
+    return quotedPath;
+  });
+  return `${quoted.join(" ")} `;
+}

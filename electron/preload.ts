@@ -1,9 +1,9 @@
 /*
  * The desktop window's preload. Runs sandboxed with context isolation and exposes only
- * `window.cmmDesktop`: platform facts and four calls that go to the main process through
- * `ipcRenderer.invoke`, with their arguments checked here first.
+ * `window.cmmDesktop`: platform facts, four calls that go to the main process through
+ * `ipcRenderer.invoke` (with their arguments checked here first), and the local path of a dropped file.
  */
-import { contextBridge, ipcRenderer } from "electron";
+import { contextBridge, ipcRenderer, webUtils } from "electron";
 import { DESKTOP_CHANNELS, isBridgePath, isExternalLink, type CmmDesktopBridge } from "@/lib/desktop-bridge";
 
 const APP_VERSION_ARGUMENT = "--cmm-app-version=";
@@ -31,6 +31,11 @@ const bridge: CmmDesktopBridge = {
   openExternal: async (url) => {
     if (!isExternalLink(url)) return false;
     return (await ipcRenderer.invoke(DESKTOP_CHANNELS.openExternal, url)) === true;
+  },
+  getPathForFile: (file) => {
+    if (!(file instanceof File)) return null;
+    const filePath = webUtils.getPathForFile(file);
+    return isBridgePath(filePath) ? filePath : null;
   },
 };
 

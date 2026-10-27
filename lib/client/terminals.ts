@@ -109,6 +109,25 @@ export function prunePanels(existingIds: ReadonlySet<string>): void {
 }
 
 /**
+ * The text to paste for CMM entries dropped on a terminal: their absolute paths, quoted for its
+ * shell by the server (only the terminal's owner gets them).
+ *
+ * @example
+ * terminal.paste(await requestDroppedPathText(terminalId, "home", ["notes/today.md"]));
+ */
+export async function requestDroppedPathText(
+  terminalId: string,
+  storageId: string,
+  paths: readonly string[],
+): Promise<string> {
+  const { text } = await requestJson<{ text: string }>(`/api/terminals/${encodeURIComponent(terminalId)}/paths`, {
+    method: "POST",
+    body: { storageId, paths },
+  });
+  return text;
+}
+
+/**
  * Whether this user may open terminals, and the terminals they have open (oldest first). Checked
  * again on focus, so a terminal closed in another tab leaves this one too.
  */

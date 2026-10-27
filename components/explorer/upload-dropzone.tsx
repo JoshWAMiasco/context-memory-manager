@@ -4,6 +4,7 @@ import { UploadCloud } from "lucide-react";
 import { useState, type DragEvent, type ReactNode } from "react";
 import { showToastNotification } from "@/components/interactive/toast-notification";
 import { readDroppedFiles } from "@/components/explorer/file-tree";
+import { ENTRY_DRAG_TYPE } from "@/lib/client/entry-drag";
 import { mergeClassNames } from "@/utilities/merge-class-names";
 
 /**
@@ -31,7 +32,7 @@ export function UploadDropzone({
   const isFileDrag = (dragEvent: DragEvent<HTMLDivElement>) =>
     isEnabled &&
     dragEvent.dataTransfer.types.includes("Files") &&
-    !dragEvent.dataTransfer.types.includes("application/x-cmm-entries");
+    !dragEvent.dataTransfer.types.includes(ENTRY_DRAG_TYPE);
 
   return (
     <div

@@ -18,6 +18,8 @@ export interface CmmDesktopBridge {
   openFolder: (absolutePath: string) => Promise<boolean>;
   /** Opens an http(s) or mailto link in the default browser, after the user confirms. False when declined. */
   openExternal: (url: string) => Promise<boolean>;
+  /** The local path of a file or folder dropped from the OS; null for one that has none (dragged from a web page). */
+  getPathForFile: (file: File) => string | null;
 }
 
 /** IPC channel names, `ipcRenderer.invoke` ↔ `ipcMain.handle`. */
