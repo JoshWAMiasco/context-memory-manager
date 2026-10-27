@@ -16,6 +16,8 @@
  * better-sqlite3 ships `prebuilds/linux-<arch>.node` in its npm package; the argon2 package for
  * the target (`@node-rs/argon2-linux-<arch>-gnu`, glibc) is packed with `npm pack` into
  * vendor/native once per build machine and must match the integrity recorded in package-lock.json.
+ * node-pty is the exception: it has no Linux prebuild, so the package carries the build/Release/pty.node
+ * that npm ci compiled, and must be built on Linux for the target architecture.
  * The package is then checked: every native binary is an ELF file for the target, no package.json
  * keeps an install script, and the offline URL scan passes on the package's files.
  *
@@ -166,6 +168,14 @@ function prepareNativeModules(
   const prebuildsDirectory = path.join(modulesDirectory, "better-sqlite3", "prebuilds");
   for (const prebuild of readdirSync(prebuildsDirectory)) {
     if (prebuild !== `linux-${arch}.node`) rmSync(path.join(prebuildsDirectory, prebuild));
+  }
+  // node-pty ships prebuilds for macOS and Windows only; on Linux, npm ci compiles build/Release/pty.node.
+  const ptyDirectory = path.join(modulesDirectory, "node-pty");
+  if (!existsSync(path.join(ptyDirectory, "build", "Release", "pty.node")))
+    throw new Error("node-pty has no build/Release/pty.node; build the package on Linux after npm ci.");
+  const ptyPrebuildsDirectory = path.join(ptyDirectory, "prebuilds");
+  for (const prebuild of existsSync(ptyPrebuildsDirectory) ? readdirSync(ptyPrebuildsDirectory) : []) {
+    if (prebuild !== `linux-${arch}`) rmSync(path.join(ptyPrebuildsDirectory, prebuild), { recursive: true });
   }
   const scopeDirectory = path.join(modulesDirectory, "@node-rs");
   for (const scopedPackage of readdirSync(scopeDirectory)) {
