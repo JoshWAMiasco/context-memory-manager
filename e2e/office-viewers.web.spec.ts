@@ -1,6 +1,6 @@
 import { readJson } from "./support/api";
 import { expect, test, waitForPageReady } from "./support/fixtures";
-import { writeWordDocument, writeWorkbook } from "./support/office-files";
+import { writeDamagedWordDocument, writeWordDocument, writeWorkbook } from "./support/office-files";
 
 /*
  * Office files: xlsx and docx are read in the browser; pptx and older formats go through
@@ -69,7 +69,8 @@ test("a pptx is shown as a PDF made by LibreOffice, or says how to get LibreOffi
 test("a file LibreOffice can't convert says so, with Download", async ({ page, request, workspace }) => {
   const office = await readJson<{ installed: boolean }>(await request.get("/api/office/status"));
   test.skip(!office.installed, "needs LibreOffice (or the e2e stand-in)");
-  workspace.writeText("office/broken.doc", "not a document");
+  workspace.makeFolder("office");
+  writeDamagedWordDocument(workspace.disk("office", "broken.doc"));
   await page.goto(workspace.url("office", "broken.doc"));
   await expect(page.getByText(/LibreOffice couldn't convert this file/)).toBeVisible({ timeout: 30_000 });
 });

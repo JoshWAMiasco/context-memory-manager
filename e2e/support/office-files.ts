@@ -1,4 +1,4 @@
-import { createWriteStream } from "node:fs";
+import { createWriteStream, writeFileSync } from "node:fs";
 import archiver from "archiver";
 
 /*
@@ -71,4 +71,14 @@ export function writeWordDocument(filePath: string): Promise<void> {
       <w:p><w:hyperlink r:id="rIdBad">${run("Do not click")}</w:hyperlink></w:p>
     </w:body></w:document>`,
   });
+}
+
+/**
+ * A .doc that real LibreOffice refuses: the Word (OLE) signature followed by zeros, so it can't fall back
+ * to reading it as plain text, which it does for any other bytes. It ends with "not a document" for the
+ * e2e stand-in (support/fake-soffice.sh), which fails on that text.
+ */
+export function writeDamagedWordDocument(filePath: string): void {
+  const oleSignature = Buffer.from("d0cf11e0a1b11ae1", "hex");
+  writeFileSync(filePath, Buffer.concat([oleSignature, Buffer.alloc(4096), Buffer.from("not a document")]));
 }
