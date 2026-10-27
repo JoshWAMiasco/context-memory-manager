@@ -16,6 +16,7 @@ import { resolveInStorage } from "@/server/security/path-jail";
 import type { BackgroundService } from "@/server/services";
 import { getSetting } from "@/server/settings/store";
 import type { ActiveStorage, StorageActor } from "@/server/storage/roots";
+import { withUserBinOnPath } from "@/server/terminal/shell-path";
 
 /**
  * Lines of history the server's copy of each terminal keeps for a panel that (re)attaches, besides
@@ -142,6 +143,10 @@ function buildShellEnvironment(): Record<string, string> {
   environment.TERM_PROGRAM = "CMM";
   // Apps opened from the Dock or Finder get no locale, and CLIs then draw boxes and emoji as "?".
   if (process.platform !== "win32" && !environment.LANG) environment.LANG = "en_US.UTF-8";
+  if (process.platform !== "win32") {
+    const pathValue = withUserBinOnPath(environment.PATH, environment.HOME);
+    if (pathValue) environment.PATH = pathValue;
+  }
   return environment;
 }
 
