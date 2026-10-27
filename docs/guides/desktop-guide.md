@@ -320,8 +320,18 @@ What CMM shows depends on the kind of file:
 | Images | The picture, with **Fit to window**, **Actual size**, **Zoom in** and **Zoom out**. |
 | CSV and TSV tables | A table you can sort, search (**Search all columns**) and filter per column. |
 | PDF | The pages, with **Fit to width** and zoom. PDFs can't be edited. |
-| Video and audio | The file's details only. CMM does not play media files. |
+| Excel workbooks (`.xlsx`) | Each sheet as a table, with a tab per sheet at the bottom. Cells show their saved values; formulas aren't recalculated. |
+| Word documents (`.docx`) | The document laid out as pages. Links ask before they open in your browser. |
+| PowerPoint and older Office files (`.pptx`, `.doc`, `.xls`, `.ppt`, OpenDocument, `.rtf`) | The file converted to PDF pages by LibreOffice, if it is installed on your computer (see the note below). |
+| Video | One still frame of the video, its length and resolution, and **Download**. CMM does not play videos. |
+| Audio | The file's details only. CMM does not play media files. |
 | Other files | The file's details and a **Download** button. |
+
+Office files are read on your computer only; nothing is sent to Microsoft or any other service. Excel and Word files
+open in CMM itself. For PowerPoint and older formats, CMM uses [LibreOffice](https://www.libreoffice.org) if it is
+installed: install it like any other program, then open the file again. CMM converts a file the first time you open
+it, which can take a few seconds, and remembers the result. Files in an encrypted folder aren't converted, so no
+decrypted copy is ever made; download them to open them.
 
 ![An image open in the viewer.](assets/screens/image-viewer.png)
 
@@ -457,9 +467,28 @@ browsing while it works.
 If a file with the same name already exists, CMM asks what to do: **Replace** it, **Keep both** (the new file is saved
 as "name (1).ext"), or **Skip** it. Tick **Do this for every name clash in this upload** to answer once for all files.
 
-> [!NOTE]
-> You can drop files, but not whole folders, from your computer. CMM skips folders and tells you so. Drop the files
-> inside the folder instead.
+### Uploading a whole folder
+
+Drop a folder from your computer onto the tree or the file pane, or right-click a folder and choose **Upload folder
+here** (or click **Upload a folder** in the toolbar). CMM recreates the folder with everything inside it. If a folder
+with that name is already there, the upload goes into it, and a name clash is asked about once for the whole folder.
+
+Your computer's own clutter (`.DS_Store`, `Thumbs.db`, `desktop.ini`, `._…` files) and `.git` folders are left out;
+CMM says how many items it skipped.
+
+### Replacing a file with a newer copy
+
+When you have worked on a copy of a file on your computer, put it back over the one in CMM:
+
+1. Right-click the file and choose **Replace with file from computer…** (also in the **⋯** menu at the top of the file
+   pane).
+2. Choose the file on your computer. It may have another name; the file in CMM keeps its own name. If it is a
+   different kind of file (say a `.docx` over a `.xlsx`), CMM asks first.
+
+If the file in CMM changed after you chose **Replace** (someone else saved it, or an agent did), CMM doesn't overwrite
+it and says so. The version that was there is kept: in the folder's history when versioning is on, otherwise in the
+Trash. For text files, the message that confirms the replace has **See what changed**, which shows the old and new
+text side by side.
 
 ## Downloading files
 
@@ -468,7 +497,11 @@ as "name (1).ext"), or **Skip** it. Tick **Do this for every name clash in this 
 1. Select the file and click **Download** at the top of the file pane, or right-click it and choose **Download**.
 2. Choose where to save the copy.
 
-For a folder, choose **Download as zip**. CMM puts the whole folder into one `.zip` file.
+For a folder, choose **Download as zip**. CMM puts the whole folder into one `.zip` file. To download several items at
+once, select them (Ctrl-click, or ⌘-click on a Mac), right-click and choose **Download N items as zip**.
+
+Before a zip starts, CMM says how many files and how much data it holds. If some of them are in an encrypted folder,
+it asks first: they are decrypted into the zip, so anyone with the zip can read them.
 
 > [!NOTE]
 > The desktop app never asks for your password before an upload or a download. (CMM's server edition, used on a shared
@@ -1036,10 +1069,13 @@ Open the history in one of these ways:
 ![Version history, with the changes of one version.](assets/screens/versioning-history.png)
 
 The list on the left shows every version, newest first, with an icon for its kind (change, undo, redo, restore, changed
-outside CMM) and when it happened. Choose **This file only** or **Whole folder** to filter it.
+outside CMM, replaced with a file from your computer) and when it happened. Choose **This file only** or **Whole
+folder** to filter it, and use the **Show steps** list to see only uploads and replaces, edits, outside changes, or
+restores.
 
 Click a version to see what changed: the files, marked as added, modified, deleted or renamed, and the text before and
-after. Switch between **Side by side** and **Unified** views.
+after. Switch between **Side by side** and **Unified** views. Comparing works for text files (Markdown, code, text,
+CSV); for Office documents and other files, CMM says comparing isn't supported yet, and you can still restore them.
 
 ## Restoring an older version
 
@@ -1243,6 +1279,25 @@ the programs keep running; they reconnect when you unlock.
 
 Links a program prints, such as a sign-in link, open in your browser after CMM asks.
 
+## Docking a terminal beside the editor
+
+Click the **Dock beside the editor** button on a terminal's title bar. In the explorer, it moves into a column to the
+right of the file you are viewing: file tree, then the file, then the terminal. Several docked terminals show as tabs.
+
+- Drag the divider to resize the column. **Minimize** (or **⌘J** on a Mac, **Ctrl+J** elsewhere, or dragging the
+  divider all the way to the right) folds it to a thin bar on the right; a dot on the bar means new output arrived.
+  Click the bar, or press the shortcut again, to bring it back.
+- **Undock to the bottom** sends the terminal back to the windows along the bottom.
+- With nothing docked, the shortcut docks the front terminal.
+
+The program inside keeps running when you dock, undock, minimize or reload, and its screen comes back as it was.
+On other pages, and in a narrow window, docked terminals wait along the bottom.
+
+## Pasting a file's path into a terminal
+
+Drag a file or folder from the file tree onto a terminal. CMM types its full path at the prompt, in quotes if it
+needs them, without pressing Enter. Files dragged from Finder, File Explorer or your file manager work the same way.
+
 ## What to know
 
 - A terminal can do anything your account on this computer can, including changing files CMM protects or reading
@@ -1257,7 +1312,13 @@ Some pages are for admins only.
 ## General
 
 **Settings › General** shows the app's name, its mode (**Desktop**), the **Data directory** where CMM keeps its database,
-and the version number. Admins can also set:
+and the version number.
+
+**Appearance › Theme** picks **Dark** (the default), **Light**, or **System**, which follows your computer's light or
+dark appearance. The same switch is in the menu under your initials. The theme is yours: each user of CMM has their
+own.
+
+Admins can also set:
 
 - **Trash › Delete items after**: the number of days after which deleted items are removed for good (0 = never);
 - **Viewer and editor**: the largest text file that can be edited (**Edit files up to**, 5 MB by default), and how many

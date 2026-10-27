@@ -114,10 +114,16 @@ install them with `sudo apt install ./<file>.deb`.
 | `acl` (`setfacl`) | `cmm add-storage` grants the `cmm` user access to folders it doesn't own, such as a folder in a home directory | `cmm add-storage` prints `chgrp`/`chmod` commands for you to run instead |
 | `udisks2` (`udisksctl`) | USB drives can be mounted, ejected and powered off from inside CMM | Mount drives yourself under `/media` or `/mnt` (see *USB drives on a server*) |
 | `git` | Version history for folders | Versioning is switched off, with an explanation in the app |
+| `libreoffice-nogui` (or `libreoffice-core` with `-writer`, `-calc`, `-impress`) | Previews of PowerPoint, older Office (`.doc`, `.xls`, `.ppt`), OpenDocument and RTF files, converted to PDF on the server | Those files show their details and **Download**. Excel (`.xlsx`) and Word (`.docx`) files are previewed without it |
 
 > [!NOTE]
 > Ubuntu Server images don't always include `acl`, and many server installs leave out `udisks2`. Check with
-> `command -v setfacl udisksctl git`.
+> `command -v setfacl udisksctl git soffice`.
+
+LibreOffice is large (several hundred MB with its dependencies). CMM runs it only to convert a file someone opens, one
+file at a time, from a copy in its data folder, with a two-minute limit. Converted PDFs are kept in
+`/var/lib/cmm/office-previews` (the 100 most recent). Files in encrypted folders are never converted. If LibreOffice is
+somewhere unusual, set `CMM_SOFFICE_PATH` in the service's environment.
 
 ## Network
 
@@ -917,7 +923,8 @@ the same session.
 - **Once per session**: the first protected action opens a password prompt. After that, the whole session
   (all of the actions above) goes ahead without asking, until the person signs out or the session ends.
 - **Every time**: each action needs the password. The confirmation is valid for that one action on that one item,
-  for two minutes, and can't be reused.
+  for two minutes, and can't be reused. A folder upload is the exception: one confirmation covers every file uploaded
+  into that folder (and its subfolders) for ten minutes.
 
 Admins choose which actions need confirmation in **Settings › Security › Password confirmation (step-up)**. All
 five are on by default. The choice applies to both columns.
@@ -982,6 +989,11 @@ Terminals**, which asks for the admin's password.
 
 A terminal is a shell on the server, running as the `cmm` service user, inside the limits of its systemd service. Anyone
 who can open one can do anything that user can, so only admins can open terminals. Leave them off unless you need them.
+
+Terminals can be docked beside the editor in the explorer. Dragging a file from the tree onto a terminal types its full
+path on the server; this is the one place a browser learns where files live on the server, and only for the admin who
+owns that terminal. Files dragged from the browser's own computer have no path on the server, so CMM explains that
+instead (drop them on the file pane to upload them).
 
 # Users and roles
 
