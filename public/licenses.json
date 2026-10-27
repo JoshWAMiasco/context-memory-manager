@@ -663,10 +663,21 @@
   "author": "The xterm.js authors"
  },
  {
+  "name": "@xterm/addon-serialize",
+  "version": "0.14.0",
+  "license": "MIT",
+  "author": "The xterm.js authors"
+ },
+ {
   "name": "@xterm/addon-web-links",
   "version": "0.12.0",
   "license": "MIT",
   "author": "The xterm.js authors"
+ },
+ {
+  "name": "@xterm/headless",
+  "version": "6.0.0",
+  "license": "MIT"
  },
  {
   "name": "@xterm/xterm",
@@ -960,6 +971,12 @@
   "author": "Titus Wormer"
  },
  {
+  "name": "docx-preview",
+  "version": "0.4.1",
+  "license": "Apache-2.0",
+  "author": "Volodymyr Baydalka"
+ },
+ {
   "name": "drizzle-orm",
   "version": "0.45.4",
   "license": "Apache-2.0",
@@ -1048,6 +1065,12 @@
   "version": "1.20.3",
   "license": "ISC",
   "author": "Matteo Collina"
+ },
+ {
+  "name": "fflate",
+  "version": "0.8.3",
+  "license": "MIT",
+  "author": "Arjun Barrett"
  },
  {
   "name": "fill-range",
@@ -1143,6 +1166,11 @@
   "version": "5.3.2",
   "license": "MIT",
   "author": "kael"
+ },
+ {
+  "name": "immediate",
+  "version": "3.0.6",
+  "license": "MIT"
  },
  {
   "name": "inline-style-parser",
@@ -1252,10 +1280,21 @@
   "author": "Isaac Z. Schlueter"
  },
  {
+  "name": "jszip",
+  "version": "3.10.2",
+  "license": "(MIT OR GPL-3.0-or-later)",
+  "author": "Stuart Knightley"
+ },
+ {
   "name": "lazystream",
   "version": "1.0.1",
   "license": "MIT",
   "author": "Jonas Pommerening"
+ },
+ {
+  "name": "lie",
+  "version": "3.3.0",
+  "license": "MIT"
  },
  {
   "name": "linkifyjs",
@@ -1656,6 +1695,12 @@
   "license": "MIT"
  },
  {
+  "name": "node-int64",
+  "version": "0.4.0",
+  "license": "MIT",
+  "author": "Robert Kieffer"
+ },
+ {
   "name": "node-pty",
   "version": "1.1.0",
   "license": "MIT",
@@ -1714,6 +1759,11 @@
   "version": "1.0.1",
   "license": "BlueOak-1.0.0",
   "author": "Isaac Z. Schlueter"
+ },
+ {
+  "name": "pako",
+  "version": "1.0.11",
+  "license": "(MIT AND Zlib)"
  },
  {
   "name": "papaparse",
@@ -1938,6 +1988,12 @@
   "license": "Apache-2.0"
  },
  {
+  "name": "read-excel-file",
+  "version": "9.3.12",
+  "license": "MIT",
+  "author": "catamphetamine"
+ },
+ {
   "name": "readable-stream",
   "version": "4.8.0",
   "license": "MIT"
@@ -2015,6 +2071,12 @@
   "author": "Feross Aboukhadijeh"
  },
  {
+  "name": "saxen",
+  "version": "11.2.0",
+  "license": "MIT",
+  "author": "Nico Rehwaldt"
+ },
+ {
   "name": "scheduler",
   "version": "0.28.0",
   "license": "MIT"
@@ -2029,6 +2091,12 @@
   "name": "server-only",
   "version": "0.0.1",
   "license": "MIT"
+ },
+ {
+  "name": "setimmediate",
+  "version": "1.0.5",
+  "license": "MIT",
+  "author": "YuzuJS"
  },
  {
   "name": "shebang-command",
@@ -2269,6 +2337,12 @@
   "author": "Titus Wormer"
  },
  {
+  "name": "unzipper-esm",
+  "version": "0.13.3",
+  "license": "MIT",
+  "author": "Ziggy Jonsson"
+ },
+ {
   "name": "use-sync-external-store",
   "version": "1.7.0",
   "license": "MIT"
@@ -2310,6 +2384,12 @@
   "author": "Isaac Z. Schlueter"
  },
  {
+  "name": "worker-f",
+  "version": "0.1.21",
+  "license": "MIT",
+  "author": "catamphetamine"
+ },
+ {
   "name": "wrap-ansi",
   "version": "8.1.0",
   "license": "MIT",
@@ -2329,7 +2409,7 @@
  },
  {
   "name": "ws",
-  "version": "8.18.3",
+  "version": "8.22.0",
   "license": "MIT",
   "author": "Einar Otto Stangvik"
  },
