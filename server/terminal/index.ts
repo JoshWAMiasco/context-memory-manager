@@ -64,9 +64,15 @@ function getTerminalRegistry(): Map<string, TerminalSession> {
  */
 function ensureSpawnHelperIsExecutable(packageDirectory: string): void {
   if (process.platform === "win32") return;
+  /*
+   * Runtime paths: without turbopackIgnore, Next traced the whole project into the build, and vendor/node's
+   * 31 MB runtime tarball ended up in every server package. assemble-app copies node-pty itself.
+   */
   for (const helperPath of [
-    path.join(packageDirectory, "prebuilds", `${process.platform}-${process.arch}`, "spawn-helper"),
-    path.join(packageDirectory, "build", "Release", "spawn-helper"),
+    // eslint-disable-next-line no-inline-comments -- runtime path: keep Turbopack's tracer from following it
+    path.join(/* turbopackIgnore: true */ packageDirectory, "prebuilds", `${process.platform}-${process.arch}`, "spawn-helper"),
+    // eslint-disable-next-line no-inline-comments -- runtime path: keep Turbopack's tracer from following it
+    path.join(/* turbopackIgnore: true */ packageDirectory, "build", "Release", "spawn-helper"),
   ]) {
     if (!existsSync(helperPath)) continue;
     try {
