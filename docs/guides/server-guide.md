@@ -995,6 +995,23 @@ path on the server; this is the one place a browser learns where files live on t
 owns that terminal. Files dragged from the browser's own computer have no path on the server, so CMM explains that
 instead (drop them on the file pane to upload them).
 
+## Claude Code in terminals
+
+Terminals run as `cmm`, not as your own account, so a `claude` installed for you isn't there. Install it for the
+`cmm` user once (this needs internet access on the server):
+
+```bash
+sudo -u cmm -H bash -c 'curl -fsSL https://claude.ai/install.sh | bash'
+```
+
+The installer puts `claude` in `/var/lib/cmm/.local/bin`, which CMM adds to every terminal's `PATH`, and keeps it up
+to date there. Open a new terminal and run `claude`; the first time it asks you to sign in, and the sign-in is kept in
+`/var/lib/cmm` for every admin who opens a terminal. **Settings › Security › Terminals** shows the same command.
+
+> [!WARNING]
+> Claude Code can do everything the terminal can: read and change every storage, and CMM's own database and
+> settings in `/var/lib/cmm`. Use permission modes that ask before acting unless you trust what you ask it to do.
+
 # Users and roles
 
 ## Roles

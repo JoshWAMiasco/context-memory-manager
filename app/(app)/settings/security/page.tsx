@@ -63,6 +63,7 @@ export default async function SecuritySettingsPage() {
         <TerminalSettingPanel
           initialValue={getSetting("terminal.enabled")}
           needsPasswordToEnable={getConfig().mode === "server"}
+          showsClaudeSetup={getConfig().mode === "server"}
         />
       )}
       <ActiveSessionsPanel />

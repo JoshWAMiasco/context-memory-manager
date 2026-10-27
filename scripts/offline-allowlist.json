@@ -160,6 +160,11 @@
       "reason": "The `homepage` field of CMM's own package.json, bundled where code imports package.json for the version; nothing reads or fetches it",
       "files": "standalone/**",
       "urlPattern": "^https://joshwamiasco\\.github\\.io/context-memory-manager/$"
+    },
+    {
+      "reason": "Claude Code's installer URL, shown as a command to copy in Settings › Security › Terminals (server only); CMM never fetches it",
+      "files": "**",
+      "urlPattern": "^https://claude\\.ai/install\\.sh$"
     }
   ]
 }

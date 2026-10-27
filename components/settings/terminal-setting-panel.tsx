@@ -13,19 +13,25 @@ import { FormErrorAlert } from "@/components/security/form-error-alert";
 import { ApiError, requestJson } from "@/lib/client/api";
 import { QUERY_KEYS } from "@/lib/client/query-keys";
 
+/** Claude Code's native installer, run as the service user; it installs to /var/lib/cmm/.local/bin. */
+const CLAUDE_INSTALL_COMMAND = "sudo -u cmm -H bash -c 'curl -fsSL https://claude.ai/install.sh | bash'";
+
 /**
  * Settings › Security › Terminals: whether admins may open terminals in folders. On a server,
- * turning them on asks for the admin's password first, since a terminal is a shell on that machine.
+ * turning them on asks for the admin's password first, since a terminal is a shell on that machine,
+ * and the panel shows how to install Claude Code for the `cmm` user the terminals run as.
  *
  * @example
- * <TerminalSettingPanel initialValue={false} needsPasswordToEnable />
+ * <TerminalSettingPanel initialValue={false} needsPasswordToEnable showsClaudeSetup />
  */
 export function TerminalSettingPanel({
   initialValue,
   needsPasswordToEnable,
+  showsClaudeSetup = false,
 }: {
   initialValue: boolean;
   needsPasswordToEnable: boolean;
+  showsClaudeSetup?: boolean;
 }) {
   const queryClient = useQueryClient();
   const [isOn, setIsOn] = useState(initialValue);
@@ -112,6 +118,22 @@ export function TerminalSettingPanel({
             </Button>
           </div>
         </form>
+      )}
+      {showsClaudeSetup && (
+        <section className="mt-5 grid gap-1.5" data-testid="terminal-claude-setup">
+          <h3 className="text-sm font-medium text-foreground-strong">Claude Code in terminals</h3>
+          <FormHelpText>
+            Terminals run as the <code className="text-brand">cmm</code> user, so Claude Code must be installed for
+            that user. Run this on the server (it needs internet access):
+          </FormHelpText>
+          <pre className="overflow-x-auto rounded border border-line px-3 py-2 font-mono text-xs leading-relaxed text-foreground-muted select-all">
+            {CLAUDE_INSTALL_COMMAND}
+          </pre>
+          <FormHelpText>
+            Then open a new terminal and run <code className="text-brand">claude</code>; the first time it asks you to
+            sign in. Claude Code can read and change everything the terminal can, including CMM&apos;s own data.
+          </FormHelpText>
+        </section>
       )}
     </SettingsPanel>
   );
