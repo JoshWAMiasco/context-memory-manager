@@ -4,6 +4,8 @@ import { constants, accessSync, chmodSync, existsSync } from "node:fs";
 import { stat } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
+import { SerializeAddon } from "@xterm/addon-serialize";
+import { Terminal as HeadlessTerminal } from "@xterm/headless";
 import type { IPty } from "node-pty";
 import type { TerminalSummary, TerminalUnavailableCode } from "@/lib/api-types";
 import { MAX_TERMINALS_PER_USER, type TerminalServerMessage } from "@/lib/terminal";
@@ -15,8 +17,11 @@ import type { BackgroundService } from "@/server/services";
 import { getSetting } from "@/server/settings/store";
 import type { ActiveStorage, StorageActor } from "@/server/storage/roots";
 
-/** Output kept for a panel that (re)attaches: about the last few screens of a busy program. */
-const SCROLLBACK_CHARACTERS = 256 * 1024;
+/**
+ * Lines of history the server's copy of each terminal keeps for a panel that (re)attaches, besides
+ * the screen itself.
+ */
+const SCROLLBACK_LINES = 2000;
 
 const DEFAULT_COLUMNS = 80;
 const DEFAULT_ROWS = 24;
@@ -34,7 +39,14 @@ interface TerminalSession {
   summary: TerminalSummary;
   ownerId: string;
   pty: IPty;
-  scrollback: string;
+  /**
+   * The server's copy of the terminal: the shell's output is fed to a headless xterm, so a panel
+   * that attaches gets the screen as it is now (and recent history), not a tail of raw output. A
+   * program that repaints only what changes (Claude Code, vim, htop) would leave a tail of its
+   * repaints as scattered characters.
+   */
+  screen: HeadlessTerminal;
+  serializer: SerializeAddon;
   listeners: Set<TerminalListener>;
 }
 
@@ -209,11 +221,11 @@ export async function openTerminal(
     },
     ownerId: actor.id,
     pty,
-    scrollback: "",
+    ...createScreen(pty.cols, pty.rows),
     listeners: new Set(),
   };
   pty.onData((data) => {
-    session.scrollback = (session.scrollback + data).slice(-SCROLLBACK_CHARACTERS);
+    session.screen.write(data);
     emit(session, { type: "output", data });
   });
   pty.onExit(({ exitCode }) => {
@@ -224,15 +236,40 @@ export async function openTerminal(
   return session.summary;
 }
 
+/** A headless xterm the size of the shell, which keeps its screen for panels that attach later. */
+function createScreen(cols: number, rows: number): Pick<TerminalSession, "screen" | "serializer"> {
+  const screen = new HeadlessTerminal({ cols, rows, scrollback: SCROLLBACK_LINES, allowProposedApi: true });
+  const serializer = new SerializeAddon();
+  screen.loadAddon(serializer as unknown as Parameters<HeadlessTerminal["loadAddon"]>[0]);
+  return { screen, serializer };
+}
+
 /**
- * Connects a panel to a terminal: it gets the kept output at once, then everything new, and the
- * exit code if the shell has already ended. Returns a function that disconnects it.
+ * Connects a panel to a terminal: it gets the screen as it is now (with recent history, the cursor
+ * and the modes programs set), then everything new, and the exit code if the shell has already
+ * ended. Output that arrives while the screen is being captured is held back and sent right after
+ * it, so nothing is lost or sent twice. Returns a function that disconnects it.
  */
 export function attachToTerminal(session: TerminalSession, listener: TerminalListener): () => void {
-  if (session.scrollback !== "") listener({ type: "output", data: session.scrollback });
-  if (session.summary.status === "exited") listener({ type: "exit", exitCode: session.summary.exitCode ?? 0 });
-  session.listeners.add(listener);
-  return () => session.listeners.delete(listener);
+  let heldBack: TerminalServerMessage[] | undefined = [];
+  const attached: TerminalListener = (message) => {
+    if (heldBack) heldBack.push(message);
+    else listener(message);
+  };
+  session.listeners.add(attached);
+  // Writes are parsed in order: once this empty write is, everything before it is on the screen.
+  session.screen.write("", () => {
+    if (!session.listeners.has(attached) || !heldBack) return;
+    const snapshot = session.serializer.serialize({ scrollback: SCROLLBACK_LINES });
+    if (snapshot !== "") listener({ type: "output", data: snapshot });
+    const pending = heldBack;
+    heldBack = undefined;
+    for (const message of pending) listener(message);
+    if (session.summary.status === "exited" && !pending.some((message) => message.type === "exit")) {
+      listener({ type: "exit", exitCode: session.summary.exitCode ?? 0 });
+    }
+  });
+  return () => session.listeners.delete(attached);
 }
 
 /** Types into a running terminal (keys and pastes); ignored once it has exited. */
@@ -243,7 +280,10 @@ export function writeToTerminal(session: TerminalSession, data: string): void {
 /** Tells the shell its new size, so full-screen programs redraw for the panel. */
 export function resizeTerminal(session: TerminalSession, cols: number, rows: number): void {
   if (session.summary.status !== "running") return;
-  session.pty.resize(clampSize(cols, DEFAULT_COLUMNS, 500), clampSize(rows, DEFAULT_ROWS, 200));
+  const columns = clampSize(cols, DEFAULT_COLUMNS, 500);
+  const lines = clampSize(rows, DEFAULT_ROWS, 200);
+  session.pty.resize(columns, lines);
+  session.screen.resize(columns, lines);
 }
 
 /** Ends a terminal's shell (and whatever runs in it) and forgets it. */
@@ -252,6 +292,7 @@ export function closeTerminal(actor: StorageActor, terminalId: string): void {
   getTerminalRegistry().delete(terminalId);
   session.listeners.clear();
   if (session.summary.status === "running") session.pty.kill();
+  session.screen.dispose();
 }
 
 /**
@@ -268,6 +309,7 @@ export function createTerminalService(): BackgroundService {
       const registry = getTerminalRegistry();
       for (const session of registry.values()) {
         if (session.summary.status === "running") session.pty.kill();
+        session.screen.dispose();
       }
       registry.clear();
     },
