@@ -159,6 +159,10 @@ prints (`[cmm] first-run setup code: …`) and `.cmm-dev-data/setup-code` holds.
 
 Plugged-in USB drives show up on their own.
 
+Optional settings go in a `.env` file, which is never committed: copy `.env.example` and uncomment what you need
+(`CMM_MODE`, `CMM_DATA_DIR`, `CMM_CONFIG`, `HOSTNAME`, `PORT`, `NEXT_TELEMETRY_DISABLED`). The npm scripts above set
+the mode and data folder themselves.
+
 ### Build
 
 ```bash
@@ -217,7 +221,7 @@ through the install.
 
 | Command | What it does |
 |---|---|
-| `npm run lint` / `npm run typecheck` | ESLint and TypeScript |
+| `npm run lint` / `npm run typecheck` / `npm test` | ESLint, TypeScript and the Vitest suite (`tests/`) |
 | `npm run check:offline` | Builds and fails if the output contains a fetchable external URL |
 | `npm run docs:pdf` | Builds the PDF guides from `docs/guides/` |
 | `npm run icons:app` | Regenerates the desktop app icons from `public/icons/cmm/logo.svg` |

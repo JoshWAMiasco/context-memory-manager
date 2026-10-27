@@ -30,6 +30,8 @@ next-env.d.ts
 *.pem
 npm-debug.log*
 
-# env files: .env holds no secrets and is committed
-.env*.local
+# env files: never committed; .env.example documents the variables
+.env
+.env.*
+!.env.example
 
