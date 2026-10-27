@@ -1,6 +1,7 @@
 import "server-only";
 import { LEGACY_RESERVED_NAMES } from "@/lib/fs/legacy-names";
-import { randomUUID } from "node:crypto";
+import { RECOVERY_KEY_FILE_SUFFIX } from "@/lib/key-file";
+import { randomUUID, timingSafeEqual } from "node:crypto";
 import { readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { inArray } from "drizzle-orm";
@@ -21,13 +22,16 @@ import {
 } from "@/server/crypto/jobs";
 import {
   buildKeyFile,
+  buildProtectedKeyFile,
   computeKeyCheck,
   generateFolderKey,
   hasAllZeroKey,
   KEY_FILE_EXTENSION,
   matchKeyFile,
   parseKeyFile,
+  readKeyFileKind,
   wrongKeyFile,
+  type KeyFileInput,
   type ParsedKeyFile,
 } from "@/server/crypto/keyfile";
 import {
@@ -71,6 +75,14 @@ export interface CryptoRequest {
   path: string;
   actor: FileActor;
 }
+
+/** The user's choice for a new key file: a passphrase that wraps it, or none (the raw key file). */
+export interface KeyFileChoice {
+  passphrase?: string;
+}
+
+/** Which download of a pending key: the key file itself, or the raw recovery copy of a protected one. */
+export type PendingKeyFileVariant = "key" | "recovery";
 
 function requireSessionHash(actor: FileActor): string {
   if (!actor.sessionIdHash) throw new ApiRouteError(401, "UNAUTHENTICATED", "Sign in to continue.");
@@ -139,16 +151,28 @@ async function assertCanChange(storage: ActiveStorage, resolvedPath: ResolvedPat
 }
 
 /**
+ * The pending slot's contents for a new key: the key, and with a passphrase also the
+ * passphrase-protected key file, built once here so the passphrase itself is never kept.
+ */
+async function buildPendingKeyFiles(
+  key: { dek: Buffer; keyId: Buffer; folderId: string; folderName: string; createdAt: string },
+  { passphrase }: KeyFileChoice,
+): Promise<{ protectedKeyFile?: Buffer }> {
+  if (!passphrase) return {};
+  return { protectedKeyFile: await buildProtectedKeyFile(key, passphrase) };
+}
+
+/**
  * Step 2 of the Enable encryption wizard: checks the folder can be encrypted (not the
  * storage root, not nested, not protected, history decided for versioned folders), generates its
- * key and keeps it in a 15-minute pending slot of this session. The password is confirmed by the
- * route first.
+ * key and keeps it in a 15-minute pending slot of this session. With a passphrase, the key file
+ * the user downloads is wrapped with it (and a raw recovery copy is offered). The password is
+ * confirmed by the route first.
  */
-export async function prepareEncryption({
-  storage,
-  path: relativePath,
-  actor,
-}: CryptoRequest): Promise<{ pendingId: string; folderName: string }> {
+export async function prepareEncryption(
+  { storage, path: relativePath, actor }: CryptoRequest,
+  choice: KeyFileChoice = {},
+): Promise<{ pendingId: string; folderName: string; hasPassphrase: boolean }> {
   const sessionIdHash = requireSessionHash(actor);
   const resolvedPath = await requireFolder(storage, relativePath);
   if (resolvedPath.relativePath === "") {
@@ -160,18 +184,18 @@ export async function prepareEncryption({
   const manifest = await readManifest(resolvedPath.absolutePath);
   const folderName = manifest?.name ?? folderNameOf(storage, resolvedPath.relativePath);
   const { dek, keyId } = generateFolderKey();
+  const newKey = { dek, keyId, folderId: randomUUID(), folderName, createdAt: new Date().toISOString() };
+  const keyFiles = await buildPendingKeyFiles(newKey, choice);
   const pendingKey = storePendingKey(sessionIdHash, {
     kind: "encrypt",
     storageId: storage.id,
     scopePath: resolvedPath.relativePath,
-    folderId: randomUUID(),
-    folderName,
-    dek,
-    keyId,
-    createdAt: new Date().toISOString(),
+    ...newKey,
+    ...keyFiles,
   });
   dek.fill(0);
-  return { pendingId: pendingKey.pendingId, folderName };
+  keyFiles.protectedKeyFile?.fill(0);
+  return { pendingId: pendingKey.pendingId, folderName, hasPassphrase: Boolean(choice.passphrase) };
 }
 
 function requirePending(actor: FileActor, pendingId: string) {
@@ -182,16 +206,30 @@ function requirePending(actor: FileActor, pendingId: string) {
   return pendingKey;
 }
 
-function toKeyFileName(folderName: string): string {
+function toKeyFileName(folderName: string, suffix = ""): string {
   const safeName = folderName.replaceAll(/[\\/:*?"<>|\u0000-\u001f]/g, "-").trim() || "folder";
-  return `${safeName}${KEY_FILE_EXTENSION}`;
+  return `${safeName}${suffix}${KEY_FILE_EXTENSION}`;
 }
 
-/** Step 3: the pending key's `.cmmkey` file; it can be downloaded again while the slot lives. */
-export function readPendingKeyFile(actor: FileActor, pendingId: string): { fileName: string; bytes: Buffer } {
+/**
+ * Step 3: the pending key's `.cmmkey` file, downloadable again while the slot lives. With a
+ * passphrase, `key` is the protected file and `recovery` the raw copy to keep offline; without
+ * one, `key` is the raw file and there is no separate recovery copy.
+ */
+export function readPendingKeyFile(
+  actor: FileActor,
+  pendingId: string,
+  variant: PendingKeyFileVariant = "key",
+): { fileName: string; bytes: Buffer } {
   const pendingKey = requirePending(actor, pendingId);
+  if (variant === "key" && pendingKey.protectedKeyFile) {
+    return { fileName: toKeyFileName(pendingKey.folderName), bytes: Buffer.from(pendingKey.protectedKeyFile) };
+  }
+  if (variant === "recovery" && !pendingKey.protectedKeyFile) {
+    throw validationFailed("This key has no passphrase: the key file itself is the only copy to keep.");
+  }
   return {
-    fileName: toKeyFileName(pendingKey.folderName),
+    fileName: toKeyFileName(pendingKey.folderName, variant === "recovery" ? RECOVERY_KEY_FILE_SUFFIX : ""),
     bytes: buildKeyFile({
       folderId: pendingKey.folderId,
       folderName: pendingKey.folderName,
@@ -202,22 +240,35 @@ export function readPendingKeyFile(actor: FileActor, pendingId: string): { fileN
   };
 }
 
-/** Step 4: the uploaded key file must be exactly the one just downloaded. */
-export function verifyPendingKeyFile(actor: FileActor, pendingId: string, keyFileBytes: Buffer): void {
+function wrongPendingKeyFile(): ApiRouteError {
+  return new ApiRouteError(
+    400,
+    "WRONG_KEY_FILE",
+    "That isn't the key file you just downloaded. Choose the .cmmkey file from step 3.",
+  );
+}
+
+/**
+ * Step 4: the uploaded key file must be one just downloaded: the protected key file byte for byte
+ * (no passphrase needed to prove it was saved), or the raw (recovery) key file.
+ */
+export async function verifyPendingKeyFile(actor: FileActor, pendingId: string, keyFileBytes: Buffer): Promise<void> {
   const pendingKey = requirePending(actor, pendingId);
-  const keyFile = parseKeyFile(keyFileBytes);
+  if (readKeyFileKind(keyFileBytes) === "passphrase") {
+    const stored = pendingKey.protectedKeyFile;
+    if (!stored || stored.length !== keyFileBytes.length || !timingSafeEqual(stored, keyFileBytes)) {
+      throw wrongPendingKeyFile();
+    }
+    pendingKey.isVerified = true;
+    return;
+  }
+  const keyFile = await parseKeyFile({ bytes: keyFileBytes });
   try {
     const isSame =
       keyFile.folderId === pendingKey.folderId &&
       keyFile.keyId.equals(pendingKey.keyId) &&
       keyFile.dek.equals(pendingKey.dek);
-    if (!isSame) {
-      throw new ApiRouteError(
-        400,
-        "WRONG_KEY_FILE",
-        "That isn't the key file you just downloaded. Choose the .cmmkey file from step 3.",
-      );
-    }
+    if (!isSame) throw wrongPendingKeyFile();
     pendingKey.isVerified = true;
   } finally {
     keyFile.dek.fill(0);
@@ -319,9 +370,9 @@ export async function startPendingJob(
   return { job, scopePath: resolvedPath.relativePath };
 }
 
-/** Parses a key file and checks it is the folder's current (or, while re-keying, next) key. */
-function requireMatchingKey(scope: EncryptionScope, keyFileBytes: Buffer): ParsedKeyFile {
-  const keyFile = parseKeyFile(keyFileBytes);
+/** Parses a key file (with its passphrase, if protected) and checks it is the folder's current (or, while re-keying, next) key. */
+async function requireMatchingKey(scope: EncryptionScope, keyFileInput: KeyFileInput): Promise<ParsedKeyFile> {
+  const keyFile = await parseKeyFile(keyFileInput);
   const { crypto } = scope;
   const isCurrent = matchKeyFile(keyFile, crypto);
   const isNext =
@@ -344,12 +395,12 @@ function requireMatchingKey(scope: EncryptionScope, keyFileBytes: Buffer): Parse
  */
 export async function unlockEncryptedFolder(
   { storage, path: relativePath, actor }: CryptoRequest,
-  keyFileBytes: Buffer,
+  keyFileInput: KeyFileInput,
   auth: ResolvedSession,
 ): Promise<EncryptionStatus> {
   const sessionIdHash = requireSessionHash(actor);
   const scope = await requireScope(storage, relativePath);
-  const keyFile = requireMatchingKey(scope, keyFileBytes);
+  const keyFile = await requireMatchingKey(scope, keyFileInput);
   try {
     unlockFolder(sessionIdHash, {
       folderId: scope.crypto.folderId,
@@ -382,7 +433,7 @@ export function lockAllEncryptedFolders(actor: FileActor): void {
  */
 export async function requestDecryption(
   { storage, path: relativePath, actor }: CryptoRequest,
-  keyFileBytes: Buffer,
+  keyFileInput: KeyFileInput,
   confirmName: string,
 ): Promise<{ job: JobSummary }> {
   const resolvedPath = await requireFolder(storage, relativePath);
@@ -393,7 +444,7 @@ export async function requestDecryption(
   const folderName = folderNameOf(storage, scope.path);
   if (confirmName.trim() !== folderName) throw validationFailed(`Type "${folderName}" to confirm.`);
   if (scope.crypto.state === "rekeying") throw validationFailed("Finish re-keying this folder first.");
-  const keyFile = requireMatchingKey(scope, keyFileBytes);
+  const keyFile = await requireMatchingKey(scope, keyFileInput);
   try {
     await assertCanChange(storage, resolvedPath, scope.crypto.folderId);
     await writeMeta(scope.absolutePath, META_FILES.crypto, { ...scope.crypto, state: "decrypting" });
@@ -422,31 +473,36 @@ export async function requestDecryption(
  */
 export async function prepareRekey(
   { storage, path: relativePath, actor }: CryptoRequest,
-  oldKeyFileBytes: Buffer,
-): Promise<{ pendingId: string; folderName: string }> {
+  oldKeyFileInput: KeyFileInput,
+  choice: KeyFileChoice = {},
+): Promise<{ pendingId: string; folderName: string; hasPassphrase: boolean }> {
   const sessionIdHash = requireSessionHash(actor);
   const resolvedPath = await requireFolder(storage, relativePath);
   const scope = await requireScope(storage, resolvedPath.relativePath);
   if (scope.path !== resolvedPath.relativePath) throw validationFailed(`Re-key "${scope.path}" itself.`);
   if (scope.crypto.state !== "encrypted") throw validationFailed("Wait until the folder's current job finishes.");
-  const oldKeyFile = requireMatchingKey(scope, oldKeyFileBytes);
-  await assertCanChange(storage, resolvedPath, scope.crypto.folderId);
-  const manifest = await readManifest(resolvedPath.absolutePath);
-  const folderName = manifest?.name ?? folderNameOf(storage, scope.path);
-  const { dek, keyId } = generateFolderKey();
-  const pendingKey = storePendingKey(sessionIdHash, {
-    kind: "rekey",
-    storageId: storage.id,
-    scopePath: scope.path,
-    folderId: scope.crypto.folderId,
-    folderName,
-    dek,
-    keyId,
-    createdAt: new Date().toISOString(),
-    oldKey: { dek: oldKeyFile.dek, keyId: oldKeyFile.keyId },
-  });
-  dek.fill(0);
-  return { pendingId: pendingKey.pendingId, folderName };
+  const oldKeyFile = await requireMatchingKey(scope, oldKeyFileInput);
+  try {
+    await assertCanChange(storage, resolvedPath, scope.crypto.folderId);
+    const manifest = await readManifest(resolvedPath.absolutePath);
+    const folderName = manifest?.name ?? folderNameOf(storage, scope.path);
+    const { dek, keyId } = generateFolderKey();
+    const newKey = { dek, keyId, folderId: scope.crypto.folderId, folderName, createdAt: new Date().toISOString() };
+    const keyFiles = await buildPendingKeyFiles(newKey, choice);
+    const pendingKey = storePendingKey(sessionIdHash, {
+      kind: "rekey",
+      storageId: storage.id,
+      scopePath: scope.path,
+      ...newKey,
+      ...keyFiles,
+      oldKey: { dek: oldKeyFile.dek, keyId: oldKeyFile.keyId },
+    });
+    dek.fill(0);
+    keyFiles.protectedKeyFile?.fill(0);
+    return { pendingId: pendingKey.pendingId, folderName, hasPassphrase: Boolean(choice.passphrase) };
+  } finally {
+    oldKeyFile.dek.fill(0);
+  }
 }
 
 /**
@@ -456,14 +512,20 @@ export async function prepareRekey(
  */
 export async function resumeEncryption(
   { storage, path: relativePath, actor }: CryptoRequest,
-  keyFileBytes: Buffer,
-  newKeyFileBytes: Buffer | undefined,
+  keyFileInput: KeyFileInput,
+  newKeyFileInput: KeyFileInput | undefined,
 ): Promise<{ job: JobSummary }> {
   const scope = await requireScope(storage, relativePath);
   const { crypto } = scope;
   if (crypto.state === "encrypted") throw validationFailed("Nothing to resume: this folder is encrypted.");
-  const oldKeyFile = parseKeyFile(keyFileBytes);
-  const newKeyFile = newKeyFileBytes ? parseKeyFile(newKeyFileBytes) : undefined;
+  const oldKeyFile = await parseKeyFile(keyFileInput);
+  let newKeyFile: ParsedKeyFile | undefined;
+  try {
+    newKeyFile = newKeyFileInput ? await parseKeyFile(newKeyFileInput) : undefined;
+  } catch (parseError) {
+    oldKeyFile.dek.fill(0);
+    throw parseError;
+  }
   try {
     if (!matchKeyFile(oldKeyFile, crypto)) throw wrongKeyFile();
     const keys = [{ keyId: oldKeyFile.keyId, dek: oldKeyFile.dek }];

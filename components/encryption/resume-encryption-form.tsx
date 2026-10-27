@@ -5,7 +5,12 @@ import { useState, type FormEvent } from "react";
 import { Button } from "@/components/primitives/button";
 import { FormErrorMessage, FormLabel } from "@/components/primitives/form-field";
 import { PasswordInput } from "@/components/primitives/password-input";
-import { KeyFileDropzone } from "@/components/encryption/key-file-dropzone";
+import {
+  describeKeyFileError,
+  KeyFileField,
+  readKeyFileChoice,
+  useKeyFileProtection,
+} from "@/components/encryption/key-file-field";
 import { announce } from "@/components/explorer/explorer-context";
 import type { EncryptionState, JobSummary } from "@/lib/api-types";
 import { ApiError } from "@/lib/client/api";
@@ -19,7 +24,8 @@ const ACTIVITY: Record<Exclude<EncryptionState, "encrypted">, string> = {
 
 /**
  * "Resume encryption": a job interrupted by a restart (or stopped) needs the key file
- * and password again, and a re-key also the new key file. Files already done are skipped.
+ * and password again (and the key file's passphrase, when it has one), and a re-key also the
+ * new key file. Files already done are skipped.
  *
  * @example
  * <ResumeEncryptionForm storageId={storageId} path="persona" state="encrypting" onResumed={setJob} />
@@ -37,27 +43,40 @@ export function ResumeEncryptionForm({
 }) {
   const { resume } = useEncryptionMutations();
   const [keyFile, setKeyFile] = useState<File>();
+  const [keyFilePassphrase, setKeyFilePassphrase] = useState("");
+  const keyFileProtection = useKeyFileProtection(keyFile);
   const [newKeyFile, setNewKeyFile] = useState<File>();
+  const [newKeyFilePassphrase, setNewKeyFilePassphrase] = useState("");
+  const newKeyFileProtection = useKeyFileProtection(newKeyFile);
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState<string>();
   const isRekey = state === "rekeying";
+  const keyFileChoice = readKeyFileChoice(keyFile, keyFilePassphrase, keyFileProtection);
+  const newKeyFileChoice = readKeyFileChoice(newKeyFile, newKeyFilePassphrase, newKeyFileProtection);
 
   const submit = async (submitEvent: FormEvent<HTMLFormElement>) => {
     submitEvent.preventDefault();
-    if (!keyFile) return;
+    if (!keyFileChoice || (isRekey && !newKeyFileChoice)) return;
     setErrorMessage(undefined);
     try {
-      const { job } = await resume.mutateAsync({ storageId, path: folderPath, keyFile, newKeyFile, password });
+      const { job } = await resume.mutateAsync({
+        storageId,
+        path: folderPath,
+        keyFile: keyFileChoice,
+        newKeyFile: isRekey ? newKeyFileChoice : undefined,
+        password,
+      });
       setPassword("");
       announce(`${ACTIVITY[state]} resumed`);
       onResumed(job);
     } catch (resumeError) {
+      const keyFileProblem = describeKeyFileError(resumeError);
       setErrorMessage(
         resumeError instanceof ApiError && resumeError.code === "INVALID_CREDENTIALS"
           ? "Wrong password."
-          : resumeError instanceof Error
-            ? resumeError.message
-            : "Couldn't resume.",
+          : (keyFileProblem.passphraseError ??
+              keyFileProblem.fileError ??
+              (resumeError instanceof Error ? resumeError.message : "Couldn't resume.")),
       );
     }
   };
@@ -75,14 +94,31 @@ export function ResumeEncryptionForm({
           {isRekey ? "s" : ""} again to continue; files already done are skipped.
         </span>
       </div>
-      <KeyFileDropzone
+      <KeyFileField
         label={isRekey ? "Old key file" : "Key file"}
         file={keyFile}
-        onFile={setKeyFile}
+        onFile={(file) => {
+          setKeyFile(file);
+          setKeyFilePassphrase("");
+        }}
+        passphrase={keyFilePassphrase}
+        onPassphraseChange={setKeyFilePassphrase}
+        protection={keyFileProtection}
         testId="resume-key"
       />
       {isRekey && (
-        <KeyFileDropzone label="New key file" file={newKeyFile} onFile={setNewKeyFile} testId="resume-new-key" />
+        <KeyFileField
+          label="New key file"
+          file={newKeyFile}
+          onFile={(file) => {
+            setNewKeyFile(file);
+            setNewKeyFilePassphrase("");
+          }}
+          passphrase={newKeyFilePassphrase}
+          onPassphraseChange={setNewKeyFilePassphrase}
+          protection={newKeyFileProtection}
+          testId="resume-new-key"
+        />
       )}
       <div>
         <FormLabel htmlFor="resume-password">Your password</FormLabel>
@@ -98,7 +134,7 @@ export function ResumeEncryptionForm({
         type="submit"
         variant="primary"
         className="w-fit"
-        disabled={resume.isPending || !keyFile || password === "" || (isRekey && !newKeyFile)}
+        disabled={resume.isPending || !keyFileChoice || password === "" || (isRekey && !newKeyFileChoice)}
         leadingIcon={<RotateCcw className="mr-1.5 h-4 w-4" />}
         data-testid="resume-submit"
       >

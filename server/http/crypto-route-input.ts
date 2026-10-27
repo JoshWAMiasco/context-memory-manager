@@ -2,7 +2,7 @@ import "server-only";
 import type { NextRequest } from "next/server";
 import type { ResolvedSession } from "@/server/auth/session";
 import { ApiRouteError, validationFailed } from "@/server/http/api-error";
-import { MAX_KEY_FILE_BYTES } from "@/server/crypto/keyfile";
+import { MAX_KEY_FILE_BYTES, type KeyFileInput } from "@/server/crypto/keyfile";
 import { requirePasswordConfirm } from "@/server/security/password-confirm";
 import { getRateLimiter } from "@/server/security/rate-limit";
 
@@ -54,6 +54,23 @@ export function requireKeyFile(form: CryptoForm, fieldName = "keyfile"): Buffer 
   return keyFile;
 }
 
+/**
+ * A required key file field with its passphrase field (`<fieldName>Passphrase`), which a
+ * passphrase-protected key file needs and a raw one ignores.
+ *
+ * @example
+ * const keyFile = readKeyFileInput(form); // fields "keyfile" and "keyfilePassphrase"
+ */
+export function readKeyFileInput(form: CryptoForm, fieldName = "keyfile"): KeyFileInput {
+  const passphrase = form.fields.get(`${fieldName}Passphrase`);
+  return { bytes: requireKeyFile(form, fieldName), ...(passphrase ? { passphrase } : {}) };
+}
+
+/** An optional key file field with its passphrase field, or undefined when no file was sent. */
+export function readOptionalKeyFileInput(form: CryptoForm, fieldName: string): KeyFileInput | undefined {
+  return form.files.has(fieldName) ? readKeyFileInput(form, fieldName) : undefined;
+}
+
 /** Confirms the account password from the form's `password` field (rate-limited). */
 export async function confirmFormPassword(form: CryptoForm, auth: ResolvedSession, clientIp: string): Promise<void> {
   const password = form.fields.get("password") ?? "";
@@ -61,9 +78,12 @@ export async function confirmFormPassword(form: CryptoForm, auth: ResolvedSessio
   await requirePasswordConfirm({ user: auth.user, password, ip: clientIp });
 }
 
+const KEY_FILE_ATTEMPT_CODES = new Set(["WRONG_KEY_FILE", "WRONG_PASSPHRASE"]);
+
 /**
- * Runs `action` with a key file the user chose; a key file that doesn't match counts as a failed
- * attempt per `ip|username`, locked out like wrong passwords.
+ * Runs `action` with a key file the user chose; a key file that doesn't match, or a passphrase
+ * that doesn't open it, counts as a failed attempt per `ip|username`, locked out like wrong
+ * passwords.
  */
 export async function withKeyFileAttempt<Result>(
   auth: ResolvedSession,
@@ -76,7 +96,7 @@ export async function withKeyFileAttempt<Result>(
   try {
     return await action();
   } catch (actionError) {
-    if (actionError instanceof ApiRouteError && actionError.code === "WRONG_KEY_FILE") {
+    if (actionError instanceof ApiRouteError && KEY_FILE_ATTEMPT_CODES.has(actionError.code)) {
       throw rateLimiter.rejectAttempt(limiterKey, actionError);
     }
     throw actionError;

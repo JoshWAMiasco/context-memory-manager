@@ -768,7 +768,14 @@ Read the explanation. Tick **I understand: without the key file, the data can't 
 
 ### Step 2: Confirm password
 
-Enter **Your password** (your CMM password) and click **Next**.
+Enter **Your password** (your CMM password).
+
+Here you can also tick **Protect the key file with a passphrase**. Then the key file alone is not enough: whoever has
+it also needs the passphrase. You type the passphrase once each time you unlock the folder, not for every file. Choose
+a passphrase of at least 8 characters, type it twice, and read
+[Protecting the key file with a passphrase](#protecting-the-key-file-with-a-passphrase) before you decide.
+
+Click **Next**.
 
 ![Encryption wizard, step 2: Confirm password.](assets/screens/encryption-step-2-password.png)
 
@@ -777,7 +784,10 @@ Enter **Your password** (your CMM password) and click **Next**.
 1. Click **Download key file**.
 2. Save the file somewhere safe, ideally straight onto a USB drive you keep apart. The file is named after the folder,
    for example `persona.cmmkey`.
-3. Click **Next**.
+3. If you chose a passphrase, also click **Download recovery key file** and put that file (`persona.recovery.cmmkey`)
+   somewhere offline, apart from the key file. It opens the folder without the passphrase, so it must not stay on this
+   computer.
+4. Click **Next**.
 
 ![Encryption wizard, step 3: Download key.](assets/screens/encryption-step-3-download.png)
 
@@ -785,7 +795,8 @@ Enter **Your password** (your CMM password) and click **Next**.
 
 CMM checks that you really saved the key file.
 
-1. Drop the `.cmmkey` file you just saved into the box, or click **Choose file** and pick it.
+1. Drop the `.cmmkey` file you just saved into the box, or click **Choose file** and pick it. With a passphrase, either
+   the key file or the recovery key file will do; no passphrase is asked here.
 2. CMM says **That's the right key file.** Click **Next**.
 
 ![Encryption wizard, step 4: Verify the key file.](assets/screens/encryption-step-4-verify.png)
@@ -805,13 +816,30 @@ bar shows how far it is, and a message tells you when it has finished.
 > A folder that keeps a history (versioning) can't be encrypted. Turn versioning off first. An encrypted folder can't
 > be put inside another encrypted folder either.
 
+## Protecting the key file with a passphrase
+
+A plain key file is like a house key: whoever copies it can open the folder, with any CMM account that can see it.
+If the key file might be copied (a shared computer, a USB stick that travels, a password manager others can reach),
+protect it with a passphrase when you encrypt or re-key the folder. The key inside the file is then wrapped with the
+passphrase, and the file is useless without it.
+
+- You type the passphrase **once per unlock**, together with the key file and your password. Viewing and editing
+  files afterwards needs nothing more, until the folder locks again.
+- CMM never stores the passphrase and can't reset it. That is why the wizard also gives you a **recovery key file**:
+  the same key without the passphrase. Keep it offline and apart from the key file (a USB stick in a drawer, a safe).
+  If you forget the passphrase, unlock with the recovery key file and re-key the folder with a new passphrase.
+- Without the passphrase and without the recovery key file, the folder can't be opened. Treat the recovery key file
+  with the same care as a plain key file.
+- You can leave the passphrase off. The key file is then the raw key, as before, and the only copy to keep.
+
 ## Unlocking an encrypted folder
 
 An encrypted folder shows a red key in the tree. When you click it, or a file inside it, CMM shows an unlock panel.
 
 1. Drop the folder's `.cmmkey` file into the **Key file** box, or click **Choose file**.
-2. Enter **Your password**.
-3. Click **Unlock**.
+2. If the key file is protected by a passphrase, a **Key file passphrase** box appears. Enter the passphrase.
+3. Enter **Your password**.
+4. Click **Unlock**.
 
 ![The unlock panel of a locked encrypted folder.](assets/screens/encryption-unlock.png)
 

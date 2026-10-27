@@ -5,13 +5,14 @@ import { ConfirmDialog } from "@/components/interactive/confirm-dialog";
 import { FormLabel } from "@/components/primitives/form-field";
 import { FormInput } from "@/components/primitives/form-input";
 import { PasswordInput } from "@/components/primitives/password-input";
-import { KeyFileDropzone } from "@/components/encryption/key-file-dropzone";
+import { KeyFileField, readKeyFileChoice, useKeyFileProtection } from "@/components/encryption/key-file-field";
 import type { JobSummary } from "@/lib/api-types";
 import { useEncryptionMutations } from "@/lib/client/encryption";
 
 /**
- * "Decrypt permanently": the key file (even when the folder is unlocked), the password
- * and the folder's name typed, then a job writes every file back as plaintext.
+ * "Decrypt permanently": the key file (even when the folder is unlocked, with its passphrase
+ * when it has one), the password and the folder's name typed, then a job writes every file back
+ * as plaintext.
  *
  * @example
  * <DecryptDialog storageId={storageId} path="persona" folderName="persona" onStarted={setJob} onClose={close} />
@@ -31,8 +32,11 @@ export function DecryptDialog({
 }) {
   const { decrypt } = useEncryptionMutations();
   const [keyFile, setKeyFile] = useState<File>();
+  const [keyFilePassphrase, setKeyFilePassphrase] = useState("");
+  const keyFileProtection = useKeyFileProtection(keyFile);
   const [password, setPassword] = useState("");
   const [confirmName, setConfirmName] = useState("");
+  const keyFileChoice = readKeyFileChoice(keyFile, keyFilePassphrase, keyFileProtection);
   return (
     <ConfirmDialog
       isOpen
@@ -41,10 +45,16 @@ export function DecryptDialog({
       confirmLabel="Decrypt permanently"
       confirmVariant="danger"
       testId="decrypt-dialog"
-      isConfirmDisabled={!keyFile || password === "" || confirmName.trim() !== folderName}
+      isConfirmDisabled={!keyFileChoice || password === "" || confirmName.trim() !== folderName}
       onConfirm={async () => {
-        if (!keyFile) return;
-        const { job } = await decrypt.mutateAsync({ storageId, path: folderPath, keyFile, password, confirmName });
+        if (!keyFileChoice) return;
+        const { job } = await decrypt.mutateAsync({
+          storageId,
+          path: folderPath,
+          keyFile: keyFileChoice,
+          password,
+          confirmName,
+        });
         onStarted(job);
       }}
     >
@@ -57,7 +67,17 @@ export function DecryptDialog({
           It runs in the background, so large folders don&rsquo;t keep you waiting: the folder shows its progress, and
           nothing inside can be changed until it finishes.
         </p>
-        <KeyFileDropzone file={keyFile} onFile={setKeyFile} testId="decrypt-key" />
+        <KeyFileField
+          file={keyFile}
+          onFile={(file) => {
+            setKeyFile(file);
+            setKeyFilePassphrase("");
+          }}
+          passphrase={keyFilePassphrase}
+          onPassphraseChange={setKeyFilePassphrase}
+          protection={keyFileProtection}
+          testId="decrypt-key"
+        />
         <div>
           <FormLabel htmlFor="decrypt-password">Your password</FormLabel>
           <PasswordInput

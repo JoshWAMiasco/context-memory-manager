@@ -5,15 +5,21 @@ import { useState, type FormEvent } from "react";
 import { Button } from "@/components/primitives/button";
 import { FormErrorMessage, FormLabel } from "@/components/primitives/form-field";
 import { PasswordInput } from "@/components/primitives/password-input";
-import { KeyFileDropzone } from "@/components/encryption/key-file-dropzone";
+import {
+  describeKeyFileError,
+  KeyFileField,
+  readKeyFileChoice,
+  useKeyFileProtection,
+} from "@/components/encryption/key-file-field";
 import { announce } from "@/components/explorer/explorer-context";
 import { ApiError } from "@/lib/client/api";
 import { useEncryptionMutations } from "@/lib/client/encryption";
 import { mergeClassNames } from "@/utilities/merge-class-names";
 
 /**
- * What a locked encrypted folder shows instead of its content: the key file, the
- * account password and Unlock. Unlocking holds the key in memory for this session only.
+ * What a locked encrypted folder shows instead of its content: the key file (and its
+ * passphrase, when it has one), the account password and Unlock. Unlocking holds the unwrapped
+ * key in memory for this session only, so the passphrase is typed once per unlock, never per file.
  *
  * @example
  * <UnlockPanel storageId={storageId} path="persona/notes.md" folderName="persona" />
@@ -36,10 +42,21 @@ export function UnlockPanel({
 }) {
   const { unlock } = useEncryptionMutations();
   const [keyFile, setKeyFile] = useState<File>();
+  const [keyFilePassphrase, setKeyFilePassphrase] = useState("");
+  const keyFileProtection = useKeyFileProtection(keyFile);
   const [password, setPassword] = useState("");
   const [keyFileError, setKeyFileError] = useState<string>();
+  const [passphraseError, setPassphraseError] = useState<string>();
   const [passwordError, setPasswordError] = useState<string>();
   const [formError, setFormError] = useState<string>();
+  const keyFileChoice = readKeyFileChoice(keyFile, keyFilePassphrase, keyFileProtection);
+
+  const chooseKeyFile = (file: File | undefined) => {
+    setKeyFile(file);
+    setKeyFilePassphrase("");
+    setKeyFileError(undefined);
+    setPassphraseError(undefined);
+  };
 
   const submit = async (submitEvent: FormEvent<HTMLFormElement>) => {
     submitEvent.preventDefault();
@@ -47,21 +64,27 @@ export function UnlockPanel({
       setKeyFileError("Choose the folder's key file.");
       return;
     }
+    if (!keyFileChoice) {
+      setPassphraseError("Enter the key file's passphrase.");
+      return;
+    }
     setKeyFileError(undefined);
+    setPassphraseError(undefined);
     setPasswordError(undefined);
     setFormError(undefined);
     try {
-      await unlock.mutateAsync({ storageId, path: entryPath, keyFile, password });
+      await unlock.mutateAsync({ storageId, path: entryPath, keyFile: keyFileChoice, password });
       setPassword("");
+      setKeyFilePassphrase("");
       announce("Unlocked", `"${folderName}" stays unlocked for this session until it locks again.`);
       onUnlocked?.();
     } catch (unlockError) {
+      const keyFileProblem = describeKeyFileError(unlockError);
       if (unlockError instanceof ApiError && unlockError.code === "INVALID_CREDENTIALS") {
         setPasswordError("Wrong password.");
-      } else if (unlockError instanceof ApiError && unlockError.code === "WRONG_KEY_FILE") {
-        setKeyFileError(
-          unlockError.message.includes("belong") ? "Key file doesn't belong to this folder." : unlockError.message,
-        );
+      } else if (keyFileProblem.fileError || keyFileProblem.passphraseError) {
+        setKeyFileError(keyFileProblem.fileError);
+        setPassphraseError(keyFileProblem.passphraseError);
       } else {
         setFormError(unlockError instanceof Error ? unlockError.message : "Couldn't unlock the folder.");
       }
@@ -86,10 +109,16 @@ export function UnlockPanel({
           </p>
         </div>
         <div className="mt-5 grid gap-4">
-          <div>
-            <KeyFileDropzone file={keyFile} onFile={setKeyFile} />
-            <FormErrorMessage message={keyFileError} />
-          </div>
+          <KeyFileField
+            file={keyFile}
+            onFile={chooseKeyFile}
+            passphrase={keyFilePassphrase}
+            onPassphraseChange={setKeyFilePassphrase}
+            protection={keyFileProtection}
+            testId="unlock-keyfile"
+            fileError={keyFileError}
+            passphraseError={passphraseError}
+          />
           <div>
             <FormLabel htmlFor="unlock-password">Your password</FormLabel>
             <PasswordInput

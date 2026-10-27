@@ -5,14 +5,21 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { Modal, ModalBody, ModalFooter } from "@/components/interactive/modal";
 import { Button, createButtonClassNames } from "@/components/primitives/button";
 import { FormCheckbox } from "@/components/primitives/form-check";
-import { FormErrorMessage, FormLabel } from "@/components/primitives/form-field";
+import { FormErrorMessage, FormHelpText, FormLabel } from "@/components/primitives/form-field";
 import { PasswordInput } from "@/components/primitives/password-input";
 import { KeyFileDropzone } from "@/components/encryption/key-file-dropzone";
+import {
+  describeKeyFileError,
+  KeyFileField,
+  readKeyFileChoice,
+  useKeyFileProtection,
+} from "@/components/encryption/key-file-field";
 import { JobProgressDetails } from "@/components/jobs/job-progress-details";
 import { useJobProgress } from "@/hooks/use-job-progress";
 import type { JobSummary } from "@/lib/api-types";
 import { ApiError } from "@/lib/client/api";
 import { buildKeyFileUrl, useEncryptionMutations } from "@/lib/client/encryption";
+import { findKeyFilePassphraseProblem } from "@/lib/key-file";
 import { mergeClassNames } from "@/utilities/merge-class-names";
 
 type WizardStep = "understand" | "confirm" | "download" | "verify" | "encrypt";
@@ -88,9 +95,10 @@ const KEEP_IT_TIPS = [
 
 /**
  * The Enable encryption wizard, five steps: understand that the key file is the only
- * key, confirm the password, download the key file, upload it again to prove it was saved, then
- * encrypt with live progress. With `mode="rekey"` step 2 asks for the old key file instead, and
- * the last step re-encrypts every file with the new key.
+ * key, confirm the password (and choose whether a passphrase protects the key file), download
+ * the key file (plus a raw recovery copy when it has a passphrase), upload one again to prove it
+ * was saved, then encrypt with live progress. With `mode="rekey"` step 2 asks for the old key
+ * file as well, and the last step re-encrypts every file with the new key.
  *
  * @example
  * <EnableEncryptionWizard storageId={storageId} path="persona" folderName="persona" onClose={close} />
@@ -113,8 +121,15 @@ export function EnableEncryptionWizard({
   const [hasUnderstood, setHasUnderstood] = useState(false);
   const [password, setPassword] = useState("");
   const [oldKeyFile, setOldKeyFile] = useState<File>();
+  const [oldKeyPassphrase, setOldKeyPassphrase] = useState("");
+  const oldKeyProtection = useKeyFileProtection(oldKeyFile);
+  const [isPassphraseOn, setIsPassphraseOn] = useState(false);
+  const [passphrase, setPassphrase] = useState("");
+  const [passphraseAgain, setPassphraseAgain] = useState("");
   const [pendingId, setPendingId] = useState<string>();
+  const [hasPassphrase, setHasPassphrase] = useState(false);
   const [hasDownloaded, setHasDownloaded] = useState(false);
+  const [hasDownloadedRecovery, setHasDownloadedRecovery] = useState(false);
   const [verifyFile, setVerifyFile] = useState<File>();
   const [isVerified, setIsVerified] = useState(false);
   const [job, setJob] = useState<JobSummary>();
@@ -123,6 +138,16 @@ export function EnableEncryptionWizard({
   // The background jobs button announces the end; this refreshes what the wizard shows.
   const jobState = useJobProgress(job, () => mutations.refresh(storageId));
   const isRekey = mode === "rekey";
+  const oldKeyChoice = readKeyFileChoice(oldKeyFile, oldKeyPassphrase, oldKeyProtection);
+  const passphraseProblem = isPassphraseOn
+    ? (findKeyFilePassphraseProblem(passphrase) ??
+      (passphrase === passphraseAgain ? undefined : "The passphrases don't match."))
+    : undefined;
+
+  const requireOldKeyChoice = (choice: typeof oldKeyChoice) => {
+    if (!choice) throw new Error("Choose the folder's current key file (and its passphrase, if it has one).");
+    return choice;
+  };
 
   const runStep = async (action: () => Promise<void>) => {
     setIsBusy(true);
@@ -130,8 +155,11 @@ export function EnableEncryptionWizard({
     try {
       await action();
     } catch (stepFailure) {
+      const keyFileProblem = describeKeyFileError(stepFailure);
       if (stepFailure instanceof ApiError && stepFailure.code === "INVALID_CREDENTIALS")
         setStepError("Wrong password.");
+      else if (keyFileProblem.passphraseError || keyFileProblem.fileError)
+        setStepError(keyFileProblem.passphraseError ?? keyFileProblem.fileError);
       else setStepError(stepFailure instanceof Error ? stepFailure.message : "Something went wrong.");
     } finally {
       setIsBusy(false);
@@ -141,19 +169,23 @@ export function EnableEncryptionWizard({
   const confirm = (submitEvent: FormEvent<HTMLFormElement>) => {
     submitEvent.preventDefault();
     void runStep(async () => {
-      if (isRekey) {
-        if (!oldKeyFile) throw new Error("Choose the folder's current key file.");
-        const result = await mutations.prepareRekey.mutateAsync({ storageId, path: folderPath, oldKeyFile, password });
-        setPendingId(result.pendingId);
-      } else {
-        const result = await mutations.prepare.mutateAsync({
-          storageId,
-          path: folderPath,
-          password,
-        });
-        setPendingId(result.pendingId);
-      }
+      if (passphraseProblem) throw new Error(passphraseProblem);
+      const newPassphrase = isPassphraseOn ? passphrase : undefined;
+      const result = isRekey
+        ? await mutations.prepareRekey.mutateAsync({
+            storageId,
+            path: folderPath,
+            oldKeyFile: requireOldKeyChoice(oldKeyChoice),
+            password,
+            passphrase: newPassphrase,
+          })
+        : await mutations.prepare.mutateAsync({ storageId, path: folderPath, password, passphrase: newPassphrase });
+      setPendingId(result.pendingId);
+      setHasPassphrase(result.hasPassphrase);
       setPassword("");
+      setPassphrase("");
+      setPassphraseAgain("");
+      setOldKeyPassphrase("");
       setCurrentStep("download");
     });
   };
@@ -193,7 +225,8 @@ export function EnableEncryptionWizard({
         ) : (
           <p>
             Encrypting <strong>{folderName}</strong> creates a <strong>key file</strong> (.cmmkey). Every file inside is
-            encrypted on disk; to view or edit them you unlock the folder with the key file and your password.
+            encrypted on disk; to view or edit them you unlock the folder with the key file and your password. In the
+            next step you can also protect the key file with a passphrase.
           </p>
         )}
         <Notice tone="danger">
@@ -227,7 +260,18 @@ export function EnableEncryptionWizard({
     body = (
       <form id="wizard-confirm" className="grid gap-4" onSubmit={confirm}>
         {isRekey && (
-          <KeyFileDropzone label="Current key file" file={oldKeyFile} onFile={setOldKeyFile} testId="wizard-old-key" />
+          <KeyFileField
+            label="Current key file"
+            file={oldKeyFile}
+            onFile={(file) => {
+              setOldKeyFile(file);
+              setOldKeyPassphrase("");
+            }}
+            passphrase={oldKeyPassphrase}
+            onPassphraseChange={setOldKeyPassphrase}
+            protection={oldKeyProtection}
+            testId="wizard-old-key"
+          />
         )}
         <div>
           <FormLabel htmlFor="wizard-password">Your password</FormLabel>
@@ -239,6 +283,48 @@ export function EnableEncryptionWizard({
             onChange={(changeEvent) => setPassword(changeEvent.target.value)}
           />
         </div>
+        <div className="grid gap-3 rounded-md border border-line bg-surface-subtle p-3" data-testid="wizard-protection">
+          <FormCheckbox
+            id="wizard-passphrase-on"
+            label={`Protect the ${isRekey ? "new " : ""}key file with a passphrase`}
+            description="Someone who copies the key file still needs the passphrase. You type it once each time you unlock the folder, not for every file."
+            checked={isPassphraseOn}
+            onChange={(changeEvent) => setIsPassphraseOn(changeEvent.target.checked)}
+            data-testid="wizard-passphrase-on"
+          />
+          {isPassphraseOn && (
+            <>
+              <div>
+                <FormLabel htmlFor="wizard-passphrase">Passphrase</FormLabel>
+                <PasswordInput
+                  id="wizard-passphrase"
+                  value={passphrase}
+                  autoComplete="new-password"
+                  onChange={(changeEvent) => setPassphrase(changeEvent.target.value)}
+                  data-testid="wizard-passphrase"
+                />
+              </div>
+              <div>
+                <FormLabel htmlFor="wizard-passphrase-again">Passphrase again</FormLabel>
+                <PasswordInput
+                  id="wizard-passphrase-again"
+                  value={passphraseAgain}
+                  autoComplete="new-password"
+                  onChange={(changeEvent) => setPassphraseAgain(changeEvent.target.value)}
+                  hasError={passphraseAgain !== "" && passphraseProblem === "The passphrases don't match."}
+                  data-testid="wizard-passphrase-again"
+                />
+                <FormErrorMessage
+                  message={passphrase !== "" && passphraseAgain !== "" ? passphraseProblem : undefined}
+                />
+              </div>
+              <FormHelpText>
+                You also get a raw <strong>recovery key file</strong> to keep offline, in case you forget the
+                passphrase. CMM can&rsquo;t reset it.
+              </FormHelpText>
+            </>
+          )}
+        </div>
         <FormErrorMessage message={stepError} />
       </form>
     );
@@ -247,7 +333,7 @@ export function EnableEncryptionWizard({
         type="submit"
         form="wizard-confirm"
         variant="primary"
-        disabled={isBusy || password === "" || (isRekey && !oldKeyFile)}
+        disabled={isBusy || password === "" || (isRekey && !oldKeyChoice) || passphraseProblem !== undefined}
         data-testid="wizard-next"
       >
         {isBusy ? "Checking…" : "Next"}
@@ -256,7 +342,10 @@ export function EnableEncryptionWizard({
   } else if (currentStep === "download") {
     body = (
       <div className="grid gap-4 text-sm leading-relaxed">
-        <p>Download the key file and keep it safe. You need it every time you unlock this folder.</p>
+        <p>
+          Download the key file and keep it safe. You need it{hasPassphrase ? ", and its passphrase," : ""} every time
+          you unlock this folder.
+        </p>
         <a
           href={pendingId ? buildKeyFileUrl(pendingId) : undefined}
           download
@@ -267,6 +356,29 @@ export function EnableEncryptionWizard({
           <Download className="mr-2 h-4 w-4" aria-hidden />
           Download key file
         </a>
+        {hasPassphrase && (
+          <div
+            className="grid gap-2 rounded-md border border-warning/30 bg-warning/10 p-3"
+            data-testid="wizard-recovery"
+          >
+            <div className="font-medium">Recovery key file: keep it offline</div>
+            <p className="text-foreground-muted">
+              The same key <strong>without the passphrase</strong>. It is the only way in if you forget the passphrase,
+              and anyone who has it can unlock the folder, so keep it apart from the key file and away from this
+              computer: a USB stick in a drawer, a safe, or a printed copy.
+            </p>
+            <a
+              href={pendingId ? buildKeyFileUrl(pendingId, "recovery") : undefined}
+              download
+              onClick={() => setHasDownloadedRecovery(true)}
+              className={createButtonClassNames({ variant: "outline-secondary", className: "w-fit" })}
+              data-testid="wizard-download-recovery"
+            >
+              <Download className="mr-2 h-4 w-4" aria-hidden />
+              {hasDownloadedRecovery ? "Download recovery key file again" : "Download recovery key file"}
+            </a>
+          </div>
+        )}
         <div>
           <div className="mb-1 font-medium">Where to keep it</div>
           <ul className="list-disc space-y-1 pl-5 text-foreground-muted">
@@ -291,7 +403,10 @@ export function EnableEncryptionWizard({
   } else if (currentStep === "verify") {
     body = (
       <div className="grid gap-4 text-sm leading-relaxed">
-        <p>Choose the key file you just downloaded, to make sure it was saved.</p>
+        <p>
+          Choose the key file you just downloaded{hasPassphrase ? " (or the recovery key file)" : ""}, to make sure it
+          was saved.
+        </p>
         <KeyFileDropzone file={verifyFile} onFile={verify} testId="wizard-verify-key" isDisabled={isBusy} />
         {isVerified && (
           <p className="flex items-center gap-2 text-success" data-testid="wizard-verified">

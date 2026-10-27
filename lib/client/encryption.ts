@@ -4,6 +4,20 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { EncryptedFolderSummary, EncryptionStatus, JobSummary } from "@/lib/api-types";
 import { requestForm, requestJson } from "@/lib/client/api";
 import { QUERY_KEYS } from "@/lib/client/query-keys";
+import { readKeyFileProtection, type KeyFileProtection } from "@/lib/key-file";
+
+/** A key file the user chose and, when it is passphrase-protected, the passphrase that opens it. */
+export interface KeyFileChoice {
+  file: File;
+  passphrase?: string;
+}
+
+/** What a prepared key gives back: the pending slot and whether its key file asks for a passphrase. */
+export interface PreparedKey {
+  pendingId: string;
+  folderName: string;
+  hasPassphrase: boolean;
+}
 
 function buildQuery(storageId: string, entryPath: string): string {
   return new URLSearchParams({ storageId, path: entryPath }).toString();
@@ -38,9 +52,36 @@ export function useEncryptedFolders() {
   });
 }
 
-/** The URL that downloads a pending key's `.cmmkey` file (wizard step 3). */
-export function buildKeyFileUrl(pendingId: string): string {
-  return `/api/crypto/keyfile/${encodeURIComponent(pendingId)}`;
+/**
+ * The URL that downloads a pending key's `.cmmkey` file (wizard step 3); `recovery` is the raw
+ * copy of a passphrase-protected key, to keep offline.
+ */
+export function buildKeyFileUrl(pendingId: string, variant: "key" | "recovery" = "key"): string {
+  const url = `/api/crypto/keyfile/${encodeURIComponent(pendingId)}`;
+  return variant === "recovery" ? `${url}?variant=recovery` : url;
+}
+
+/**
+ * Whether a chosen key file asks for a passphrase, read in the browser from its version field
+ * alone (the server validates everything else).
+ *
+ * @example
+ * if ((await readKeyFileProtectionOf(file)) === "passphrase") showPassphraseField();
+ */
+export async function readKeyFileProtectionOf(file: File): Promise<KeyFileProtection> {
+  try {
+    return readKeyFileProtection(await file.text());
+  } catch {
+    return "unknown";
+  }
+}
+
+function keyFileFields(
+  fieldName: string,
+  choice: KeyFileChoice | undefined,
+): Record<string, string | File | undefined> {
+  if (!choice) return {};
+  return { [fieldName]: choice.file, [`${fieldName}Passphrase`]: choice.passphrase || undefined };
 }
 
 /**
@@ -61,8 +102,11 @@ export function useEncryptionMutations() {
     if (storageId) void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.folderState(storageId) });
   };
   const prepare = useMutation({
-    mutationFn: (input: { storageId: string; path: string; password: string }) =>
-      requestJson<{ pendingId: string; folderName: string }>("/api/crypto/prepare", { method: "POST", body: input }),
+    mutationFn: (input: { storageId: string; path: string; password: string; passphrase?: string }) =>
+      requestJson<PreparedKey>("/api/crypto/prepare", {
+        method: "POST",
+        body: { ...input, passphrase: input.passphrase || undefined },
+      }),
   });
   const prepareRekey = useMutation({
     mutationFn: ({
@@ -70,15 +114,18 @@ export function useEncryptionMutations() {
       path,
       oldKeyFile,
       password,
+      passphrase,
     }: {
       storageId: string;
       path: string;
-      oldKeyFile: File;
+      oldKeyFile: KeyFileChoice;
       password: string;
+      /** Protects the new key file. */
+      passphrase?: string;
     }) =>
-      requestForm<{ pendingId: string; folderName: string }>(
+      requestForm<PreparedKey>(
         `/api/crypto/rekey/prepare?${buildQuery(storageId, path)}`,
-        buildForm({ oldKeyfile: oldKeyFile, password }),
+        buildForm({ ...keyFileFields("oldKeyfile", oldKeyFile), password, passphrase: passphrase || undefined }),
       ),
   });
   const verify = useMutation({
@@ -99,12 +146,12 @@ export function useEncryptionMutations() {
     }: {
       storageId: string;
       path: string;
-      keyFile: File;
+      keyFile: KeyFileChoice;
       password: string;
     }) =>
       requestForm<EncryptionStatus>(
         `/api/crypto/unlock?${buildQuery(storageId, path)}`,
-        buildForm({ keyfile: keyFile, password }),
+        buildForm({ ...keyFileFields("keyfile", keyFile), password }),
       ),
     onSuccess: (_result, input) => refresh(input.storageId),
   });
@@ -127,13 +174,13 @@ export function useEncryptionMutations() {
     }: {
       storageId: string;
       path: string;
-      keyFile: File;
+      keyFile: KeyFileChoice;
       password: string;
       confirmName: string;
     }) =>
       requestForm<{ job: JobSummary }>(
         `/api/crypto/decrypt?${buildQuery(storageId, path)}`,
-        buildForm({ keyfile: keyFile, password, confirmName }),
+        buildForm({ ...keyFileFields("keyfile", keyFile), password, confirmName }),
       ),
     onSuccess: (_result, input) => refresh(input.storageId),
   });
@@ -152,13 +199,13 @@ export function useEncryptionMutations() {
     }: {
       storageId: string;
       path: string;
-      keyFile: File;
-      newKeyFile?: File;
+      keyFile: KeyFileChoice;
+      newKeyFile?: KeyFileChoice;
       password: string;
     }) =>
       requestForm<{ job: JobSummary }>(
         `/api/crypto/resume?${buildQuery(storageId, path)}`,
-        buildForm({ keyfile: keyFile, newKeyfile: newKeyFile, password }),
+        buildForm({ ...keyFileFields("keyfile", keyFile), ...keyFileFields("newKeyfile", newKeyFile), password }),
       ),
     onSuccess: (_result, input) => refresh(input.storageId),
   });

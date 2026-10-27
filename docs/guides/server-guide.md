@@ -963,8 +963,11 @@ Encrypted folders work the same on a server as on the desktop, and the server ne
 
 - When someone encrypts a folder, CMM gives them a `.cmmkey` key file to download and keep on their own computer
   (or a USB stick, or a password manager). The server keeps no copy.
-- To open the folder, they upload the key file from their computer **and** enter their account password. The key
-  is then held in the server's memory for that session only.
+- The key file can be protected with a passphrase (chosen in the wizard). The server then also offers a raw
+  recovery key file to keep offline; the passphrase itself is never sent anywhere but with the unlock request, and
+  never stored.
+- To open the folder, they upload the key file from their computer (with its passphrase, if it has one) **and**
+  enter their account password. The unwrapped key is then held in the server's memory for that session only.
 - The key is wiped when the session locks, when they sign out, when the unlock time runs out (60 minutes by
   default, in **Settings › Encryption**) or when someone selects **Lock all**.
 - Decrypted content is never written to the server's disk.

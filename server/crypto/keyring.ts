@@ -37,6 +37,8 @@ export interface PendingKey {
   expiresAt: number;
   /** Re-key only: the folder's current key, from the old key file. */
   oldKey?: { dek: Buffer; keyId: Buffer };
+  /** The passphrase-protected `.cmmkey` bytes, when the user chose a passphrase; the raw file is the recovery copy. */
+  protectedKeyFile?: Buffer;
 }
 
 interface KeyringState {
@@ -53,6 +55,7 @@ function wipeKeys(keys: Iterable<Buffer>): void {
 function wipePending(pendingKey: PendingKey): void {
   pendingKey.dek.fill(0);
   pendingKey.oldKey?.dek.fill(0);
+  pendingKey.protectedKeyFile?.fill(0);
 }
 
 function getState(): KeyringState {
@@ -219,6 +222,7 @@ export function storePendingKey(
     ...(pendingKey.oldKey
       ? { oldKey: { dek: Buffer.from(pendingKey.oldKey.dek), keyId: Buffer.from(pendingKey.oldKey.keyId) } }
       : {}),
+    ...(pendingKey.protectedKeyFile ? { protectedKeyFile: Buffer.from(pendingKey.protectedKeyFile) } : {}),
     pendingId: randomUUID(),
     isVerified: false,
     expiresAt: now + PENDING_KEY_MILLISECONDS,

@@ -4,14 +4,14 @@ import { requestDecryption } from "@/server/crypto";
 import {
   confirmFormPassword,
   readCryptoForm,
-  requireKeyFile,
+  readKeyFileInput,
   withKeyFileAttempt,
 } from "@/server/http/crypto-route-input";
 import { storageFromQuery, storagePathQuerySchema } from "@/server/http/fs-route-input";
 
 /**
- * Decrypt permanently: multipart `keyfile`, `password` and `confirmName` (the folder's
- * name typed). The key file is needed even when the folder is unlocked. Returns `{ job }`.
+ * Decrypt permanently: multipart `keyfile` (with `keyfilePassphrase` when it is protected),
+ * `password` and `confirmName` (the folder's name typed). The key file is needed even when the folder is unlocked. Returns `{ job }`.
  */
 export const POST = withApi(
   async ({ request, query, actor, auth, client, storage }) => {
@@ -20,7 +20,7 @@ export const POST = withApi(
     const result = await withKeyFileAttempt(auth, client.ip, () =>
       requestDecryption(
         { storage: storage(query.storageId), path: query.path, actor },
-        requireKeyFile(form),
+        readKeyFileInput(form),
         form.fields.get("confirmName") ?? "",
       ),
     );
