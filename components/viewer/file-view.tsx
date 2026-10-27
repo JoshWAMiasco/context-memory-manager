@@ -340,7 +340,15 @@ export function FileView({ entry, fileStat }: { entry: FileEntry; fileStat: File
   };
 
   let body: ReactNode;
-  const placeholder = (message?: string) => <PlaceholderViewer entry={entry} message={message} onDownload={download} />;
+  const rawSource = `${buildRawUrl(storage.id, entry.path)}&v=${encodeURIComponent(fileStat.etag)}`;
+  const placeholder = (message?: string) => (
+    <PlaceholderViewer
+      entry={entry}
+      message={message}
+      videoSource={describeFileKind(entry.name).kind === "video" && message === undefined ? rawSource : undefined}
+      onDownload={download}
+    />
+  );
   if ((isFolderLocked || isLockedOnServer) && encryption) {
     body = (
       <UnlockPanel
