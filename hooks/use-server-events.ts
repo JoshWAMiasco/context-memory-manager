@@ -15,7 +15,8 @@ import { goToSessionPage } from "@/lib/client/session-channel";
  * `job.*` update the cached jobs (so progress bars move live), `encryption.changed` (an unlock,
  * lock or job in an encrypted folder) every listing and file of that storage, `versioning.changed`
  * its history and undo state (and badges when versioning was turned on or off).
- * `protection.violation` shows a toast. `session.locked` and `session.destroyed` leave for /lock
+ * Each time the stream (re)opens, the jobs are refetched: a job that ended while it was closed
+ * would otherwise keep its folders busy. `protection.violation` shows a toast. `session.locked` and `session.destroyed` leave for /lock
  * or /login. Mount once, in the signed-in layout.
  *
  * @example
@@ -29,6 +30,7 @@ export function useServerEventInvalidation(): void {
   useEffect(() => {
     const eventsClient = getServerEventsClient();
     const stopListening = [
+      eventsClient.onOpen(() => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.jobs() })),
       eventsClient.on("fs.changed", ({ storageId, path, change }) => {
         void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.directory(storageId, readParentPath(path)) });
         void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.stat(storageId, path) });

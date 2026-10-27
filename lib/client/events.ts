@@ -42,12 +42,14 @@ const REOPEN_DELAY_MILLISECONDS = 100;
 /**
  * One `EventSource` per tab for `/api/events`. Folder watches are counted: adding or
  * removing one reopens the stream with the new `watch=` list. A closed stream reopens with
- * backoff (1 s doubling to 30 s), reset after each successful open.
+ * backoff (1 s doubling to 30 s), reset after each successful open. Events sent while the stream
+ * is closed or reopening are lost, so `onOpen` listeners refetch what those events keep live.
  */
 export class ServerEventsClient {
   private eventSource?: EventSource;
   private readonly watchCounts = new Map<string, number>();
   private readonly listeners = new Map<ServerEventName, Set<AnyListener>>();
+  private readonly openListeners = new Set<() => void>();
   private reconnectDelay = 1000;
   private reopenTimer?: ReturnType<typeof setTimeout>;
   private isStopped = true;
@@ -75,6 +77,12 @@ export class ServerEventsClient {
     eventListeners.add(listener as AnyListener);
     this.listeners.set(eventName, eventListeners);
     return () => eventListeners.delete(listener as AnyListener);
+  }
+
+  /** Calls `listener` each time the stream opens, including reopens; returns the function that stops it. */
+  onOpen(listener: () => void): () => void {
+    this.openListeners.add(listener);
+    return () => this.openListeners.delete(listener);
   }
 
   /** Watches a folder for changes made outside CMM; returns the function that stops watching. */
@@ -120,6 +128,7 @@ export class ServerEventsClient {
     this.eventSource = eventSource;
     eventSource.addEventListener("open", () => {
       this.reconnectDelay = 1000;
+      for (const listener of this.openListeners) listener();
     });
     for (const eventName of EVENT_NAMES) {
       eventSource.addEventListener(eventName, (messageEvent) => {
