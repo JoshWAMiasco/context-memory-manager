@@ -217,12 +217,15 @@ export function ExplorerWorkspace({
   mode,
   userRole,
   initialPath,
+  initialChanges,
 }: {
   storage: StorageSummary;
   memoryRoot?: MemoryRoot;
   mode: ApplicationMode;
   userRole: UserRole;
   initialPath: string;
+  /** `?changes=`: open the entry's "What changed" history on this step. */
+  initialChanges?: string;
 }) {
   const isClient = useSyncExternalStore(
     subscribeToNothing,
@@ -237,6 +240,7 @@ export function ExplorerWorkspace({
       mode={mode}
       userRole={userRole}
       initialPath={initialPath}
+      initialChanges={initialChanges}
     >
       <h1 className="sr-only">{memoryRoot?.memory.name ?? storage.label}</h1>
       <div className="box h-[calc(100dvh-9rem)] min-h-[420px] overflow-hidden" data-testid="explorer" data-full-width>

@@ -1,16 +1,20 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { CheckCircle2, ChevronDown, ChevronUp, CircleAlert, RotateCcw, X } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { Modal, ModalBody, ModalFooter } from "@/components/interactive/modal";
+import { showToastNotification } from "@/components/interactive/toast-notification";
 import { Button } from "@/components/primitives/button";
 import { FormCheckbox } from "@/components/primitives/form-check";
 import { ProgressBar } from "@/components/primitives/progress-bar";
 import { FileIcon } from "@/components/explorer/file-icon";
 import { formatFileSize } from "@/components/page-sections/applications/file-manager/format-file-size";
-import { QUERY_KEYS } from "@/lib/client/query-keys";
+import { joinEntryPath, QUERY_KEYS } from "@/lib/client/query-keys";
+import { buildChangesHref } from "@/lib/client/routes";
 import { getUploadQueue, type ConflictAnswer, type ConflictDecision, type UploadItem } from "@/lib/client/upload-queue";
+import { describeFileKind, isTextKind } from "@/lib/file-kinds";
 import { mergeClassNames } from "@/utilities/merge-class-names";
 
 const STATUS_LABELS: Record<UploadItem["status"], string> = {
@@ -132,7 +136,8 @@ function UploadRow({ item }: { item: UploadItem }) {
 /**
  * The upload panel at the bottom right: each file's progress, speed, cancel and retry,
  * and a summary when everything has finished. It also asks what to do when a name is taken
- * (Replace, Keep both, Skip, optionally for the whole upload). Mounted once in the signed-in
+ * (Replace, Keep both, Skip, optionally for the whole upload). A finished "Replace with file from
+ * computer…" says so, with "See what changed" for text files. Mounted once in the signed-in
  * layout, so uploads keep going while you browse.
  *
  * @example
@@ -142,6 +147,7 @@ export function UploadQueuePanel() {
   const uploadQueue = getUploadQueue();
   const items = useSyncExternalStore(uploadQueue.subscribe, uploadQueue.getSnapshot, readNoUploads);
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [pendingConflict, setPendingConflict] = useState<PendingConflict>();
 
@@ -151,12 +157,46 @@ export function UploadQueuePanel() {
     );
     uploadQueue.setUploadedListener((item) => {
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.directory(item.storageId, item.directory) });
+      if (!item.replace) return;
+      const filePath = joinEntryPath(item.directory, item.targetName);
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.stat(item.storageId, filePath) });
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.versioning(item.storageId) });
+      // Comparing is for text files; Office and other binary files can only be restored.
+      const focus = isTextKind(describeFileKind(item.targetName).kind) ? item.replaced : undefined;
+      const canCompare = focus?.commitSha !== undefined || focus?.trashItemId !== undefined;
+      showToastNotification({
+        title: `Replaced ${item.targetName}`,
+        tone: "success",
+        description: item.replaced?.trashItemId
+          ? "The previous version is in Trash."
+          : item.replaced?.commitSha
+            ? "The previous version is in its history."
+            : undefined,
+        durationInMilliseconds: 8000,
+        actions: canCompare ? (
+          <button
+            type="button"
+            className="cursor-pointer text-brand hover:underline"
+            data-testid="replace-see-changes"
+            onClick={() =>
+              router.push(
+                buildChangesHref(item.storageId, filePath, {
+                  sha: focus?.commitSha,
+                  trashItemId: focus?.trashItemId,
+                }),
+              )
+            }
+          >
+            See what changed
+          </button>
+        ) : undefined,
+      });
     });
     return () => {
       uploadQueue.setConflictResolver(undefined);
       uploadQueue.setUploadedListener(undefined);
     };
-  }, [queryClient, uploadQueue]);
+  }, [queryClient, router, uploadQueue]);
 
   if (items.length === 0) return null;
   const countOf = (status: UploadItem["status"]) => items.filter((item) => item.status === status).length;

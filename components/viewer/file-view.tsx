@@ -4,6 +4,7 @@ import {
   Copy,
   Download,
   Eye,
+  FileUp,
   FolderSearch,
   History,
   Info,
@@ -517,6 +518,13 @@ export function FileView({ entry, fileStat }: { entry: FileEntry; fileStat: File
         >
           <DropdownMenuItem onSelect={() => void copyPath()} icon={<Copy className="mr-2 h-4 w-4" />}>
             Copy path
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            isDisabled={(writeReason ?? busyReason) !== undefined}
+            onSelect={() => explorer.replaceFile(entry.path)}
+            icon={<FileUp className="mr-2 h-4 w-4" />}
+          >
+            Replace with file from computer…
           </DropdownMenuItem>
           {explorer.mode === "desktop" && (
             <DropdownMenuItem

@@ -1,4 +1,4 @@
-import type { FileEntry, UploadSession } from "@/lib/api-types";
+import type { FileEntry, ReplaceResult, UploadSession } from "@/lib/api-types";
 import { ApiError, requestJson } from "@/lib/client/api";
 import { goToSessionPage } from "@/lib/client/session-channel";
 
@@ -8,6 +8,14 @@ export interface UploadTarget {
   directory: string;
   name: string;
   overwrite: boolean;
+  /** Replaces this existing file, which must still be the version the user saw. */
+  replace?: { expectedEtag?: string };
+}
+
+/** A finished upload: the file, and for a replace what it left to compare with. */
+export interface UploadCompletion {
+  entry: FileEntry;
+  replaced?: ReplaceResult;
 }
 
 /** How the uploader talks to the server; tests pass a fake. */
@@ -21,7 +29,7 @@ export interface UploadTransport {
     onBytesSent: (bytesSent: number) => void,
     signal: AbortSignal,
   ) => Promise<UploadSession>;
-  complete: (uploadId: string) => Promise<FileEntry>;
+  complete: (uploadId: string) => Promise<UploadCompletion>;
   cancel: (uploadId: string) => Promise<void>;
 }
 
@@ -68,7 +76,7 @@ function isRetryable(uploadError: unknown): boolean {
  * arrived.
  *
  * @example
- * const entry = await uploadFile(file, { storageId, directory: "notes", name: file.name, overwrite: false });
+ * const { entry } = await uploadFile(file, { storageId, directory: "notes", name: file.name, overwrite: false });
  */
 export async function uploadFile(
   file: Blob,
@@ -80,7 +88,7 @@ export async function uploadFile(
     maximumAttempts = DEFAULT_MAXIMUM_ATTEMPTS,
     readRetryDelay = defaultRetryDelay,
   }: UploadOptions = {},
-): Promise<FileEntry> {
+): Promise<UploadCompletion> {
   const session = await transport.init(target, file.size);
   const throwIfCancelled = async () => {
     if (!signal?.aborted) return;
@@ -171,16 +179,13 @@ export const xhrUploadTransport: UploadTransport = {
         name: target.name,
         size,
         overwrite: target.overwrite,
+        replace: target.replace,
       },
     }),
   status: (uploadId) => requestJson<UploadSession>(`/api/fs/upload/${encodeURIComponent(uploadId)}`),
   sendChunk: sendChunkWithXhr,
-  complete: async (uploadId) =>
-    (
-      await requestJson<{ entry: FileEntry }>(`/api/fs/upload/${encodeURIComponent(uploadId)}/complete`, {
-        method: "POST",
-      })
-    ).entry,
+  complete: (uploadId) =>
+    requestJson<UploadCompletion>(`/api/fs/upload/${encodeURIComponent(uploadId)}/complete`, { method: "POST" }),
   cancel: async (uploadId) => {
     await requestJson(`/api/fs/upload/${encodeURIComponent(uploadId)}`, { method: "DELETE" });
   },

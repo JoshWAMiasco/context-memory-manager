@@ -29,6 +29,47 @@ export function buildMemoryHref(storageId: string, memoryPath: string, entryPath
   return `${buildStorageHref(storageId, entryPath)}?${new URLSearchParams({ [MEMORY_ROOT_PARAMETER]: memoryPath })}`;
 }
 
+/**
+ * The search parameter that opens a file's history ("What changed") on one step: a commit sha, or
+ * `trash:<item id>` for the version a replace kept in Trash (a folder without versioning). Empty
+ * opens the history without choosing a step.
+ */
+export const CHANGES_PARAMETER = "changes";
+
+/** The step the history opens on: a commit, or the trash copy a replace kept. */
+export interface HistoryFocus {
+  sha?: string;
+  trashItemId?: string;
+}
+
+const TRASH_FOCUS_PREFIX = "trash:";
+
+/**
+ * The page URL of a file's "What changed" view, opened on a commit or on the trash copy of the
+ * version a replace overwrote.
+ *
+ * @example
+ * buildChangesHref("home", "notes/a.md", { sha: "4f1c2d3" }); // "/storage/home/notes/a.md?changes=4f1c2d3"
+ * buildChangesHref("home", "notes/a.md", { trashItemId: "home:9e…" }); // "…?changes=trash%3Ahome%3A9e…"
+ */
+export function buildChangesHref(storageId: string, entryPath: string, focus: HistoryFocus = {}): string {
+  const value = focus.trashItemId ? `${TRASH_FOCUS_PREFIX}${focus.trashItemId}` : (focus.sha ?? "");
+  return `${buildStorageHref(storageId, entryPath)}?${new URLSearchParams({ [CHANGES_PARAMETER]: value })}`;
+}
+
+/**
+ * Reads the `changes` parameter back: undefined when it is absent (no history), else the step to
+ * open on (none when it is empty or not a sha).
+ *
+ * @example
+ * parseChangesParameter("trash:home:9e…"); // { trashItemId: "home:9e…" }
+ */
+export function parseChangesParameter(value: string | undefined): HistoryFocus | undefined {
+  if (value === undefined) return undefined;
+  if (value.startsWith(TRASH_FOCUS_PREFIX)) return { trashItemId: value.slice(TRASH_FOCUS_PREFIX.length) };
+  return /^[\da-f]{4,64}$/i.test(value) ? { sha: value } : {};
+}
+
 /** Reads `{ storageId, path }` back from a storage page pathname, or undefined for other pages. */
 export function parseStorageHref(pathname: string): { storageId: string; path: string } | undefined {
   const pathSegments = pathname.split("/").filter(Boolean);

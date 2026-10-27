@@ -6,6 +6,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import {
   ArrowLeft,
   Columns2,
+  FileUp,
   GitBranch,
   Pencil,
   Plug,
@@ -22,6 +23,7 @@ import { Button } from "@/components/primitives/button";
 import { EmptyState } from "@/components/primitives/empty-state";
 import { announce, useExplorer } from "@/components/explorer/explorer-context";
 import { DiffView, type DiffLayout } from "@/components/versioning/diff-view";
+import { TrashComparison } from "@/components/versioning/trash-comparison";
 import { UndoRedoButtons } from "@/components/versioning/undo-redo-buttons";
 import type { CommitFile, FileEntry, HistoryCommit, HistoryCommitKind } from "@/lib/api-types";
 import { readBaseName } from "@/lib/client/query-keys";
@@ -32,6 +34,7 @@ import {
   useVersioningMutations,
   useVersioningStatus,
 } from "@/lib/client/versioning";
+import { describeFileKind } from "@/lib/file-kinds";
 import { mergeClassNames } from "@/utilities/merge-class-names";
 
 dayjs.extend(relativeTime);
@@ -45,7 +48,41 @@ const KIND_ICONS: Record<HistoryCommitKind, { icon: LucideIcon; label: string; t
   restore: { icon: RotateCcw, label: "Restore", tone: "text-success" },
   external: { icon: Plug, label: "Changed outside CMM", tone: "text-pending" },
   enable: { icon: GitBranch, label: "Versioning turned on", tone: "text-foreground-muted" },
+  replace: { icon: FileUp, label: "Replaced with a file from the computer", tone: "text-accent" },
 };
+
+/** Which steps the history lists. */
+type StepFilter = "all" | "uploads" | "edits" | "external" | "restores";
+
+const STEP_FILTERS: { value: StepFilter; label: string }[] = [
+  { value: "all", label: "All steps" },
+  { value: "uploads", label: "Uploads and replaces" },
+  { value: "edits", label: "Edits" },
+  { value: "external", label: "Changed outside CMM" },
+  { value: "restores", label: "Restores, undo and redo" },
+];
+
+function isUploadStep(commit: HistoryCommit): boolean {
+  return commit.kind === "replace" || /^Upload /.test(commit.message);
+}
+
+function matchesStepFilter(commit: HistoryCommit, filter: StepFilter): boolean {
+  switch (filter) {
+    case "uploads":
+      return isUploadStep(commit);
+    case "edits":
+      return commit.kind === "change" && !isUploadStep(commit);
+    case "external":
+      return commit.kind === "external";
+    case "restores":
+      return commit.kind === "restore" || commit.kind === "undo" || commit.kind === "redo";
+    default:
+      return true;
+  }
+}
+
+/** File kinds the comparison shows line by line; Office documents, media and archives are not compared yet. */
+const COMPARABLE_KINDS = new Set(["markdown", "code", "text", "csv", "binary"]);
 
 const STATUS_LABELS: Record<CommitFile["status"], { letter: string; label: string; tone: string }> = {
   A: { letter: "A", label: "Added", tone: "text-success" },
@@ -100,16 +137,20 @@ function CommitRow({
 function CommitList({
   storageId,
   logPath,
+  stepFilter,
   selectedSha,
   onSelect,
 }: {
   storageId: string;
   logPath: string;
+  stepFilter: StepFilter;
   selectedSha?: string;
   onSelect: (commit: HistoryCommit) => void;
 }) {
   const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useVersioningLog(storageId, logPath);
-  const commits = data?.pages.flatMap((page) => page.commits) ?? [];
+  const commits = (data?.pages.flatMap((page) => page.commits) ?? []).filter((commit) =>
+    matchesStepFilter(commit, stepFilter),
+  );
   const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null);
   const virtualizer = useVirtualizer({
     count: commits.length,
@@ -129,7 +170,14 @@ function CommitList({
 
   if (error) return <p className="p-3 text-sm text-danger">{error.message}</p>;
   if (!data) return <p className="p-3 text-sm text-foreground-subtle">Loading history…</p>;
-  if (commits.length === 0) return <p className="p-3 text-sm text-foreground-subtle">No changes recorded yet.</p>;
+  if (commits.length === 0) {
+    if (hasNextPage) return <p className="p-3 text-sm text-foreground-subtle">Loading more…</p>;
+    return (
+      <p className="p-3 text-sm text-foreground-subtle">
+        {stepFilter === "all" ? "No changes recorded yet." : "No steps of this kind."}
+      </p>
+    );
+  }
   return (
     <div ref={setScrollElement} className="h-full overflow-auto" data-testid="history-commits">
       <div className="relative" style={{ height: virtualizer.getTotalSize() }}>
@@ -163,7 +211,14 @@ function DiffArea({
   sha: string;
   layout: DiffLayout;
 }) {
-  const { data: diff, error } = useFileDiff(storageId, file, sha);
+  const isComparable = COMPARABLE_KINDS.has(describeFileKind(readBaseName(file.path)).kind);
+  const { data: diff, error } = useFileDiff(storageId, isComparable ? file : undefined, sha);
+  if (!isComparable)
+    return (
+      <p className="text-sm text-foreground-muted" data-testid="diff-unsupported">
+        Comparing this file type isn&rsquo;t supported yet. You can still restore this version.
+      </p>
+    );
   if (error)
     return (
       <p className="text-sm text-danger" data-testid="diff-error">
@@ -179,7 +234,10 @@ function DiffArea({
  * versioned folder), newest first and virtualised, with kind icons and relative times. A commit
  * lists its changed files; a file opens a read-only comparison (side by side or unified).
  * "Restore this file to this version" and "Restore whole folder to this version" ask first and
- * make a new commit.
+ * make a new commit. It is also the "What changed" view after a replace: it opens on the step the
+ * explorer's `historyFocus` names (or, for a folder without versioning, compares the file with the
+ * version kept in Trash). Steps can be filtered by kind. Text files are compared line by line;
+ * other kinds (Office documents, media) say comparing isn't supported yet.
  *
  * @example
  * <HistoryPanel entry={entry} />
@@ -190,7 +248,8 @@ export function HistoryPanel({ entry }: { entry: FileEntry }) {
   const { data: status } = useVersioningStatus(storage.id, entry.path);
   const { restoreFile, restoreFolder } = useVersioningMutations();
   const [showsWholeFolder, setShowsWholeFolder] = useState(false);
-  const [selectedSha, setSelectedSha] = useState<string>();
+  const [selectedSha, setSelectedSha] = useState(explorer.historyFocus?.sha);
+  const [stepFilter, setStepFilter] = useState<StepFilter>("all");
   const [chosenFile, setChosenFile] = useState<CommitFile>();
   const [layout, setLayout] = useState<DiffLayout>("split");
   const [confirming, setConfirming] = useState<"file" | "folder">();
@@ -205,6 +264,9 @@ export function HistoryPanel({ entry }: { entry: FileEntry }) {
     files[0];
   const blockedReason = explorer.readOnlyReason ?? status?.peek?.blockedReason;
   const folderName = status?.folderName ?? (readBaseName(scopePath) || storage.label);
+
+  const trashItemId = explorer.historyFocus?.trashItemId;
+  if (trashItemId && entry.type === "file") return <TrashComparison entry={entry} trashItemId={trashItemId} />;
 
   if (status && !status.versioned) {
     return (
@@ -262,14 +324,31 @@ export function HistoryPanel({ entry }: { entry: FileEntry }) {
             ))}
           </div>
         )}
+        <select
+          aria-label="Show steps"
+          value={stepFilter}
+          onChange={(changeEvent) => {
+            setStepFilter(changeEvent.target.value as StepFilter);
+            setSelectedSha(undefined);
+          }}
+          className="h-8 rounded-md border border-line bg-field py-0 pr-8 pl-2.5 text-xs"
+          data-testid="history-step-filter"
+        >
+          {STEP_FILTERS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
         <UndoRedoButtons path={scopePath} />
       </header>
       <div className="grid min-h-0 flex-1 grid-rows-[16rem_1fr] md:grid-cols-[19rem_1fr] md:grid-rows-1">
         <div className="min-h-0 border-b border-line/60 md:border-r md:border-b-0">
           <CommitList
-            key={logPath}
+            key={`${logPath}:${stepFilter}`}
             storageId={storage.id}
             logPath={logPath}
+            stepFilter={stepFilter}
             selectedSha={selectedSha}
             onSelect={selectCommit}
           />

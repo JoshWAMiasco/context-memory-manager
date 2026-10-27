@@ -1,4 +1,4 @@
-import type { FileEntry } from "@/lib/api-types";
+import type { FileEntry, ReplaceResult } from "@/lib/api-types";
 import { ApiError } from "@/lib/client/api";
 import { buildKeepBothName, uploadFile, type UploadOptions, type UploadTransport } from "@/lib/client/upload";
 
@@ -21,6 +21,10 @@ export interface UploadItem {
   /** Bytes per second, while uploading. */
   speed?: number;
   error?: string;
+  /** Set for "Replace with file from computer…": it overwrites `targetName`, if that is unchanged. */
+  replace?: { expectedEtag?: string };
+  /** What a finished replace left to compare with. */
+  replaced?: ReplaceResult;
 }
 
 export type ConflictDecision = "replace" | "keep-both" | "skip";
@@ -103,6 +107,32 @@ export class UploadQueue {
     return batchId;
   }
 
+  /**
+   * Queues a file that replaces an existing one (`targetName` in `directory`), keeping that name.
+   * It fails with `ETAG_MISMATCH` if the file changed since `expectedEtag`.
+   */
+  addReplacement(file: File, storageId: string, directory: string, targetName: string, expectedEtag?: string): string {
+    const batchId = createIdentifier("batch");
+    this.entries.push({
+      file,
+      item: {
+        id: createIdentifier("upload"),
+        batchId,
+        fileName: file.name,
+        targetName,
+        storageId,
+        directory,
+        status: "queued",
+        uploadedBytes: 0,
+        totalBytes: file.size,
+        replace: { expectedEtag },
+      },
+    });
+    this.publish();
+    this.pump();
+    return batchId;
+  }
+
   cancel(itemId: string): void {
     const queueEntry = this.findEntry(itemId);
     if (!queueEntry) return;
@@ -177,13 +207,14 @@ export class UploadQueue {
     try {
       for (;;) {
         try {
-          const uploadedEntry = await uploadFile(
+          const completion = await uploadFile(
             queueEntry.file,
             {
               storageId: queueEntry.item.storageId,
               directory: queueEntry.item.directory,
               name: queueEntry.item.targetName,
               overwrite,
+              replace: queueEntry.item.replace,
             },
             {
               transport: this.transport,
@@ -198,8 +229,13 @@ export class UploadQueue {
               },
             },
           );
-          this.update(queueEntry, { status: "done", uploadedBytes: queueEntry.item.totalBytes, speed: undefined });
-          this.uploadedListener?.(queueEntry.item, uploadedEntry);
+          this.update(queueEntry, {
+            status: "done",
+            uploadedBytes: queueEntry.item.totalBytes,
+            speed: undefined,
+            replaced: completion.replaced,
+          });
+          this.uploadedListener?.(queueEntry.item, completion.entry);
           return;
         } catch (uploadError) {
           if (!(uploadError instanceof ApiError) || uploadError.code !== "ALREADY_EXISTS") throw uploadError;

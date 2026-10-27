@@ -33,8 +33,11 @@ export interface FileOperation extends FileOperationTarget {
   confirmDecrypt?: boolean;
   /** Read the bytes as stored on disk, skipping decryption ("Encrypted (raw)" downloads). */
   asStored?: boolean;
-  /** How the change arrived, when it matters to after-hooks ("Upload 3 files" commits). */
-  origin?: "upload";
+  /**
+   * How the change arrived, when it matters to after-hooks ("Upload 3 files" commits): an upload,
+   * or a file replaced by one from the user's computer.
+   */
+  origin?: "upload" | "replace";
 }
 
 /** The storage root of an operation target: its absolute path minus its storage-relative path. */

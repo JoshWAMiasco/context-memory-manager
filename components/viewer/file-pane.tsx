@@ -87,7 +87,13 @@ export function FilePane() {
 
   let content: ReactNode;
   if (entry && explorer.historyPath === selectedPath && entry.path === selectedPath) {
-    content = <HistoryPanel key={`${storage.id}:${entry.path}`} entry={entry} />;
+    const focus = explorer.historyFocus;
+    content = (
+      <HistoryPanel
+        key={`${storage.id}:${entry.path}:${focus?.sha ?? ""}:${focus?.trashItemId ?? ""}`}
+        entry={entry}
+      />
+    );
   } else if (isRoot) {
     content = (
       <>

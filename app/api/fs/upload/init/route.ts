@@ -11,6 +11,8 @@ const initUploadBodySchema = z.object({
   name: z.string().min(1).max(255),
   size: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
   overwrite: z.boolean().default(false),
+  /** "Replace with file from computer…": the existing file, as the user last saw it. */
+  replace: z.object({ expectedEtag: z.string().min(1).max(200).optional() }).strict().optional(),
 });
 
 /** The step-up resource of an upload: `<storageId>:<dir>/<name>`. */
@@ -28,6 +30,7 @@ export const POST = withApi(
         name: body.name,
         size: body.size,
         overwrite: body.overwrite,
+        replace: body.replace,
       }),
       { status: 201 },
     ),

@@ -1,9 +1,10 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { lstat, mkdir, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
+import { copyFile, lstat, mkdir, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { TrashItem, TrashListResponse } from "@/lib/api-types";
 import { getConfig } from "@/server/config";
+import { readFileHeader } from "@/server/crypto/format";
 import { getEventBus } from "@/server/events/bus";
 import { ApiRouteError, forbidden, notFound, validationFailed } from "@/server/http/api-error";
 import { parentRelativePath, resolveInStorage, resolveRootPath } from "@/server/security/path-jail";
@@ -183,6 +184,78 @@ export async function moveToTrash(storage: ActiveStorage, relativePath: string, 
     isDirectory,
   });
   return toTrashItem(storage, meta);
+}
+
+/**
+ * Keeps a copy of a file in the trash before it is replaced, so the version that was there can be
+ * compared and restored. The file stays where it is; the copy is byte for byte (an encrypted file
+ * stays ciphertext). The caller has already passed the write guards for the replace.
+ *
+ * @example
+ * const kept = await copyFileToTrash(storage, "notes/report.md", actor);
+ */
+export async function copyFileToTrash(storage: ActiveStorage, relativePath: string, actor: FileActor): Promise<TrashItem> {
+  const { absolutePath, relativePath: normalizedPath, rootPath } = await resolveInStorage(storage, relativePath);
+  const fileStats = await stat(absolutePath);
+  if (!fileStats.isFile()) throw validationFailed("Only a file can be kept in the trash before it is replaced.");
+  const itemUuid = randomUUID();
+  const itemDirectory = joinStoragePath(readItemsDirectory(rootPath), itemUuid);
+  const payloadDirectory = joinStoragePath(itemDirectory, "payload");
+  await mkdir(payloadDirectory, { recursive: true, mode: 0o700 });
+  const meta: TrashMeta = {
+    v: 1,
+    id: itemUuid,
+    name: path.basename(absolutePath),
+    originalPath: normalizedPath,
+    deletedAt: new Date().toISOString(),
+    deletedBy: actor.username ?? null,
+    deletedById: actor.id,
+    size: fileStats.size,
+    isDir: false,
+    encrypted: (await readFileHeader(absolutePath)) !== undefined,
+    memory: false,
+    status: "moving",
+  };
+  await writeJsonAtomically(joinStoragePath(itemDirectory, "meta.json"), meta);
+  try {
+    await copyFile(absolutePath, joinStoragePath(payloadDirectory, meta.name));
+  } catch (copyError) {
+    await rm(itemDirectory, { recursive: true, force: true });
+    throw copyError;
+  }
+  meta.status = "ok";
+  await writeJsonAtomically(joinStoragePath(itemDirectory, "meta.json"), meta);
+  return toTrashItem(storage, meta);
+}
+
+/** Largest trashed file `readTrashedText` reads for a comparison. */
+export const MAX_TRASHED_TEXT_BYTES = 5 * 1024 * 1024;
+
+/**
+ * The text of a trashed file, for comparing it with the file now in its place: plain files only
+ * (not folders, not encrypted, at most 5 MB). Needs read access to its storage.
+ *
+ * @example
+ * const { content } = await readTrashedText(actor, "home:4f1c…");
+ */
+export async function readTrashedText(
+  actor: StorageActor,
+  trashItemId: string,
+): Promise<{ item: TrashItem; content: string }> {
+  const { storageId, itemUuid } = parseTrashItemId(trashItemId);
+  const storage = requireStorageAccess(actor, storageId, "read");
+  const itemDirectory = joinStoragePath(readItemsDirectory(await resolveRootPath(storage)), itemUuid);
+  const meta = await readMeta(itemDirectory);
+  if (meta?.status !== "ok") throw notFound("That item is not in the trash.");
+  if (meta.isDir) throw validationFailed("A folder can't be compared.");
+  const payloadPath = joinStoragePath(itemDirectory, "payload", meta.name);
+  if (meta.encrypted || (await readFileHeader(payloadPath)) !== undefined) {
+    throw validationFailed("An encrypted file in the trash can't be compared. Restore it to see it.");
+  }
+  if ((await stat(payloadPath)).size > MAX_TRASHED_TEXT_BYTES) {
+    throw validationFailed("This file is too large to compare.");
+  }
+  return { item: toTrashItem(storage, meta), content: await readFile(payloadPath, "utf8") };
 }
 
 /**

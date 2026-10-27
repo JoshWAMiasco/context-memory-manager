@@ -138,7 +138,7 @@ export interface GitDetection {
   checkedAt: string;
 }
 
-export type HistoryCommitKind = "change" | "undo" | "redo" | "restore" | "external" | "enable";
+export type HistoryCommitKind = "change" | "undo" | "redo" | "restore" | "external" | "enable" | "replace";
 
 /** One commit of a versioned folder. */
 export interface HistoryCommit {
@@ -471,6 +471,12 @@ export interface UploadSession {
   size: number;
 }
 
+/** What a replace left to compare with: its commit (versioned folder) or the old version's trash copy. */
+export interface ReplaceResult {
+  commitSha?: string;
+  trashItemId?: string;
+}
+
 export interface TrashItem {
   id: string;
   storageId: string;
@@ -648,4 +654,10 @@ export interface TerminalListResponse {
   unavailableCode?: TerminalUnavailableCode;
   unavailableReason?: string;
   terminals: TerminalSummary[];
+}
+
+/** A trashed text file and its content, for comparing with the file now in its place. */
+export interface TrashedTextResponse {
+  item: TrashItem;
+  content: string;
 }

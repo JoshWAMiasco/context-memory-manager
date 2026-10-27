@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { ExplorerWorkspace } from "@/components/explorer/explorer-workspace";
 import { isInsideFolder } from "@/lib/client/query-keys";
-import { buildMemoryHref, buildStorageHref, MEMORY_ROOT_PARAMETER } from "@/lib/client/routes";
+import { buildMemoryHref, buildStorageHref, CHANGES_PARAMETER, MEMORY_ROOT_PARAMETER } from "@/lib/client/routes";
 import type { MemorySummary } from "@/lib/memory";
 import { requirePageSession } from "@/server/auth/page-guard";
 import { getConfig } from "@/server/config";
@@ -29,7 +29,8 @@ async function readMemoryAt(storageId: string, memoryPath: string): Promise<Memo
  * A storage's explorer, or with `?memory=<folder>` that memory's own explorer, whose tree starts
  * at the memory. Storages the user can't open, or that are unplugged, are 404. A `memory` that
  * isn't a memory folder falls back to the storage's explorer, and a path outside the memory opens
- * the memory itself.
+ * the memory itself. `?changes=<sha>` (or `trash:<item id>`) opens the entry's "What changed"
+ * history on that step.
  */
 export default async function StoragePage({ params, searchParams }: PageProps<"/storage/[storageId]/[[...path]]">) {
   const { user } = await requirePageSession();
@@ -38,7 +39,9 @@ export default async function StoragePage({ params, searchParams }: PageProps<"/
   if (!storage?.available) notFound();
   const initialPath = path.map(decodeSegment).join("/");
 
-  const memoryParameter = (await searchParams)[MEMORY_ROOT_PARAMETER];
+  const searchParameters = await searchParams;
+  const memoryParameter = searchParameters[MEMORY_ROOT_PARAMETER];
+  const changesParameter = searchParameters[CHANGES_PARAMETER];
   const memoryPath = (typeof memoryParameter === "string" ? memoryParameter : "").replaceAll(/^\/+|\/+$/g, "");
   let memoryRoot: { path: string; memory: MemorySummary } | undefined;
   if (memoryParameter !== undefined) {
@@ -56,6 +59,7 @@ export default async function StoragePage({ params, searchParams }: PageProps<"/
       mode={getConfig().mode}
       userRole={user.role}
       initialPath={initialPath}
+      initialChanges={typeof changesParameter === "string" ? changesParameter : undefined}
     />
   );
 }

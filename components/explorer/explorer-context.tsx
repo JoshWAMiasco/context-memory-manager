@@ -3,10 +3,11 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
+import { ConfirmDialog } from "@/components/interactive/confirm-dialog";
 import { showToastNotification } from "@/components/interactive/toast-notification";
 import type { FileEntry, FileStat, StorageSummary } from "@/lib/api-types";
 import type { UserRole } from "@/lib/auth/policy";
-import { ApiError } from "@/lib/client/api";
+import { ApiError, requestJson } from "@/lib/client/api";
 import { readFileClipboard, setFileClipboard } from "@/lib/client/clipboard";
 import {
   downloadEntry,
@@ -17,10 +18,11 @@ import {
 } from "@/lib/client/fs";
 import { readBusyReason, useBusyFolders } from "@/lib/client/jobs";
 import { isInsideFolder, joinEntryPath, QUERY_KEYS, readBaseName, readParentPath } from "@/lib/client/query-keys";
-import { buildMemoryHref, buildStorageHref } from "@/lib/client/routes";
+import { buildMemoryHref, buildStorageHref, parseChangesParameter, type HistoryFocus } from "@/lib/client/routes";
 import { protectionReason } from "@/lib/client/protection";
 import { confirmLeave } from "@/lib/client/unsaved-changes";
 import { getUploadQueue } from "@/lib/client/upload-queue";
+import { readExtension } from "@/lib/file-kinds";
 import type { MemorySummary } from "@/lib/memory";
 
 export type ApplicationMode = "desktop" | "server";
@@ -87,8 +89,10 @@ export interface ExplorerContextValue {
   contextMenu?: ContextMenuState;
   /** The entry whose history the file pane shows instead of its content. */
   historyPath?: string;
-  /** Selects `entryPath` and shows its history (a file's own, or a folder's). */
-  openHistory: (entryPath: string) => void;
+  /** The step the history opened on: a commit, or the trash copy a replace kept. */
+  historyFocus?: HistoryFocus;
+  /** Selects `entryPath` and shows its history (a file's own, or a folder's), optionally on one step. */
+  openHistory: (entryPath: string, focus?: HistoryFocus) => void;
   closeHistory: () => void;
   /**
    * Selects one entry (and puts it in the URL, expanding its folders), or extends the selection
@@ -139,6 +143,11 @@ export interface ExplorerContextValue {
   uploadFiles: (files: readonly File[], folderPath: string) => void;
   /** Opens the computer's file picker and uploads the chosen files into `folderPath`. */
   openUploadPicker: (folderPath: string) => void;
+  /**
+   * "Replace with file from computer…": opens the file picker, then uploads the chosen file over
+   * `entryPath`, keeping its name. It is refused if the file changes in between.
+   */
+  replaceFile: (entryPath: string) => void;
   /** Downloads an entry; an encrypted file first asks "Decrypted" or "Encrypted (raw)". */
   download: (entryPath: string, options?: { asStored?: boolean }) => Promise<void>;
   refresh: () => Promise<void>;
@@ -215,6 +224,7 @@ export function ExplorerProvider({
   mode,
   userRole,
   initialPath,
+  initialChanges,
   children,
 }: {
   storage: StorageSummary;
@@ -222,6 +232,8 @@ export function ExplorerProvider({
   mode: ApplicationMode;
   userRole: UserRole;
   initialPath: string;
+  /** The page's `?changes=` value: open the entry's history, on this step. */
+  initialChanges?: string;
   children: ReactNode;
 }) {
   const rootPath = memoryRoot?.path ?? "";
@@ -239,9 +251,25 @@ export function ExplorerProvider({
   const [draft, setDraft] = useState<DraftItem>();
   const [dialog, setDialog] = useState<ExplorerDialog>();
   const [contextMenu, setContextMenu] = useState<ContextMenuState>();
-  const [historyPath, setHistoryPath] = useState<string>();
+  const [historyPath, setHistoryPath] = useState(() =>
+    parseChangesParameter(initialChanges) ? initialPath : undefined,
+  );
+  const [historyFocus, setHistoryFocus] = useState(() => parseChangesParameter(initialChanges));
+  const [syncedChanges, setSyncedChanges] = useState(`${initialPath}\u0000${initialChanges ?? ""}`);
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const uploadFolderRef = useRef("");
+  const replaceInputRef = useRef<HTMLInputElement>(null);
+  const replaceTargetRef = useRef<{ path: string; etag: Promise<string | undefined> }>(undefined);
+  const [pendingReplace, setPendingReplace] = useState<{ file: File; path: string; expectedEtag?: string }>();
+
+  // A link to "What changed" on the page already open (`?changes=` changed) opens that history.
+  const changesKey = `${initialPath}\u0000${initialChanges ?? ""}`;
+  if (changesKey !== syncedChanges) {
+    setSyncedChanges(changesKey);
+    const focus = parseChangesParameter(initialChanges);
+    setHistoryPath(focus ? initialPath : undefined);
+    setHistoryFocus(focus);
+  }
 
   if (initialPath !== syncedInitialPath) {
     setSyncedInitialPath(initialPath);
@@ -492,6 +520,42 @@ export function ExplorerProvider({
     uploadInputRef.current?.click();
   }, []);
 
+  const queueReplacement = useCallback(
+    (file: File, entryPath: string, expectedEtag: string | undefined) => {
+      getUploadQueue().addReplacement(file, storage.id, readParentPath(entryPath), readBaseName(entryPath), expectedEtag);
+    },
+    [storage.id],
+  );
+
+  const replaceFile = useCallback(
+    (entryPath: string) => {
+      // The version the user is looking at now: the replace is refused if the file changes meanwhile.
+      const query = new URLSearchParams({ storageId: storage.id, path: entryPath });
+      const etag = requestJson<FileStat>(`/api/fs/stat?${query}`).then(
+        (fileStat) => fileStat.etag,
+        () => undefined,
+      );
+      replaceTargetRef.current = { path: entryPath, etag };
+      replaceInputRef.current?.click();
+    },
+    [storage.id],
+  );
+
+  const handleReplacementChosen = useCallback(
+    async (file: File | undefined) => {
+      const target = replaceTargetRef.current;
+      replaceTargetRef.current = undefined;
+      if (!file || !target) return;
+      const expectedEtag = await target.etag;
+      if (readExtension(file.name) !== readExtension(readBaseName(target.path))) {
+        setPendingReplace({ file, path: target.path, expectedEtag });
+        return;
+      }
+      queueReplacement(file, target.path, expectedEtag);
+    },
+    [queueReplacement],
+  );
+
   const download = useCallback(
     async (entryPath: string, options?: { asStored?: boolean }) => {
       const entry =
@@ -531,11 +595,16 @@ export function ExplorerProvider({
       dialog,
       contextMenu,
       historyPath,
-      openHistory: (entryPath) => {
+      historyFocus,
+      openHistory: (entryPath, focus) => {
         selectPath(entryPath);
         setHistoryPath(entryPath);
+        setHistoryFocus(focus);
       },
-      closeHistory: () => setHistoryPath(undefined),
+      closeHistory: () => {
+        setHistoryPath(undefined);
+        setHistoryFocus(undefined);
+      },
       selectPath,
       selectMany: (paths) => setSelection(new Set(paths)),
       setExpanded,
@@ -560,6 +629,7 @@ export function ExplorerProvider({
       pasteInto,
       uploadFiles,
       openUploadPicker,
+      replaceFile,
       download,
       refresh,
     }),
@@ -579,6 +649,7 @@ export function ExplorerProvider({
       dialog,
       contextMenu,
       historyPath,
+      historyFocus,
       selectPath,
       setExpanded,
       commitRename,
@@ -596,6 +667,7 @@ export function ExplorerProvider({
       pasteInto,
       uploadFiles,
       openUploadPicker,
+      replaceFile,
       download,
       refresh,
     ],
@@ -614,6 +686,30 @@ export function ExplorerProvider({
           changeEvent.target.value = "";
         }}
       />
+      <input
+        ref={replaceInputRef}
+        type="file"
+        hidden
+        data-testid="replace-input"
+        onChange={(changeEvent) => {
+          void handleReplacementChosen(changeEvent.target.files?.[0]);
+          changeEvent.target.value = "";
+        }}
+      />
+      {pendingReplace && (
+        <ConfirmDialog
+          isOpen
+          onOpenChange={(isOpen) => !isOpen && setPendingReplace(undefined)}
+          title={`Replace "${readBaseName(pendingReplace.path)}" with a .${readExtension(pendingReplace.file.name) || "?"} file?`}
+          confirmLabel="Replace"
+          confirmVariant="danger"
+          testId="replace-type-dialog"
+          onConfirm={() => queueReplacement(pendingReplace.file, pendingReplace.path, pendingReplace.expectedEtag)}
+        >
+          &ldquo;{pendingReplace.file.name}&rdquo; is a different kind of file. It is saved under the name{" "}
+          &ldquo;{readBaseName(pendingReplace.path)}&rdquo;, which may make it open in the wrong viewer.
+        </ConfirmDialog>
+      )}
     </ExplorerContext.Provider>
   );
 }

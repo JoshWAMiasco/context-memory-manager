@@ -64,6 +64,7 @@ export function classifyCommit(message: string, author: string): HistoryCommitKi
   if (message.startsWith("Undo: ")) return "undo";
   if (message.startsWith("Redo: ")) return "redo";
   if (/^Restore (folder|.+) to [0-9a-f]{7,}$/.test(message)) return "restore";
+  if (/^Replace .+ \(uploaded\)$/.test(message)) return "replace";
   if (author === EXTERNAL_AUTHOR.name && message.startsWith("External changes")) return "external";
   if (message.startsWith(ENABLE_MESSAGE)) return "enable";
   return "change";

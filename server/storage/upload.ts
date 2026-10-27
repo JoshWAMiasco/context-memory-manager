@@ -21,14 +21,14 @@ import {
 import path from "node:path";
 import { Readable, Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
-import type { FileEntry, UploadSession } from "@/lib/api-types";
+import type { FileEntry, ReplaceResult, UploadSession } from "@/lib/api-types";
 import { HEADER_BYTES, readPartProgress } from "@/server/crypto/format";
 import { getEventBus } from "@/server/events/bus";
 import { ApiRouteError, notFound, validationFailed } from "@/server/http/api-error";
 import { getGlobalSingleton } from "@/server/runtime/global-singleton";
 import { assertValidName, joinRelativePath, resolveInStorage, resolveRootPath } from "@/server/security/path-jail";
 import type { BackgroundService } from "@/server/services";
-import { statEntry, TEMPORARY_DIRECTORY, writeAtomically } from "@/server/storage/fs-ops";
+import { readCurrentEtag, statEntry, TEMPORARY_DIRECTORY, writeAtomically } from "@/server/storage/fs-ops";
 import {
   collectTransforms,
   collectUploadCipher,
@@ -40,6 +40,9 @@ import {
 } from "@/server/storage/pipeline";
 import { listActiveStorages, requireStorageAccess, type ActiveStorage } from "@/server/storage/roots";
 import { joinStoragePath } from "@/server/storage/storage-path";
+import { copyFileToTrash } from "@/server/trash";
+import { flushAutocommits } from "@/server/versioning/autocommit";
+import { readVersioning, versionedScopeOf } from "@/server/versioning/scope";
 
 export const UPLOAD_CHUNK_SIZE = 8 * 1024 * 1024;
 export const STALE_UPLOAD_MILLISECONDS = 24 * 60 * 60 * 1000;
@@ -59,6 +62,13 @@ interface UploadRecord {
   createdAt: string;
   /** The part is encrypted as it arrives (an upload into an encrypted folder). */
   encrypted?: boolean;
+  /** "Replace with file from computer…": the target must exist, unchanged since `expectedEtag`. */
+  replace?: ReplaceRequest;
+}
+
+/** A replace of an existing file: it must still be the version the user saw (`expectedEtag`). */
+export interface ReplaceRequest {
+  expectedEtag?: string;
 }
 
 interface LocatedUpload {
@@ -103,17 +113,31 @@ export interface UploadRequest {
   name: string;
   size: number;
   overwrite: boolean;
+  replace?: ReplaceRequest;
+}
+
+/** Refuses a replace whose target is gone, is a folder, or changed since the user chose it. */
+async function checkReplaceTarget(storage: ActiveStorage, targetPath: string, replace: ReplaceRequest): Promise<void> {
+  const currentEtag = await readCurrentEtag(storage, targetPath);
+  if (currentEtag === undefined) throw notFound("The file to replace is no longer there.");
+  if (replace.expectedEtag !== undefined && currentEtag !== replace.expectedEtag) {
+    throw new ApiRouteError(409, "ETAG_MISMATCH", "The file changed since you chose to replace it. Look at it, then try again.", {
+      etag: currentEtag,
+    });
+  }
 }
 
 /**
  * Starts an upload: checks the name, the target, and free space up front, then creates
- * an empty `.part` file. The route asks for the `upload` step-up here, once per upload.
+ * an empty `.part` file. The route asks for the `upload` step-up here, once per upload. A replace
+ * needs the target to exist, unchanged since the user chose it.
  */
 export async function initUpload(
   actor: FileActor,
   storage: ActiveStorage,
-  { directory, name, size, overwrite }: UploadRequest,
+  { directory, name, size, overwrite: overwriteRequested, replace }: UploadRequest,
 ): Promise<UploadSession> {
+  const overwrite = overwriteRequested || replace !== undefined;
   assertValidName(name);
   const folder = await resolveInStorage(storage, directory);
   if (!(await stat(folder.absolutePath)).isDirectory()) throw validationFailed("The upload folder is not a folder.");
@@ -123,6 +147,7 @@ export async function initUpload(
     throw new ApiRouteError(409, "ALREADY_EXISTS", `A folder named "${name}" already exists.`);
   if (targetStats && !overwrite)
     throw new ApiRouteError(409, "ALREADY_EXISTS", `"${name}" already exists in this folder.`);
+  if (replace) await checkReplaceTarget(storage, target.relativePath, replace);
   const freeBytes = await readFreeBytes(target.rootPath);
   if (freeBytes < size) {
     throw new ApiRouteError(507, "INSUFFICIENT_SPACE", "There is not enough free space on this storage.", {
@@ -151,6 +176,7 @@ export async function initUpload(
     createdAt: new Date().toISOString(),
   };
   if (cipher) record.encrypted = true;
+  if (replace) record.replace = replace;
   const uploadsDirectory = readUploadsDirectory(target.rootPath);
   await mkdir(uploadsDirectory, { recursive: true, mode: 0o700 });
   await writeFile(joinStoragePath(uploadsDirectory, `${record.uploadId}.part`), cipher?.startBytes() ?? "", {
@@ -374,11 +400,46 @@ async function placeEncryptedPart(
   }
 }
 
+/** The last commit of a versioned folder, from its undo stack. */
+async function readLastCommit(scopeAbsolutePath: string): Promise<string | undefined> {
+  return (await readVersioning(scopeAbsolutePath))?.undoStack.at(-1);
+}
+
+/**
+ * Before a replace: in a versioned folder, commits pending edits so the replace is a step of its
+ * own; elsewhere, keeps a copy of the current file in the trash. Returns what to do afterwards.
+ */
+async function prepareReplace(
+  actor: FileActor,
+  storage: ActiveStorage,
+  target: { rootPath: string; relativePath: string },
+): Promise<{ finish: () => Promise<ReplaceResult> }> {
+  const scope = await versionedScopeOf(target.rootPath, target.relativePath, { isDirectory: false });
+  if (scope) {
+    await flushAutocommits(storage.id, scope.path);
+    const commitBefore = await readLastCommit(scope.absolutePath);
+    return {
+      finish: async () => {
+        await flushAutocommits(storage.id, scope.path);
+        const commitAfter = await readLastCommit(scope.absolutePath);
+        return commitAfter && commitAfter !== commitBefore ? { commitSha: commitAfter } : {};
+      },
+    };
+  }
+  const kept = await copyFileToTrash(storage, target.relativePath, actor);
+  return { finish: () => Promise.resolve({ trashItemId: kept.id }) };
+}
+
 /**
  * Puts a fully received upload in place through the FS pipeline (encryption happens here). Without
  * overwrite the target is claimed with a hard link, so a file created meanwhile is never replaced.
+ * A replace checks the target is unchanged, and returns the commit (versioned folder) or the trash
+ * copy of the old version (elsewhere) to compare with.
  */
-export async function completeUpload(actor: FileActor, uploadId: string): Promise<FileEntry> {
+export async function completeUpload(
+  actor: FileActor,
+  uploadId: string,
+): Promise<{ entry: FileEntry; replaced?: ReplaceResult }> {
   const { record, storage, partPath, recordPath } = await locateUpload(actor, uploadId);
   const received = await readReceivedBytes(partPath, record);
   if (received !== record.size) {
@@ -390,15 +451,20 @@ export async function completeUpload(actor: FileActor, uploadId: string): Promis
   if (targetExisted && !record.overwrite) {
     throw new ApiRouteError(409, "ALREADY_EXISTS", `"${record.name}" already exists in this folder.`);
   }
+  if (record.replace) {
+    if (!targetExisted) throw notFound("The file to replace is no longer there.");
+    await checkReplaceTarget(storage, target.relativePath, record.replace);
+  }
   const operation: FileOperation = {
     type: "write",
     storageId: storage.id,
     path: target.relativePath,
     absolutePath: target.absolutePath,
     actor,
-    origin: "upload",
+    origin: record.replace ? "replace" : "upload",
   };
   await runGuards(targetExisted ? operation : { ...operation, type: "create" });
+  const replacing = record.replace ? await prepareReplace(actor, storage, target) : undefined;
   if (record.encrypted) {
     await placeEncryptedPart(actor, storage, record, partPath, targetPath, targetExisted);
   } else if ((await collectTransforms("write", operation)).length > 0 || targetExisted) {
@@ -422,7 +488,9 @@ export async function completeUpload(actor: FileActor, uploadId: string): Promis
     change: targetExisted ? "changed" : "added",
   });
   await runAfterHooks(operation);
-  return (await statEntry(storage, target.relativePath, actor)).entry;
+  const replaced = await replacing?.finish();
+  const { entry } = await statEntry(storage, target.relativePath, actor);
+  return replaced ? { entry, replaced } : { entry };
 }
 
 /** Cancels an upload and deletes what arrived. */

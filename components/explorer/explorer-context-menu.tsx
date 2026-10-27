@@ -7,6 +7,7 @@ import {
   Copy,
   Download,
   FilePlus,
+  FileUp,
   FolderInput,
   FolderOpen,
   FolderOpenDot,
@@ -41,7 +42,7 @@ import { buildMemoryBackupHref, buildMemoryHref } from "@/lib/client/routes";
 
 /**
  * The right-click menu of the tree: open, new items, rename, copy, cut, move to a folder,
- * paste, trash, upload, download, backup, terminal, the file manager and the full path (desktop
+ * paste, trash, upload, replace a file with one from the computer, download, backup, terminal, the file manager and the full path (desktop
  * app), memory conversion, folder settings and properties. Actions the user can't take are
  * disabled with the reason in a tooltip.
  *
@@ -168,6 +169,17 @@ export function ExplorerContextMenu() {
       disabledReason: folderReason,
       dividerBefore: true,
     },
+    ...(entry?.type === "file"
+      ? [
+          {
+            key: "replace",
+            label: "Replace with file from computer…",
+            icon: FileUp,
+            onSelect: () => explorer.replaceFile(entry.path),
+            disabledReason: entryReason ?? (actionPaths.length > 1 ? "Select one file to replace it." : undefined),
+          },
+        ]
+      : []),
     {
       key: "download",
       label: entry?.type === "file" ? "Download" : "Download as zip",

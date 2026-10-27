@@ -437,6 +437,19 @@ export async function openFileReadStream(
   };
 }
 
+/**
+ * The ETag a file has now (the one `stat` reports), or undefined when it is gone or not a file.
+ *
+ * @example
+ * if ((await readCurrentEtag(storage, "notes/a.md")) !== expectedEtag) throw conflict;
+ */
+export async function readCurrentEtag(storage: ActiveStorage, relativePath: string): Promise<string | undefined> {
+  const resolvedPath = await resolveInStorage(storage, relativePath);
+  const fileStats = await stat(resolvedPath.absolutePath).catch(() => undefined);
+  if (!fileStats?.isFile()) return undefined;
+  return (await readContentVersion(resolvedPath, fileStats)).etag;
+}
+
 async function checkIfMatch(
   resolvedPath: ResolvedPath,
   currentStats: Stats | undefined,

@@ -1,7 +1,18 @@
 import { NextResponse } from "next/server";
 import { readRouteParameter, requireHandlerStepUp, withApi } from "@/server/auth/guard";
 import { notFound } from "@/server/http/api-error";
-import { moveTrashItemsToOsTrash, purgeTrashItems, restoreTrashItem } from "@/server/trash";
+import { moveTrashItemsToOsTrash, purgeTrashItems, readTrashedText, restoreTrashItem } from "@/server/trash";
+
+/**
+ * `GET /api/trash/<itemId>/content`: a trashed text file, to compare with the file now in its place
+ * (after "Replace with file from computer…"). Never cached.
+ */
+export const GET = withApi(async ({ params, actor }) => {
+  if (readRouteParameter(params, "action") !== "content") throw notFound("Unknown trash action.");
+  return NextResponse.json(await readTrashedText(actor, readRouteParameter(params, "itemId")), {
+    headers: { "cache-control": "no-store" },
+  });
+});
 
 /** `POST /api/trash/<itemId>/restore`, `/purge` (step-up `delete-permanent`) or `/os-trash` (desktop only). */
 export const POST = withApi(async (context) => {

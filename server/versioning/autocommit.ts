@@ -23,7 +23,17 @@ const DEFAULT_BATCH_MILLISECONDS = 2000;
 /** How long a path CMM wrote counts as "ours" for the external-change watcher. */
 const APP_WRITE_MEMORY_MILLISECONDS = 30_000;
 
-type ChangeKind = "write" | "create" | "mkdir" | "rename" | "move" | "copy" | "delete" | "restore" | "upload";
+type ChangeKind =
+  | "write"
+  | "create"
+  | "mkdir"
+  | "rename"
+  | "move"
+  | "copy"
+  | "delete"
+  | "restore"
+  | "upload"
+  | "replace";
 
 interface PendingChange {
   kind: ChangeKind;
@@ -126,6 +136,7 @@ function describeChange(operation: FileOperation, scopePath: string): PendingCha
     case "write":
     case "create":
       if (operation.origin === "upload") return { kind: "upload", message: `Upload ${source}`, author };
+      if (operation.origin === "replace") return { kind: "replace", message: `Replace ${source} (uploaded)`, author };
       return operation.type === "write"
         ? { kind: "write", message: `Edit ${source}`, author }
         : { kind: "create", message: `Create ${source}`, author };
