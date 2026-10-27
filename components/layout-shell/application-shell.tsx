@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { ToastViewport } from "@/components/interactive/toast-notification";
 import type { AccountMenuAccount } from "@/components/layout-shell/account-menu";
+import { MobileBottomBar, MobileMenuDrawer } from "@/components/layout-shell/mobile-navigation";
 import { PageLoadingOverlay } from "@/components/layout-shell/page-loading-overlay";
 import { ScrollAwareElement } from "@/components/layout-shell/scroll-aware-element";
 import { ShellWrappers } from "@/components/layout-shell/shell-wrappers";
@@ -21,6 +22,8 @@ export interface ApplicationShellProps {
   /** Custom side menu content; replaces `navigation`. */
   sideMenuContent?: ReactNode;
   currentAccount?: AccountMenuAccount;
+  /** CMM's version, for the mobile menu drawer. */
+  applicationVersion?: string;
 }
 
 /**
@@ -38,6 +41,7 @@ export function ApplicationShell({
   navigation = SIDE_MENU_NAVIGATION,
   sideMenuContent,
   currentAccount = PLACEHOLDER_ACCOUNT,
+  applicationVersion,
 }: ApplicationShellProps) {
   const { classNames } = SHELL_APPEARANCE;
   const topBar = (
@@ -89,6 +93,9 @@ export function ApplicationShell({
       ) : (
         <div className={classNames.themeWrapper}>{application}</div>
       )}
+      {/* Outside the top bar: its backdrop blur would pin fixed elements to it rather than the screen. */}
+      <MobileBottomBar />
+      <MobileMenuDrawer currentAccount={currentAccount} applicationVersion={applicationVersion} />
       <ToastViewport />
     </>
   );

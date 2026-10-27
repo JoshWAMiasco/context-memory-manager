@@ -49,8 +49,8 @@ export const SHELL_APPEARANCE: ShellAppearance = {
     sideMenuContent: "",
     sideMenuPanel: "",
     sideMenuNavigation: "",
-    pageContent: "relative z-10 pt-[65px] pb-16",
-    pageContentWrappers: ["px-3.5 mt-10 sm:px-5"],
+    pageContent: "relative z-10 pt-[65px] pb-28 md:pb-16",
+    pageContentWrappers: ["px-3.5 mt-7 sm:px-5 md:mt-10"],
     pageContainer: "container has-[[data-full-width]]:max-w-none",
   },
 };

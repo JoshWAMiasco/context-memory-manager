@@ -26,6 +26,18 @@ import { mergeClassNames } from "@/utilities/merge-class-names";
 /** ⌘K (Ctrl+K elsewhere) opens quick search. */
 const QUICK_SEARCH_SHORTCUT = "Mod-K";
 
+const openListeners = new Set<() => void>();
+
+/**
+ * Opens quick search from elsewhere, such as the mobile bottom bar.
+ *
+ * @example
+ * <button onClick={openQuickSearch}>Search</button>
+ */
+export function openQuickSearch(): void {
+  for (const listener of openListeners) listener();
+}
+
 interface SearchItem {
   key: string;
   title: string;
@@ -286,7 +298,12 @@ export function QuickSearch({
       setIsOpen(true);
     };
     document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    const open = () => setIsOpen(true);
+    openListeners.add(open);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      openListeners.delete(open);
+    };
   }, []);
 
   return (

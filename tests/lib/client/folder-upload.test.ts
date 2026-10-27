@@ -2,9 +2,13 @@
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/client/api", () => ({ ApiError: class extends Error {}, requestJson: vi.fn() }));
-vi.mock("@/lib/client/upload-queue", () => ({ getUploadQueue: vi.fn() }));
+const uploadQueue = { add: vi.fn() };
+vi.mock("@/lib/client/upload-queue", () => ({ getUploadQueue: () => uploadQueue }));
+vi.mock("@/lib/client/step-up", () => ({ requestStepUpGrant: vi.fn() }));
 
-const { isJunkPath, readDroppedTree, readPickedFolder, withoutJunk } = await import("@/lib/client/folder-upload");
+const { isJunkPath, readDroppedTree, readPickedFolder, startFilesUpload, withoutJunk } =
+  await import("@/lib/client/folder-upload");
+const { requestStepUpGrant } = await import("@/lib/client/step-up");
 
 function fakeFile(name: string, relativePath?: string): File {
   const file = new File(["x"], name);
@@ -82,5 +86,33 @@ describe("folder uploads", () => {
     const cleaned = withoutJunk(tree);
     expect(cleaned.skippedCount).toBe(1);
     expect(cleaned.files).toHaveLength(5);
+  });
+});
+
+describe("uploading several files", () => {
+  it("asks for the password once, for the folder, and gives every file that grant", async () => {
+    vi.mocked(requestStepUpGrant).mockReset().mockResolvedValue({ actionToken: "token-1" });
+    uploadQueue.add.mockReset();
+    const files = [fakeFile("a.md"), fakeFile("b.md"), fakeFile("c.md")];
+    await expect(startFilesUpload(files, "home", "notes")).resolves.toBe(true);
+    expect(requestStepUpGrant).toHaveBeenCalledTimes(1);
+    expect(requestStepUpGrant).toHaveBeenCalledWith("upload", "home:notes/**");
+    expect(uploadQueue.add).toHaveBeenCalledWith(files, "home", "notes", { root: "notes", actionToken: "token-1" });
+  });
+
+  it("queue nothing when the confirmation is cancelled", async () => {
+    vi.mocked(requestStepUpGrant).mockReset().mockResolvedValue(undefined);
+    uploadQueue.add.mockReset();
+    await expect(startFilesUpload([fakeFile("a.md"), fakeFile("b.md")], "home", "")).resolves.toBe(false);
+    expect(uploadQueue.add).not.toHaveBeenCalled();
+  });
+
+  it("leave one file to ask as it starts, like before", async () => {
+    vi.mocked(requestStepUpGrant).mockReset();
+    uploadQueue.add.mockReset();
+    const files = [fakeFile("a.md")];
+    await startFilesUpload(files, "home", "notes");
+    expect(requestStepUpGrant).not.toHaveBeenCalled();
+    expect(uploadQueue.add).toHaveBeenCalledWith(files, "home", "notes");
   });
 });

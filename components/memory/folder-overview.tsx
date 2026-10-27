@@ -251,7 +251,7 @@ export function FolderOverview({ entry }: { entry: FileEntry }) {
   const encryption = entry.badges.encryption;
   const isEncryptionScope = encryption?.scopePath === entry.path;
   return (
-    <div className="grid gap-6" data-testid={memory ? "memory-overview" : "folder-overview"}>
+    <div className="grid grid-cols-1 gap-6" data-testid={memory ? "memory-overview" : "folder-overview"}>
       <TamperBanner folderPath={entry.path} />
       {encryption && encryption.state !== "encrypted" && (
         <EncryptionActivityBanner

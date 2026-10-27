@@ -18,7 +18,13 @@ export interface AccountMenuAccount {
   roleLabel: string;
 }
 
-function readInitials(fullName: string): string {
+/**
+ * Up to two initials of a name, for the round avatar.
+ *
+ * @example
+ * readInitials("jane.doe"); // "JD"
+ */
+export function readInitials(fullName: string): string {
   const nameParts = fullName
     .trim()
     .split(/[\s._-]+/)
@@ -29,7 +35,13 @@ function readInitials(fullName: string): string {
     .join("");
 }
 
-async function lockNow() {
+/**
+ * Locks the session and goes to the lock page, coming back here after unlocking.
+ *
+ * @example
+ * <DropdownMenuItem onSelect={() => void lockNow()}>Lock now</DropdownMenuItem>
+ */
+export async function lockNow() {
   const nextPath = readCurrentPagePath();
   beginLeavingPage();
   await requestJson("/api/auth/lock", { method: "POST", handleSessionErrors: false }).catch(() => undefined);
@@ -37,7 +49,13 @@ async function lockNow() {
   navigateWithFullReload(`/lock?next=${encodeURIComponent(nextPath)}`);
 }
 
-async function signOut() {
+/**
+ * Signs out and goes to the sign-in page.
+ *
+ * @example
+ * <DropdownMenuItem onSelect={() => void signOut()}>Sign out</DropdownMenuItem>
+ */
+export async function signOut() {
   beginLeavingPage();
   await requestJson("/api/auth/logout", { method: "POST", handleSessionErrors: false }).catch(() => undefined);
   postSessionMessage({ type: "signed-out" });

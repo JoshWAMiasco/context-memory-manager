@@ -24,7 +24,13 @@ import { isInsideFolder, joinEntryPath, QUERY_KEYS, readBaseName, readParentPath
 import { buildMemoryHref, buildStorageHref, parseChangesParameter, type HistoryFocus } from "@/lib/client/routes";
 import { protectionReason } from "@/lib/client/protection";
 import { confirmLeave } from "@/lib/client/unsaved-changes";
-import { readDroppedTree, readPickedFolder, startFolderUpload, type FolderTree } from "@/lib/client/folder-upload";
+import {
+  readDroppedTree,
+  readPickedFolder,
+  startFilesUpload,
+  startFolderUpload,
+  type FolderTree,
+} from "@/lib/client/folder-upload";
 import { getUploadQueue } from "@/lib/client/upload-queue";
 import { readExtension } from "@/lib/file-kinds";
 import type { MemorySummary } from "@/lib/memory";
@@ -530,8 +536,10 @@ export function ExplorerProvider({
 
   const uploadFiles = useCallback(
     (files: readonly File[], folderPath: string) => {
-      if (files.length === 0) return;
-      getUploadQueue().add(files, storage.id, folderPath);
+      // Several files ask for one confirmation for the folder, not one per file.
+      startFilesUpload(files, storage.id, folderPath).catch((uploadError: unknown) =>
+        announceError("Couldn't upload the files", uploadError),
+      );
     },
     [storage.id],
   );

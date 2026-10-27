@@ -6,6 +6,13 @@ import { ClipboardPaste } from "lucide-react";
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import { announceError } from "@/components/explorer/explorer-context";
 import { showToastNotification } from "@/components/interactive/toast-notification";
+import {
+  applyControlModifier,
+  readTerminalKeySequence,
+  TerminalKeyBar,
+  type TerminalKey,
+} from "@/components/terminal/terminal-key-bar";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { readDesktopBridge } from "@/lib/client/desktop";
 import { ENTRY_DRAG_TYPE, readDraggedEntries } from "@/lib/client/entry-drag";
 import { requestDroppedPathText } from "@/lib/client/terminals";
@@ -21,6 +28,9 @@ import {
 } from "@/lib/terminal";
 
 export type TerminalConnection = "connecting" | "connected" | "disconnected";
+
+/** Touch screens and phones get the key bar: their keyboards have no arrows, Esc or Tab. */
+const KEY_BAR_MEDIA_QUERY = "(pointer: coarse), (max-width: 767px)";
 
 /** Waits before reconnecting a dropped socket: quickly at first, then every 5 seconds. */
 const RECONNECT_DELAYS_MILLISECONDS = [500, 1000, 2000, 5000];
@@ -136,7 +146,8 @@ function openSocket(terminalId: string): WebSocket {
  * reloaded or reconnected shows what happened meanwhile. It follows its container's size (and tells
  * the shell), reconnects a dropped socket on its own (not after the session locks), and opens links
  * in the browser. Files and folders dropped on it paste their quoted full paths at the prompt,
- * without pressing Enter.
+ * without pressing Enter. On touch screens a key bar underneath sends Esc, Tab, Ctrl, the arrows
+ * and Enter.
  *
  * @example
  * <TerminalView terminalId={id} shell="zsh" isVisible onOutput={markUnread} onExit={showExit} onConnectionChange={setConnection} />
@@ -165,6 +176,10 @@ export function TerminalView({
   const callbacksRef = useRef({ onOutput, onExit, onConnectionChange });
   const isVisibleRef = useRef(isVisible);
   const [isDropTarget, setIsDropTarget] = useState(false);
+  const sendInputRef = useRef<((data: string) => void) | undefined>(undefined);
+  const isControlHeldRef = useRef(false);
+  const [isControlHeld, setIsControlHeld] = useState(false);
+  const hasKeyBar = useMediaQuery(KEY_BAR_MEDIA_QUERY);
   useEffect(() => {
     callbacksRef.current = { onOutput, onExit, onConnectionChange };
     isVisibleRef.current = isVisible;
@@ -222,7 +237,17 @@ export function TerminalView({
       const resizeObserver = new ResizeObserver(fit);
       resizeObserver.observe(container);
       disposers.push(() => resizeObserver.disconnect());
-      const inputSubscription = terminal.onData((data) => send({ type: "input", data }));
+      sendInputRef.current = (data) => send({ type: "input", data });
+      const inputSubscription = terminal.onData((data) => {
+        // Ctrl from the key bar applies to the next key typed, then lets go.
+        if (isControlHeldRef.current) {
+          isControlHeldRef.current = false;
+          setIsControlHeld(false);
+          send({ type: "input", data: applyControlModifier(data) });
+          return;
+        }
+        send({ type: "input", data });
+      });
       disposers.push(() => inputSubscription.dispose());
       // A theme change (or the computer's, under System) recolours the terminal in place.
       disposers.push(
@@ -277,6 +302,7 @@ export function TerminalView({
       terminalRef.current?.dispose();
       terminalRef.current = undefined;
       fitRef.current = undefined;
+      sendInputRef.current = undefined;
     };
   }, [terminalId]);
 
@@ -285,6 +311,19 @@ export function TerminalView({
     fitRef.current?.();
     terminalRef.current?.focus();
   }, [isVisible]);
+
+  const changeControlHeld = (isHeld: boolean) => {
+    isControlHeldRef.current = isHeld;
+    setIsControlHeld(isHeld);
+  };
+
+  const sendKey = (key: TerminalKey) => {
+    const terminal = terminalRef.current;
+    if (!terminal) return;
+    changeControlHeld(false);
+    sendInputRef.current?.(readTerminalKeySequence(key, terminal.modes.applicationCursorKeysMode));
+    terminal.focus();
+  };
 
   const handleDrop = (dragEvent: DragEvent<HTMLDivElement>) => {
     // Captured before xterm's text area sees it: the browser would type the dragged text into the shell.
@@ -304,27 +343,32 @@ export function TerminalView({
   };
 
   return (
-    <div
-      className="relative h-full w-full"
-      data-testid="terminal-drop-target"
-      onDragOverCapture={(dragEvent) => {
-        if (!isPathDrag(dragEvent)) return;
-        dragEvent.preventDefault();
-        dragEvent.stopPropagation();
-        dragEvent.dataTransfer.dropEffect = "copy";
-        if (!isDropTarget) setIsDropTarget(true);
-      }}
-      onDragLeave={(dragEvent) => {
-        if (!dragEvent.currentTarget.contains(dragEvent.relatedTarget as Node | null)) setIsDropTarget(false);
-      }}
-      onDropCapture={handleDrop}
-    >
-      <div ref={containerRef} className="h-full w-full overflow-hidden" data-testid="terminal-view" />
-      {isDropTarget && (
-        <div className="pointer-events-none absolute inset-1 z-10 flex flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed border-brand bg-field/85 text-brand">
-          <ClipboardPaste className="h-7 w-7 stroke-[1.25]" />
-          <p className="text-sm font-medium">Drop to paste the full path</p>
-        </div>
+    <div className="flex h-full w-full flex-col">
+      <div
+        className="relative min-h-0 w-full flex-1"
+        data-testid="terminal-drop-target"
+        onDragOverCapture={(dragEvent) => {
+          if (!isPathDrag(dragEvent)) return;
+          dragEvent.preventDefault();
+          dragEvent.stopPropagation();
+          dragEvent.dataTransfer.dropEffect = "copy";
+          if (!isDropTarget) setIsDropTarget(true);
+        }}
+        onDragLeave={(dragEvent) => {
+          if (!dragEvent.currentTarget.contains(dragEvent.relatedTarget as Node | null)) setIsDropTarget(false);
+        }}
+        onDropCapture={handleDrop}
+      >
+        <div ref={containerRef} className="h-full w-full overflow-hidden" data-testid="terminal-view" />
+        {isDropTarget && (
+          <div className="pointer-events-none absolute inset-1 z-10 flex flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed border-brand bg-field/85 text-brand">
+            <ClipboardPaste className="h-7 w-7 stroke-[1.25]" />
+            <p className="text-sm font-medium">Drop to paste the full path</p>
+          </div>
+        )}
+      </div>
+      {hasKeyBar && (
+        <TerminalKeyBar onKey={sendKey} isControlHeld={isControlHeld} onControlChange={changeControlHeld} />
       )}
     </div>
   );

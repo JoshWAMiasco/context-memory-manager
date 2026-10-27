@@ -3,6 +3,7 @@ import { SessionProviders } from "@/components/security/session-providers";
 import { UploadQueuePanel } from "@/components/explorer/upload-queue";
 import { TerminalDock } from "@/components/terminal/terminal-dock";
 import { ROLE_LABELS } from "@/lib/auth/policy";
+import packageManifest from "@/package.json";
 import { requirePageSession } from "@/server/auth/page-guard";
 import { getAutoLockSeconds } from "@/server/settings/store";
 
@@ -11,7 +12,10 @@ export default async function SignedInLayout({ children }: LayoutProps<"/">) {
   const { user } = await requirePageSession();
   return (
     <SessionProviders autoLockSeconds={getAutoLockSeconds()}>
-      <ApplicationShell currentAccount={{ fullName: user.username, roleLabel: ROLE_LABELS[user.role] }}>
+      <ApplicationShell
+        currentAccount={{ fullName: user.username, roleLabel: ROLE_LABELS[user.role] }}
+        applicationVersion={packageManifest.version}
+      >
         {children}
       </ApplicationShell>
       <UploadQueuePanel />

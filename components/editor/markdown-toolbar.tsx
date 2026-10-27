@@ -291,13 +291,28 @@ function Divider() {
   return <span className="mx-1 h-5 w-px bg-line-strong/70" aria-hidden />;
 }
 
+const TABLE_MENU_WIDTH = 208;
+
 /**
  * The table menu. A plain popover rather than the shared dropdown menu: that one hands focus
  * back to its button when it closes, which would take the caret out of the table just inserted.
  */
 function TableMenu({ editor, isInTable }: { editor: Editor; isInTable: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
+  /* Fixed, under the button: the toolbar row scrolls sideways on phones and would clip it. */
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const toggle = () => {
+    const buttonBox = buttonRef.current?.getBoundingClientRect();
+    if (!isOpen && buttonBox) {
+      setMenuPosition({
+        top: buttonBox.bottom + 4,
+        left: Math.max(8, Math.min(buttonBox.left, window.innerWidth - TABLE_MENU_WIDTH - 8)),
+      });
+    }
+    setIsOpen(!isOpen);
+  };
   const close = useCallback(() => setIsOpen(false), []);
   useClickOutside(menuRef, close);
   const items: (TableAction | "divider")[] = [
@@ -314,13 +329,14 @@ function TableMenu({ editor, isInTable }: { editor: Editor; isInTable: boolean }
     <div ref={menuRef} className="relative">
       <Tooltip content="Table">
         <button
+          ref={buttonRef}
           type="button"
           aria-label="Table"
           aria-haspopup="menu"
           aria-expanded={isOpen}
           data-testid="toolbar-table"
           onMouseDown={(mouseEvent) => mouseEvent.preventDefault()}
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={toggle}
           className={mergeClassNames(
             "flex h-8 w-8 cursor-pointer items-center justify-center rounded-md text-foreground-muted hover:bg-surface-strong hover:text-foreground",
             (isOpen || isInTable) && "bg-surface-strong text-brand",
@@ -336,7 +352,8 @@ function TableMenu({ editor, isInTable }: { editor: Editor; isInTable: boolean }
           onKeyDown={(keyEvent) => {
             if (keyEvent.key === "Escape") close();
           }}
-          className="absolute top-full left-0 z-20 mt-1 w-52 rounded-md border border-line-strong bg-surface-muted p-1.5 shadow-overlay"
+          style={{ top: menuPosition.top, left: menuPosition.left, width: TABLE_MENU_WIDTH }}
+          className="fixed z-30 rounded-md border border-line-strong bg-surface-muted p-1.5 shadow-overlay"
         >
           {items.map((item, itemIndex) =>
             item === "divider" ? (
@@ -435,7 +452,8 @@ function readToolbarState(currentEditor: Editor) {
 /**
  * The Markdown editor's toolbar: history, block types, inline marks, lists, quote, code
  * block with a language, rule, link, table operations, and the Rich/Source switch. Buttons show
- * their shortcut in the tooltip and reflect the current selection.
+ * their shortcut in the tooltip and reflect the current selection. On phones the buttons are one row
+ * that scrolls sideways, with the Rich/Source switch (icons only) kept in view at its end.
  *
  * @example
  * <MarkdownToolbar editor={editor} mode="rich" onModeChange={switchMode} />
@@ -460,60 +478,66 @@ export function MarkdownToolbar({
 
   return (
     <div className="sticky top-0 z-10 border-b border-line/60 bg-surface-subtle" data-testid="markdown-toolbar">
-      <div role="toolbar" aria-label="Formatting" className="flex flex-wrap items-center gap-0.5 px-2 py-1">
-        {isRich &&
-          ACTION_GROUPS.map((actionGroup, groupIndex) => (
-            <div key={actionGroup[0]?.key} className="flex items-center gap-0.5">
-              {groupIndex > 0 && <Divider />}
-              {actionGroup.map((action) => (
-                <ToolbarButton
-                  key={action.key}
-                  label={action.label}
-                  shortcut={action.shortcut}
-                  icon={action.icon}
-                  isActive={toolbarState.active[action.key]}
-                  isDisabled={!toolbarState.enabled[action.key]}
-                  onClick={() => action.run(editor)}
-                  testId={`toolbar-${action.key}`}
-                />
-              ))}
-            </div>
-          ))}
-        {isRich && toolbarState.codeBlockLanguage !== undefined && (
-          <select
-            aria-label="Code block language"
-            value={toolbarState.codeBlockLanguage}
-            onChange={(changeEvent) =>
-              editor
-                .chain()
-                .focus()
-                .updateAttributes("codeBlock", { language: changeEvent.target.value || null })
-                .run()
-            }
-            className="ml-1 h-7 rounded-md border-line-strong bg-field py-0 pr-7 pl-2 text-xs"
-          >
-            {CODE_BLOCK_LANGUAGES.map((language) => (
-              <option key={language} value={language}>
-                {language || "Plain text"}
-              </option>
-            ))}
-          </select>
-        )}
-        {isRich && (
-          <>
-            <Divider />
-            <ToolbarButton
-              label="Link"
-              icon={Link2}
-              isActive={toolbarState.isLink || isLinkFormOpen}
-              onClick={() => setIsLinkFormOpen(!isLinkFormOpen)}
-              testId="toolbar-link"
-            />
-            <TableMenu editor={editor} isInTable={toolbarState.isInTable} />
-          </>
-        )}
+      <div className="flex items-center gap-1 px-2 py-1">
         <div
-          className="ml-auto flex items-center rounded-md border border-line-strong p-0.5"
+          role="toolbar"
+          aria-label="Formatting"
+          className="flex min-w-0 flex-1 [scrollbar-width:none] items-center gap-0.5 overflow-x-auto md:flex-wrap md:overflow-visible"
+        >
+          {isRich &&
+            ACTION_GROUPS.map((actionGroup, groupIndex) => (
+              <div key={actionGroup[0]?.key} className="flex flex-none items-center gap-0.5">
+                {groupIndex > 0 && <Divider />}
+                {actionGroup.map((action) => (
+                  <ToolbarButton
+                    key={action.key}
+                    label={action.label}
+                    shortcut={action.shortcut}
+                    icon={action.icon}
+                    isActive={toolbarState.active[action.key]}
+                    isDisabled={!toolbarState.enabled[action.key]}
+                    onClick={() => action.run(editor)}
+                    testId={`toolbar-${action.key}`}
+                  />
+                ))}
+              </div>
+            ))}
+          {isRich && toolbarState.codeBlockLanguage !== undefined && (
+            <select
+              aria-label="Code block language"
+              value={toolbarState.codeBlockLanguage}
+              onChange={(changeEvent) =>
+                editor
+                  .chain()
+                  .focus()
+                  .updateAttributes("codeBlock", { language: changeEvent.target.value || null })
+                  .run()
+              }
+              className="ml-1 h-7 flex-none rounded-md border-line-strong bg-field py-0 pr-7 pl-2 text-xs"
+            >
+              {CODE_BLOCK_LANGUAGES.map((language) => (
+                <option key={language} value={language}>
+                  {language || "Plain text"}
+                </option>
+              ))}
+            </select>
+          )}
+          {isRich && (
+            <>
+              <Divider />
+              <ToolbarButton
+                label="Link"
+                icon={Link2}
+                isActive={toolbarState.isLink || isLinkFormOpen}
+                onClick={() => setIsLinkFormOpen(!isLinkFormOpen)}
+                testId="toolbar-link"
+              />
+              <TableMenu editor={editor} isInTable={toolbarState.isInTable} />
+            </>
+          )}
+        </div>
+        <div
+          className="ml-auto flex flex-none items-center rounded-md border border-line-strong p-0.5"
           role="group"
           aria-label="Editor mode"
         >
@@ -526,6 +550,8 @@ export function MarkdownToolbar({
             <button
               key={modeValue}
               type="button"
+              aria-label={modeLabel}
+              title={modeLabel}
               aria-pressed={mode === modeValue}
               data-testid={`mode-${modeValue}`}
               onClick={() => onModeChange(modeValue)}
@@ -535,7 +561,7 @@ export function MarkdownToolbar({
               )}
             >
               <ModeIcon className="h-3.5 w-3.5" />
-              {modeLabel}
+              <span className="hidden sm:inline">{modeLabel}</span>
             </button>
           ))}
         </div>

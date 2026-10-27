@@ -217,7 +217,7 @@ export function UploadQueuePanel() {
       <section
         aria-label="Uploads"
         data-testid="upload-queue"
-        className="fixed right-4 bottom-4 z-[55] w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-md border border-line-strong bg-surface-strong shadow-overlay"
+        className="fixed right-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-[55] w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-md border border-line-strong bg-surface-strong shadow-overlay md:bottom-4"
       >
         <header className="flex items-center gap-2 border-b border-line/60 px-4 py-2.5">
           <h2 className="flex-1 text-sm font-medium" data-testid="upload-summary">

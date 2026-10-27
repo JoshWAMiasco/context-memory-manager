@@ -94,7 +94,8 @@ export function PaneHeader({
 }) {
   return (
     <header className="flex flex-wrap items-start gap-3 border-b border-line/60 px-5 py-3.5">
-      <div className="flex min-w-0 flex-1 items-start gap-2.5">
+      {/* At least 12rem for the name: on a phone the actions wrap below it rather than squeeze it. */}
+      <div className="flex min-w-0 flex-1 basis-48 items-start gap-2.5">
         <span className="mt-1">{icon}</span>
         <div className="min-w-0">
           <h2 className="flex items-center gap-2 truncate font-display text-base font-medium" data-testid="pane-title">

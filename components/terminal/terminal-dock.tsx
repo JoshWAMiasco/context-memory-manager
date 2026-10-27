@@ -118,7 +118,7 @@ export function TerminalDock() {
 
   return (
     <div
-      className="pointer-events-none fixed right-4 bottom-0 z-50 flex flex-row-reverse items-end gap-3"
+      className="pointer-events-none fixed right-4 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-50 flex flex-row-reverse items-end gap-3 md:bottom-0"
       data-testid="terminal-dock"
     >
       {placedPanels.map(({ terminal, isCollapsed, isHidden }) => (

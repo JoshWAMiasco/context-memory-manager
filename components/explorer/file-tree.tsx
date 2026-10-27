@@ -7,6 +7,7 @@ import { showToastNotification } from "@/components/interactive/toast-notificati
 import { useExplorer } from "@/components/explorer/explorer-context";
 import { FileTreeNode, InlineNameInput, TREE_INDENT, TREE_ROW_HEIGHT } from "@/components/explorer/file-tree-node";
 import { FileIcon } from "@/components/explorer/file-icon";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import type { DirectoryListing, FileEntry } from "@/lib/api-types";
 import { useFileClipboard } from "@/lib/client/clipboard";
 import { ENTRY_DRAG_TYPE, readDraggedEntries, type DraggedEntries } from "@/lib/client/entry-drag";
@@ -78,6 +79,7 @@ function useDirectoryWatches(storageId: string, directoryPaths: readonly string[
  */
 export function FileTree() {
   const explorer = useExplorer();
+  const isNarrow = useMediaQuery("(max-width: 767px)");
   const { storage, rootPath, memoryRoot, expandedPaths, draft, selection, selectedPath, renamingPath, canWrite } =
     explorer;
   const queryClient = useQueryClient();
@@ -174,12 +176,16 @@ export function FileTree() {
     scrollRowIntoView(rows.findIndex((row) => row.kind === "entry" && row.entry.path === entryPath));
   };
 
-  const handleRowClick = (entry: FileEntry, mouseEvent: MouseEvent<HTMLDivElement>) => {
+  const handleRowClick = (entry: FileEntry, isExpanded: boolean, mouseEvent: MouseEvent<HTMLDivElement>) => {
     if (explorer.readBusyReason(entry.path) !== undefined) return;
     setFocusedPath(entry.path);
     if (mouseEvent.metaKey || mouseEvent.ctrlKey) explorer.selectPath(entry.path, "toggle", visiblePaths);
     else if (mouseEvent.shiftKey) explorer.selectPath(entry.path, "range", visiblePaths);
-    else explorer.selectPath(entry.path);
+    else {
+      explorer.selectPath(entry.path);
+      // On a phone the chevron is a small target: tapping a folder opens or closes it too.
+      if (isNarrow && entry.type === "directory") explorer.setExpanded(entry.path, !isExpanded);
+    }
     scrollRef.current?.focus({ preventScroll: true });
   };
 
@@ -466,7 +472,7 @@ export function FileTree() {
                     isRenaming={renamingPath === entry.path}
                     isCut={cutPaths.has(entry.path)}
                     isBusy={explorer.readBusyReason(entry.path) !== undefined}
-                    onClick={(mouseEvent) => handleRowClick(entry, mouseEvent)}
+                    onClick={(mouseEvent) => handleRowClick(entry, row.isExpanded, mouseEvent)}
                     onToggle={() => explorer.setExpanded(entry.path, !row.isExpanded)}
                     onContextMenu={(mouseEvent) => {
                       mouseEvent.preventDefault();

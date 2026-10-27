@@ -99,7 +99,11 @@ test("dock, fold, reload and undock a terminal, keeping its screen", async ({ pa
   await expect(floating.locator(".xterm-rows")).toContainText("docked line 0 keep-me");
 });
 
-test("on a narrow screen a docked terminal floats", async ({ page, request, workspace }) => {
+test("on a narrow screen a docked terminal moves to the Terminal view, keeping its screen", async ({
+  page,
+  request,
+  workspace,
+}) => {
   terminalId = await openTerminalWithPainter(page, request, workspace);
   await page
     .locator(`[data-testid="terminal-panel"][data-terminal-id="${terminalId}"]`)
@@ -107,6 +111,11 @@ test("on a narrow screen a docked terminal floats", async ({ page, request, work
     .click();
   await expect(page.getByTestId("docked-terminals")).toBeVisible();
   await page.setViewportSize({ width: 700, height: 900 });
-  await expect(page.getByTestId("docked-terminals")).toHaveCount(0);
-  await expect(page.locator(`[data-testid="terminal-panel"][data-terminal-id="${terminalId}"]`)).toBeVisible();
+  // One view at a time: the file pane is shown, and no terminal floats over it.
+  await expect(page.getByTestId("stacked-view")).toHaveAttribute("data-view", "pane");
+  await expect(page.getByTestId("terminal-panel")).toHaveCount(0);
+  await page.getByTestId("stacked-tab-terminal").click();
+  const docked = page.locator(`[data-testid="docked-terminal"][data-terminal-id="${terminalId}"]`);
+  await expect(docked).toBeVisible();
+  await expect(docked.locator(".xterm-rows")).toContainText("docked line 0 keep-me");
 });

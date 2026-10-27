@@ -42,7 +42,8 @@ function ColumnButton({ label, onClick, children }: { label: string; onClick: ()
  * The docked terminals, as a column beside the editor: a tab per terminal (marked when it has
  * new output), and for the open one Restart (once its shell ended), Undock (back to the floating
  * dock at the bottom), Minimize (fold the column to its rail, ⌘J) and Close (asks first while it
- * runs). Every docked terminal stays connected; only the open tab is shown.
+ * runs). Every docked terminal stays connected; only the open tab is shown. On phones
+ * (`isFullWidth`) it fills the explorer: there is nowhere to undock or fold it to.
  *
  * @example
  * <DockedTerminalColumn terminals={dockedTerminals} isFolded={false} />
@@ -50,11 +51,14 @@ function ColumnButton({ label, onClick, children }: { label: string; onClick: ()
 export function DockedTerminalColumn({
   terminals,
   isFolded,
+  isFullWidth = false,
 }: {
   /** The docked terminals, in tab order. */
   terminals: readonly TerminalSummary[];
   /** The column is folded to its rail: the terminals stay connected but aren't measured. */
   isFolded: boolean;
+  /** The explorer's Terminal view on phones: no Undock or Minimize, no border beside an editor. */
+  isFullWidth?: boolean;
 }) {
   const dockState = useTerminalDockState();
   const { openTerminal, closeTerminal } = useTerminalMutations();
@@ -82,7 +86,10 @@ export function DockedTerminalColumn({
 
   return (
     <section
-      className="flex h-full min-h-0 flex-col border-l border-line/60 bg-surface-subtle"
+      className={mergeClassNames(
+        "flex h-full min-h-0 flex-col bg-surface-subtle",
+        !isFullWidth && "border-l border-line/60",
+      )}
       aria-label="Docked terminals"
       data-testid="docked-terminals"
     >
@@ -139,15 +146,19 @@ export function DockedTerminalColumn({
             <RotateCcw className="h-3.5 w-3.5" />
           </ColumnButton>
         )}
-        <ColumnButton label="Undock to the bottom" onClick={() => undockTerminal(active.id)}>
-          <PanelBottom className="h-4 w-4" />
-        </ColumnButton>
-        <ColumnButton
-          label={`Minimize (${formatShortcut(TERMINAL_TOGGLE_SHORTCUT)})`}
-          onClick={() => setDockMinimized(true)}
-        >
-          <Minimize2 className="h-3.5 w-3.5" />
-        </ColumnButton>
+        {!isFullWidth && (
+          <>
+            <ColumnButton label="Undock to the bottom" onClick={() => undockTerminal(active.id)}>
+              <PanelBottom className="h-4 w-4" />
+            </ColumnButton>
+            <ColumnButton
+              label={`Minimize (${formatShortcut(TERMINAL_TOGGLE_SHORTCUT)})`}
+              onClick={() => setDockMinimized(true)}
+            >
+              <Minimize2 className="h-3.5 w-3.5" />
+            </ColumnButton>
+          </>
+        )}
       </header>
       <div className="relative min-h-0 flex-1 bg-field">
         {terminals.map((terminal) => {
@@ -155,7 +166,12 @@ export function DockedTerminalColumn({
           return (
             <div
               key={terminal.id}
-              className={mergeClassNames("absolute inset-0 py-1 pl-2", !isShown && "hidden")}
+              className={mergeClassNames(
+                "absolute inset-0 pt-1",
+                !isFullWidth && "pb-1 pl-2",
+                isFullWidth && "pl-1",
+                !isShown && "hidden",
+              )}
               data-terminal-id={terminal.id}
               data-testid="docked-terminal"
             >

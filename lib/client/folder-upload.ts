@@ -168,3 +168,28 @@ export async function startFolderUpload(
   );
   return { queuedCount: files.length, skippedCount };
 }
+
+/**
+ * Uploads files picked or dropped together into `folderPath`. Several files ask for the `upload`
+ * confirmation once, for the folder (where the server wants one), instead of once per file; one
+ * file asks as it starts. Resolves to whether they were queued (false when the confirmation is
+ * cancelled).
+ *
+ * @example
+ * await startFilesUpload([...input.files], "home", "notes");
+ */
+export async function startFilesUpload(
+  files: readonly File[],
+  storageId: string,
+  folderPath: string,
+): Promise<boolean> {
+  if (files.length === 0) return true;
+  if (files.length === 1) {
+    getUploadQueue().add(files, storageId, folderPath);
+    return true;
+  }
+  const grant = await requestStepUpGrant("upload", buildFolderUploadResource(storageId, folderPath));
+  if (!grant) return false;
+  getUploadQueue().add(files, storageId, folderPath, { root: folderPath, actionToken: grant.actionToken });
+  return true;
+}

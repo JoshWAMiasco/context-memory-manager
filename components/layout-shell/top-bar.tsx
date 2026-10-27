@@ -5,6 +5,7 @@ import { AccountMenu, type AccountMenuAccount } from "@/components/layout-shell/
 import { BrandLogo } from "@/components/layout-shell/brand-logo";
 import { BreadcrumbTrail } from "@/components/layout-shell/breadcrumb-trail";
 import { FullScreenButton } from "@/components/layout-shell/full-screen-button";
+import { MobileAccountButton } from "@/components/layout-shell/mobile-navigation";
 import type { ShellAppearance } from "@/components/layout-shell/shell-appearance";
 import { ShellWrappers } from "@/components/layout-shell/shell-wrappers";
 import {
@@ -25,7 +26,8 @@ export interface TopBarProps {
  * The fixed 65px top bar: breadcrumb, background jobs, unlocked encrypted folders, full
  * screen and the account menu, plus the logo and collapse toggle in `top-bar-with-brand` themes.
  * In `top-bar-only` themes (CMM) it also holds the logo, quick search (⌘K) and the page links
- * that the side menu used to have. Server component; each control is a small client island. Its
+ * that the side menu used to have. On phones it keeps the logo, the job and key indicators and the
+ * avatar, which opens the menu drawer; the page links move to a bottom bar. Server component; each control is a small client island. Its
  * look comes from `appearance`.
  *
  * @example
@@ -62,18 +64,27 @@ export function TopBar({ appearance, homeHref = "/", currentAccount }: TopBarPro
         <BrandLogo href={homeHref} classNames={classNames} />
         <BreadcrumbTrail classNames={classNames} />
         <div className={classNames.searchArea}>
-          <QuickSearch triggerClassName={classNames.searchTrigger} iconButtonClassName={classNames.actionButton} />
+          {/* On phones search lives in the bottom bar. */}
+          <QuickSearch triggerClassName={classNames.searchTrigger} iconButtonClassName="hidden" />
         </div>
         <div className={classNames.actionButtons}>
-          <ShellNavigation buttonClassName={classNames.actionButton} iconClassName={classNames.actionIcon} />
-          <span className="mx-1 h-6 border-l border-line" aria-hidden="true" />
+          <div className="hidden items-center gap-1 md:flex">
+            <ShellNavigation buttonClassName={classNames.actionButton} iconClassName={classNames.actionIcon} />
+            <span className="mx-1 h-6 border-l border-line" aria-hidden="true" />
+          </div>
           <BackgroundJobsButton />
           <UnlockedFoldersButton />
-          <FullScreenButton className={classNames.actionButton}>
+          <FullScreenButton className={`hidden md:flex ${classNames.actionButton}`}>
             <Expand className={classNames.actionIcon} />
           </FullScreenButton>
         </div>
-        <AccountMenu currentAccount={currentAccount} avatarClassName={classNames.accountAvatarButton} />
+        <div className="hidden md:block">
+          <AccountMenu currentAccount={currentAccount} avatarClassName={classNames.accountAvatarButton} />
+        </div>
+        <MobileAccountButton
+          currentAccount={currentAccount}
+          className={`ml-2 md:hidden ${classNames.accountAvatarButton}`}
+        />
       </ShellWrappers>
     );
   }

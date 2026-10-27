@@ -85,8 +85,16 @@ export class UploadQueue {
     this.uploadedListener = listener;
   }
 
-  /** Queues files for one folder as one batch; returns the batch id. */
-  add(files: readonly File[], storageId: string, directory: string): string {
+  /**
+   * Queues files for one folder as one batch; returns the batch id. `batch` is an upload grant
+   * covering the folder (one confirmation for all the files, as for a folder upload).
+   */
+  add(
+    files: readonly File[],
+    storageId: string,
+    directory: string,
+    batch?: { root: string; actionToken?: string },
+  ): string {
     const batchId = createIdentifier("batch");
     for (const file of files) {
       this.entries.push({
@@ -101,6 +109,7 @@ export class UploadQueue {
           status: "queued",
           uploadedBytes: 0,
           totalBytes: file.size,
+          batch,
         },
       });
     }

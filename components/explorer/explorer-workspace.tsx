@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { FolderTree, HardDrive, PanelLeftOpen, SquareTerminal } from "lucide-react";
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { FileText, FolderTree, HardDrive, PanelLeftOpen, SquareTerminal, type LucideIcon } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Group, Panel, Separator, usePanelRef, type Layout } from "react-resizable-panels";
-import { Slideover } from "@/components/interactive/slideover";
 import { Tooltip } from "@/components/interactive/tooltip";
 import { Button } from "@/components/primitives/button";
+import { EmptyState } from "@/components/primitives/empty-state";
 import { ExplorerContextMenu } from "@/components/explorer/explorer-context-menu";
 import {
   ExplorerProvider,
@@ -24,10 +24,12 @@ import {
   useTreeToggleShortcut,
 } from "@/components/explorer/tree-visibility";
 import { DockedTerminalColumn, TERMINAL_TOGGLE_SHORTCUT } from "@/components/terminal/docked-terminal-column";
+import { useOpenTerminal } from "@/components/terminal/use-open-terminal";
 import { FilePane } from "@/components/viewer/file-pane";
 import type { UserRole } from "@/lib/auth/policy";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import type { StorageSummary } from "@/lib/api-types";
+import { readBaseName } from "@/lib/client/query-keys";
 import { buildStorageHref } from "@/lib/client/routes";
 import { formatShortcut, isCommandShortcut } from "@/lib/client/shortcuts";
 import {
@@ -39,6 +41,7 @@ import {
   useTerminalDockState,
   useTerminals,
 } from "@/lib/client/terminals";
+import { mergeClassNames } from "@/utilities/merge-class-names";
 
 /** `localStorage` key of the tree/pane/terminal split. */
 export const SPLIT_STORAGE_KEY = "cmm.split";
@@ -281,38 +284,149 @@ function SplitView() {
   );
 }
 
-function StackedView() {
-  const [isTreeOpen, setIsTreeOpen] = useState(false);
-  const toggleTree = useCallback(() => setIsTreeOpen((wasOpen) => !wasOpen), []);
-  useTreeToggleShortcut(toggleTree);
+type StackedViewName = "files" | "pane" | "terminal";
+
+function StackedViewTab({
+  view,
+  currentView,
+  onSelect,
+  icon: TabIcon,
+  label,
+  badge,
+}: {
+  view: StackedViewName;
+  currentView: StackedViewName;
+  onSelect: (view: StackedViewName) => void;
+  icon: LucideIcon;
+  label: string;
+  badge?: ReactNode;
+}) {
+  const isCurrent = view === currentView;
   return (
-    <TreeVisibilityContext.Provider value={{ isTreeHidden: !isTreeOpen, toggleTree }}>
-      <div className="flex h-full min-h-0 flex-col">
-        <div className="border-b border-line/60 p-2">
-          <Button
-            variant="outline-secondary"
-            size="small"
-            onClick={() => setIsTreeOpen(true)}
-            leadingIcon={<FolderTree className="mr-1.5 h-4 w-4" />}
-          >
-            Files
-          </Button>
+    <button
+      type="button"
+      role="tab"
+      aria-selected={isCurrent}
+      onClick={() => onSelect(view)}
+      data-testid={`stacked-tab-${view}`}
+      className={mergeClassNames(
+        "relative flex min-w-0 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-foreground-muted transition-colors",
+        isCurrent ? "bg-surface-strong font-medium text-brand" : "hover:text-foreground",
+      )}
+    >
+      <TabIcon className="h-4 w-4 flex-none stroke-[1.5]" />
+      <span className="truncate">{label}</span>
+      {badge}
+    </button>
+  );
+}
+
+/** The Terminal view when no terminal is open yet: open one in the selected folder. */
+function NoTerminal() {
+  const explorer = useExplorer();
+  const terminal = useOpenTerminal();
+  const folderPath = explorer.readTargetFolder(explorer.selectedPath);
+  return (
+    <EmptyState
+      className="m-auto p-6"
+      title="No terminal open"
+      description={terminal.disabledReason ?? "Open one in the selected folder."}
+      action={
+        <Button
+          variant="outline-primary"
+          size="small"
+          disabled={terminal.disabledReason !== undefined}
+          onClick={() => terminal.open(explorer.storage.id, folderPath)}
+          leadingIcon={<SquareTerminal className="mr-1.5 h-4 w-4" />}
+          data-testid="stacked-open-terminal"
+        >
+          Open terminal here
+        </Button>
+      }
+    />
+  );
+}
+
+/**
+ * Phones: one view at a time, picked from a switch at the top: the file tree, the file pane
+ * (viewer or editor) and the terminals. Opening a file shows it, opening a terminal shows it. Every
+ * terminal is docked into the Terminal view, so none floats over the editor; all three stay
+ * mounted, keeping the tree's state and the terminals' screens while another view is shown.
+ */
+function StackedView() {
+  const explorer = useExplorer();
+  const { selectedPath, historyPath, findEntry } = explorer;
+  const [view, setView] = useState<StackedViewName>(() => (selectedPath === "" ? "files" : "pane"));
+  const toggleTree = useCallback(() => setView((current) => (current === "files" ? "pane" : "files")), []);
+  useTreeToggleShortcut(toggleTree);
+  const terminal = useOpenTerminal();
+  const { data } = useTerminals();
+  const dockState = useTerminalDockState();
+  const terminals = useMemo(() => (data?.available ? data.terminals : []), [data]);
+  useEffect(() => registerDockColumn(), []);
+
+  // Every terminal goes to the Terminal view; a new one is shown at once.
+  const knownTerminalIdsRef = useRef<Set<string> | undefined>(undefined);
+  useEffect(() => {
+    for (const openTerminal of terminals) {
+      if (!isDockedPanel(dockState, openTerminal.id)) dockTerminal(openTerminal.id);
+    }
+    const currentIds = new Set(terminals.map((openTerminal) => openTerminal.id));
+    const knownIds = knownTerminalIdsRef.current;
+    if (data && knownIds && [...currentIds].some((id) => !knownIds.has(id))) setView("terminal");
+    if (data) knownTerminalIdsRef.current = currentIds;
+  }, [data, dockState, terminals]);
+
+  // Opening a file (or an entry's history) shows the file pane; folders stay in the tree.
+  const selectedType = findEntry(selectedPath)?.type;
+  const selection = `${selectedPath}|${historyPath ?? ""}`;
+  const [shownSelection, setShownSelection] = useState(selection);
+  if (selection !== shownSelection) {
+    setShownSelection(selection);
+    if (selectedType === "file" || historyPath === selectedPath) setView("pane");
+  }
+
+  const docked = terminals.filter((openTerminal) => isDockedPanel(dockState, openTerminal.id));
+  const hasUnread =
+    view !== "terminal" && docked.some((openTerminal) => readPanelLayout(dockState, openTerminal.id).hasUnread);
+  const paneLabel = selectedType === "file" ? readBaseName(selectedPath) : "Details";
+  const isTerminalOffered = terminal.isOffered || terminals.length > 0;
+  return (
+    <TreeVisibilityContext.Provider value={{ isTreeHidden: view !== "files", toggleTree }}>
+      <div className="flex h-full min-h-0 flex-col" data-testid="stacked-view" data-view={view}>
+        <div role="tablist" aria-label="Explorer views" className="flex flex-none gap-1 border-b border-line/60 p-1.5">
+          <StackedViewTab view="files" currentView={view} onSelect={setView} icon={FolderTree} label="Files" />
+          <StackedViewTab view="pane" currentView={view} onSelect={setView} icon={FileText} label={paneLabel} />
+          {isTerminalOffered && (
+            <StackedViewTab
+              view="terminal"
+              currentView={view}
+              onSelect={setView}
+              icon={SquareTerminal}
+              label="Terminal"
+              badge={
+                hasUnread && (
+                  <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-accent" aria-label="New output" />
+                )
+              }
+            />
+          )}
         </div>
-        <div className="min-h-0 flex-1">
+        <div className={mergeClassNames("min-h-0 flex-1", view !== "files" && "hidden")} data-testid="tree-panel">
+          <TreeColumn />
+        </div>
+        <div className={mergeClassNames("min-h-0 flex-1", view !== "pane" && "hidden")}>
           <FilePane />
         </div>
-        <Slideover
-          isOpen={isTreeOpen}
-          onOpenChange={setIsTreeOpen}
-          side="left"
-          title="Files"
-          size="small"
-          panelClassName="h-full"
-        >
-          <div className="h-[calc(100dvh-4rem)]">
-            <TreeColumn />
+        {isTerminalOffered && (
+          <div className={mergeClassNames("flex min-h-0 flex-1 flex-col", view !== "terminal" && "hidden")}>
+            {docked.length > 0 ? (
+              <DockedTerminalColumn terminals={docked} isFolded={view !== "terminal"} isFullWidth />
+            ) : (
+              <NoTerminal />
+            )}
           </div>
-        </Slideover>
+        )}
       </div>
     </TreeVisibilityContext.Provider>
   );
@@ -324,8 +438,8 @@ function StackedView() {
  * (tree 24% by default, 16–45%) remembered in `localStorage` under `cmm.split`. The tree can be
  * hidden to give the file pane the whole width (its toolbar button, dragging the split to the
  * left, or ⌘\); a slim rail brings it back. Docked terminals get a third column on the right
- * (resizable, folded to a rail with ⌘J or by dragging the divider). Narrow screens stack them, with
- * the tree in a "Files" drawer and terminals floating. The URL path is the selected entry.
+ * (resizable, folded to a rail with ⌘J or by dragging the divider). Narrow screens show one at a
+ * time (Files, the file pane, Terminal) with a switch at the top. The URL path is the selected entry.
  *
  * @example
  * <ExplorerWorkspace storage={storage} mode="server" initialPath="notes" />
@@ -362,7 +476,11 @@ export function ExplorerWorkspace({
       initialChanges={initialChanges}
     >
       <h1 className="sr-only">{memoryRoot?.memory.name ?? storage.label}</h1>
-      <div className="box h-[calc(100dvh-9rem)] min-h-[420px] overflow-hidden" data-testid="explorer" data-full-width>
+      <div
+        className="box h-[calc(100dvh-12rem)] min-h-[420px] overflow-hidden md:h-[calc(100dvh-9rem)]"
+        data-testid="explorer"
+        data-full-width
+      >
         {isClient ? isNarrow ? <StackedView /> : <SplitView /> : null}
       </div>
       <ExplorerContextMenu />
