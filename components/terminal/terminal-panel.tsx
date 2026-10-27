@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronUp, Minus, RotateCcw, SquareTerminal, X } from "lucide-react";
+import { ChevronUp, Minus, PanelRight, RotateCcw, SquareTerminal, X } from "lucide-react";
 import { useState, type PointerEvent as ReactPointerEvent } from "react";
 import { ConfirmDialog } from "@/components/interactive/confirm-dialog";
 import { TerminalView, type TerminalConnection } from "@/components/terminal/terminal-view";
@@ -47,7 +47,8 @@ function HeaderButton({ label, onClick, children }: { label: string; onClick: ()
 
 /**
  * One terminal in the dock, like a chat window: a title bar (the memory or folder, its storage,
- * whether the shell ended) with Restart, Minimize and Close, and the terminal below it. Drag the top
+ * whether the shell ended) with Restart, Dock beside the editor (explorer pages), Minimize and Close,
+ * and the terminal below it. Drag the top
  * edge, the left edge or the top-left corner to resize it; the size is remembered. Minimized it is
  * just the title bar, marked when new output arrives; click it to open it again. Closing a running
  * terminal asks first, since whatever runs in it stops.
@@ -64,6 +65,7 @@ export function TerminalPanel({
   onFocus,
   onClose,
   onRestart,
+  onDock,
   onDisconnect,
 }: {
   terminal: TerminalSummary;
@@ -77,6 +79,8 @@ export function TerminalPanel({
   onFocus: () => void;
   onClose: () => void;
   onRestart: () => void;
+  /** Docks it beside the editor; undefined where there is no column to dock into. */
+  onDock?: () => void;
   onDisconnect: () => void;
 }) {
   const [connection, setConnection] = useState<TerminalConnection>("connecting");
@@ -198,6 +202,11 @@ export function TerminalPanel({
         {hasExited && (
           <HeaderButton label="Restart in the same folder" onClick={onRestart}>
             <RotateCcw className="h-3.5 w-3.5" />
+          </HeaderButton>
+        )}
+        {onDock && (
+          <HeaderButton label="Dock beside the editor" onClick={onDock}>
+            <PanelRight className="h-4 w-4" />
           </HeaderButton>
         )}
         {isCollapsed ? (

@@ -8,8 +8,11 @@ import { TERMINAL_MINIMIZED_WIDTH, TerminalPanel } from "@/components/terminal/t
 import type { TerminalSummary } from "@/lib/api-types";
 import {
   bringPanelToFront,
+  dockTerminal,
+  isDockedPanel,
   prunePanels,
   readPanelLayout,
+  useIsDockColumnShown,
   useTerminalDockState,
   useTerminalMutations,
   useTerminals,
@@ -70,7 +73,9 @@ function placePanels(
  * The terminals, pinned along the bottom of every signed-in page like chat windows: each can be
  * minimized to its title bar, opened again, resized, and closed, and several can be open at once.
  * Terminals keep running on the server while their panels are minimized or the page reloads. It
- * shows nothing for users who can't open terminals.
+ * shows nothing for users who can't open terminals. On explorer pages a panel can be docked beside
+ * the editor (`DockedTerminalColumn`); docked terminals leave the dock there, and wait in it as
+ * title bars on other pages.
  *
  * @example
  * <TerminalDock />
@@ -79,15 +84,19 @@ export function TerminalDock() {
   const { data, refetch } = useTerminals();
   const dockState = useTerminalDockState();
   const { openTerminal, closeTerminal } = useTerminalMutations();
+  const isDockColumnShown = useIsDockColumnShown();
   const windowWidth = useSyncExternalStore(
     subscribeToWindowWidth,
     () => window.innerWidth,
     () => 0,
   );
-  const terminals = data?.available ? data.terminals : [];
+  const allTerminals = data?.available ? data.terminals : [];
+  const terminals = isDockColumnShown
+    ? allTerminals.filter((terminal) => !isDockedPanel(dockState, terminal.id))
+    : allTerminals;
 
   // Panels of terminals that are gone (closed in another tab, or CMM restarted) are forgotten.
-  const terminalIdsKey = data ? terminals.map((terminal) => terminal.id).join(",") : undefined;
+  const terminalIdsKey = data ? allTerminals.map((terminal) => terminal.id).join(",") : undefined;
   useEffect(() => {
     if (terminalIdsKey !== undefined) prunePanels(new Set(terminalIdsKey.split(",").filter(Boolean)));
   }, [terminalIdsKey]);
@@ -127,6 +136,7 @@ export function TerminalDock() {
             })
           }
           onRestart={() => restart(terminal)}
+          onDock={isDockColumnShown ? () => dockTerminal(terminal.id) : undefined}
           onDisconnect={() => void refetch()}
         />
       ))}
