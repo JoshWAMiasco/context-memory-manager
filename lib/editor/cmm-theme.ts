@@ -1,6 +1,7 @@
 /*
- * The CodeMirror look, built from the theme's CSS variables so the editor, the
- * viewer and the merge view match the rest of the app. The app is dark-only.
+ * The CodeMirror look, built from the theme's CSS variables so the editor, the viewer and the
+ * merge view match the rest of the app, in Dark and Light alike (the variables change, this
+ * doesn't).
  */
 import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { EditorView } from "@codemirror/view";

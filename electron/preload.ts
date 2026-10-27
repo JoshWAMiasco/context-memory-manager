@@ -1,6 +1,6 @@
 /*
  * The desktop window's preload. Runs sandboxed with context isolation and exposes only
- * `window.cmmDesktop`: platform facts, four calls that go to the main process through
+ * `window.cmmDesktop`: platform facts, calls that go to the main process through
  * `ipcRenderer.invoke` (with their arguments checked here first), and the local path of a dropped file.
  */
 import { contextBridge, ipcRenderer, webUtils } from "electron";
@@ -31,6 +31,10 @@ const bridge: CmmDesktopBridge = {
   openExternal: async (url) => {
     if (!isExternalLink(url)) return false;
     return (await ipcRenderer.invoke(DESKTOP_CHANNELS.openExternal, url)) === true;
+  },
+  setTheme: (theme) => {
+    if (theme === "dark" || theme === "light" || theme === "system")
+      void ipcRenderer.invoke(DESKTOP_CHANNELS.setTheme, theme);
   },
   getPathForFile: (file) => {
     if (!(file instanceof File)) return null;

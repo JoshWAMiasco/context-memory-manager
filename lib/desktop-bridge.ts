@@ -20,6 +20,8 @@ export interface CmmDesktopBridge {
   openExternal: (url: string) => Promise<boolean>;
   /** The local path of a file or folder dropped from the OS; null for one that has none (dragged from a web page). */
   getPathForFile: (file: File) => string | null;
+  /** Follows the user's theme: the window's background, native dialogs, and the next launch's splash. */
+  setTheme: (theme: "dark" | "light" | "system") => void;
 }
 
 /** IPC channel names, `ipcRenderer.invoke` ↔ `ipcMain.handle`. */
@@ -28,6 +30,7 @@ export const DESKTOP_CHANNELS = {
   revealPath: "cmm:reveal-path",
   openFolder: "cmm:open-folder",
   openExternal: "cmm:open-external",
+  setTheme: "cmm:set-theme",
 } as const;
 
 /** Longest path the bridge passes on; longer arguments are rejected before they reach the main process. */

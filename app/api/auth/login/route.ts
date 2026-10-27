@@ -6,6 +6,7 @@ import { verifyAgainstDecoy, verifyPassword } from "@/server/auth/password";
 import { buildSessionCookie, createSession } from "@/server/auth/session";
 import { findUserByUsername, recordLogin } from "@/server/auth/users";
 import { invalidCredentials } from "@/server/http/api-error";
+import { buildThemeCookie } from "@/lib/theme";
 import { getRateLimiter } from "@/server/security/rate-limit";
 
 const loginBodySchema = z.object({
@@ -31,6 +32,8 @@ export const POST = withApi(
     recordLogin(user.id);
     const response = NextResponse.json({ user: toAuthUser(user) });
     response.cookies.set(buildSessionCookie(token, client.isSecure));
+    // The page is rendered in the user's theme from now on, in this browser too.
+    response.cookies.set(buildThemeCookie(user.theme, client.isSecure));
     return response;
   },
   { auth: false, body: loginBodySchema },

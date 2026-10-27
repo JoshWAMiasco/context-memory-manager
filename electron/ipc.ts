@@ -6,6 +6,7 @@
 import { access, stat } from "node:fs/promises";
 import { BrowserWindow, dialog, ipcMain, shell, type IpcMainInvokeEvent } from "electron";
 import { DESKTOP_CHANNELS, isBridgePath, isExternalLink } from "@/lib/desktop-bridge";
+import { isThemePreference, type ThemePreference } from "@/lib/theme";
 import { describeExternalLink } from "./navigation";
 
 /**
@@ -35,12 +36,16 @@ export async function confirmAndOpenExternal(parentWindow: BrowserWindow | null,
 
 /**
  * Registers the bridge's handlers. `readAppOrigin` gives the current `http://127.0.0.1:<port>`
- * (it changes when the server restarts); calls from any other page are refused.
+ * (it changes when the server restarts); calls from any other page are refused. `onSetTheme`
+ * applies and remembers the user's theme.
  *
  * @example
- * registerDesktopIpc(() => currentOrigin);
+ * registerDesktopIpc(() => currentOrigin, { onSetTheme: applyTheme });
  */
-export function registerDesktopIpc(readAppOrigin: () => string | undefined): void {
+export function registerDesktopIpc(
+  readAppOrigin: () => string | undefined,
+  { onSetTheme }: { onSetTheme: (theme: ThemePreference) => void },
+): void {
   const assertAppSender = (event: IpcMainInvokeEvent) => {
     const senderUrl = event.senderFrame?.url ?? "";
     let senderOrigin: string | undefined;
@@ -89,6 +94,11 @@ export function registerDesktopIpc(readAppOrigin: () => string | undefined): voi
     if (!isFolder) return false;
     // Resolves to an error message, empty on success (Finder, Explorer, or xdg-open's file manager).
     return (await shell.openPath(absolutePath)) === "";
+  });
+
+  ipcMain.handle(DESKTOP_CHANNELS.setTheme, (event, theme: unknown) => {
+    assertAppSender(event);
+    if (isThemePreference(theme)) onSetTheme(theme);
   });
 
   ipcMain.handle(DESKTOP_CHANNELS.openExternal, async (event, url: unknown) => {

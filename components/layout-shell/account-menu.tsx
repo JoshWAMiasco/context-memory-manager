@@ -3,6 +3,7 @@
 import { KeyRound, Lock, Power, Settings } from "lucide-react";
 import { useLockAllEncryptedFolders } from "@/components/encryption/unlocked-folders-button";
 import { DropdownMenu, DropdownMenuDivider, DropdownMenuItem } from "@/components/interactive/dropdown-menu";
+import { ThemeSwitch } from "@/components/layout-shell/theme-switch";
 import { requestJson } from "@/lib/client/api";
 import { useEncryptedFolders } from "@/lib/client/encryption";
 import {
@@ -44,7 +45,8 @@ async function signOut() {
 }
 
 /**
- * The avatar menu at the right of the top bar: the signed-in username and role, Settings, Lock now,
+ * The avatar menu at the right of the top bar: the signed-in username and role, the theme (Dark,
+ * Light or System), Settings, Lock now,
  * "Lock all encrypted folders" while any is unlocked, and Sign out. `avatarClassName` styles the round avatar button, which shows the initials.
  *
  * @example
@@ -63,7 +65,7 @@ export function AccountMenu({
   return (
     <DropdownMenu
       className="ml-5"
-      menuClassName="mt-1 w-56"
+      menuClassName="mt-1 w-64"
       triggerClassName={avatarClassName}
       triggerLabel={`Account menu for ${currentAccount.fullName}`}
       trigger={
@@ -78,6 +80,10 @@ export function AccountMenu({
       <div className="px-2 py-1.5">
         <div className="font-medium">{currentAccount.fullName}</div>
         <div className="mt-0.5 text-xs text-foreground-muted">{currentAccount.roleLabel}</div>
+      </div>
+      <div className="px-2 pt-1 pb-2">
+        <div className="mb-1.5 text-xs text-foreground-subtle">Theme</div>
+        <ThemeSwitch />
       </div>
       <DropdownMenuDivider className="-mx-2" />
       <DropdownMenuItem href="/settings/security" icon={<Settings className="mr-2 h-4 w-4 stroke-[1]" />}>

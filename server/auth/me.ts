@@ -7,7 +7,13 @@ import { readStepUpMode } from "@/server/security/step-up";
 import { getAutoLockSeconds, getSetting } from "@/server/settings/store";
 
 export function toAuthUser(user: UserRow): AuthUser {
-  return { id: user.id, username: user.username, role: user.role, mustChangePassword: user.mustChangePassword };
+  return {
+    id: user.id,
+    username: user.username,
+    role: user.role,
+    mustChangePassword: user.mustChangePassword,
+    theme: user.theme,
+  };
 }
 
 export function toSessionSummary(session: SessionRow, currentSessionIdHash: string): SessionSummary {

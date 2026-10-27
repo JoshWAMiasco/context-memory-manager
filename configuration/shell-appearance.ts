@@ -1,7 +1,7 @@
 import type { ShellAppearance } from "@/components/layout-shell/shell-appearance";
 
 const BREADCRUMB_SEPARATOR_CLASS_NAMES =
-  "relative ml-5 pl-0.5 before:content-[''] before:w-[14px] before:h-[14px] before:bg-chevron-white before:opacity-50 before:transform before:rotate-[-90deg] before:bg-[length:100%] before:-ml-[1.125rem] before:absolute before:my-auto before:inset-y-0";
+  "relative ml-5 pl-0.5 before:content-[''] before:w-[14px] before:h-[14px] before:bg-chevron-theme before:opacity-50 before:transform before:rotate-[-90deg] before:bg-[length:100%] before:-ml-[1.125rem] before:absolute before:my-auto before:inset-y-0";
 
 /**
  * How CMM's shell looks: no side menu (the drives live on the home page

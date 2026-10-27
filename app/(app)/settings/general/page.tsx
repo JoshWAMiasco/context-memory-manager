@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Badge } from "@/components/primitives/badge";
 import { FormSectionRow } from "@/components/primitives/form-section-row";
 import { SettingsPanel } from "@/components/page-sections/settings/settings-panel";
+import { ThemeSwitch } from "@/components/layout-shell/theme-switch";
 import { SettingNumberPanel } from "@/components/settings/setting-number-panel";
 import { SettingSwitchPanel } from "@/components/settings/setting-switch-panel";
 import { THEME_IDENTITY } from "@/configuration/theme-identity";
@@ -53,6 +54,15 @@ export default async function GeneralSettingsPage() {
         </FormSectionRow>
         <FormSectionRow label="Version" labelWidth="large">
           <ReadOnlyValue>{packageManifest.version}</ReadOnlyValue>
+        </FormSectionRow>
+      </SettingsPanel>
+      <SettingsPanel title="Appearance">
+        <FormSectionRow
+          label="Theme"
+          description="Yours alone: it follows you to every browser and the desktop app. System follows the computer's light or dark appearance."
+          labelWidth="large"
+        >
+          <ThemeSwitch className="max-w-sm" />
         </FormSectionRow>
       </SettingsPanel>
       {authContext.user.role === "admin" && (

@@ -14,6 +14,7 @@ import { buildApplicationMenu } from "./menu";
 import { classifyNavigation, isPermissionAllowed } from "./navigation";
 import { buildServerEnvironment, createLaunchToken, findFreePort, waitForHealth } from "./server-launch";
 import { DesktopServer } from "./server-process";
+import { applyTheme, loadThemePreference, readCanvasColor, saveThemePreference } from "./theme";
 import { MINIMUM_WINDOW_SIZE, readWindowState, writeWindowState } from "./window-state";
 
 // Settings named CCM_… (before the rename to CMM) still apply.
@@ -23,7 +24,6 @@ const PRODUCT_NAME = "CMM";
 const DESKTOP_GUIDE_FILE = "CMM-Desktop-Guide.pdf";
 /** The server's SQLite file in userData (server/db/client.ts); Reset CMM deletes it. */
 const DATABASE_FILE_NAME = "cmm.db";
-const CANVAS_COLOR = "#04101a";
 const isMac = process.platform === "darwin";
 const isDebug = process.env.CMM_DEBUG === "1";
 const launchStartedAt = Date.now();
@@ -56,6 +56,8 @@ app.commandLine.appendSwitch("disable-component-update");
 const userDataDirectory = app.getPath("userData");
 const logsDirectory = path.join(userDataDirectory, "logs");
 const windowStatePath = path.join(userDataDirectory, "window-state.json");
+const themePath = path.join(userDataDirectory, "theme.json");
+applyTheme(loadThemePreference(themePath));
 const mainLog = new RotatingLogFile(path.join(logsDirectory, "main.log"));
 const serverLog = new RotatingLogFile(path.join(logsDirectory, "server.log"));
 
@@ -193,7 +195,7 @@ function guardNavigation(contents: WebContents): void {
       return {
         action: "allow",
         overrideBrowserWindowOptions: {
-          backgroundColor: CANVAS_COLOR,
+          backgroundColor: readCanvasColor(),
           webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, spellcheck: false },
         },
       };
@@ -213,7 +215,7 @@ function createSplashWindow(): BrowserWindow {
     movable: true,
     show: false,
     center: true,
-    backgroundColor: CANVAS_COLOR,
+    backgroundColor: readCanvasColor(),
     title: PRODUCT_NAME,
     webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, spellcheck: false },
   });
@@ -241,7 +243,7 @@ function createMainWindow(origin: string): BrowserWindow {
     minHeight: MINIMUM_WINDOW_SIZE.height,
     show: false,
     title: PRODUCT_NAME,
-    backgroundColor: CANVAS_COLOR,
+    backgroundColor: readCanvasColor(),
     webPreferences: {
       contextIsolation: true,
       sandbox: true,
@@ -357,7 +359,13 @@ async function showStartupError(startupError: unknown): Promise<void> {
 async function launch(): Promise<void> {
   log(`CMM ${app.getVersion()} starting (Electron ${process.versions.electron}, ${process.platform}-${process.arch})`);
   hardenSession();
-  registerDesktopIpc(() => state.origin);
+  registerDesktopIpc(() => state.origin, {
+    onSetTheme: (theme) => {
+      applyTheme(theme);
+      saveThemePreference(themePath, theme);
+      for (const window of BrowserWindow.getAllWindows()) window.setBackgroundColor(readCanvasColor());
+    },
+  });
   Menu.setApplicationMenu(
     Menu.buildFromTemplate(
       buildApplicationMenu({

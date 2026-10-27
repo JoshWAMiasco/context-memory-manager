@@ -5,7 +5,22 @@
  * Use them as Tailwind classes: `bg-surface`, `text-foreground-muted`, `border-line`,
  * `text-on-primary`, `rounded-box`, `shadow-box`, `font-display`. Opacity modifiers work
  * as usual (`bg-primary/20`).
+ *
+ * Two themes: the values in `@theme` are Dark, the default; the `theme-light` block below gives
+ * Light. `<html data-theme>` picks one: "dark", "light", or "system" (follows the computer).
  */
+
+/* Light: `data-theme="light"`, or `"system"` while the computer uses a light appearance. */
+@custom-variant theme-light {
+  &:where([data-theme="light"]) {
+    @slot;
+  }
+  @media (prefers-color-scheme: light) {
+    &:where([data-theme="system"]) {
+      @slot;
+    }
+  }
+}
 @theme static {
   /* Page and panel surfaces, from the page background up to the strongest filled area. */
   --color-canvas: #04101a;
@@ -85,10 +100,84 @@
 }
 
 :root {
+  color-scheme: dark;
+
   /* Theme decorations (see styles/theme-decorations.css). */
   --decoration-aurora-start: rgb(76 201 240 / 0.12);
   --decoration-aurora-end: rgb(179 136 255 / 0.1);
+  --decoration-hero-start: rgb(76 201 240 / 0.2);
+  --decoration-hero-end: rgb(179 136 255 / 0.16);
   --decoration-scanline-color: rgb(76 201 240 / 0.035);
   --decoration-heading-letter-spacing: 0.03em;
   --decoration-text-glow: 0 0 12px rgb(76 201 240 / 0.4);
+
+  /* Images drawn in the theme's text colour (background-image-utilities.css). */
+  --image-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23ffffff95' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  --image-loading-puff: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='25' viewBox='0 0 44 44' %3E%3Cg stroke='white' fill='none' fill-rule='evenodd' stroke-width='4' %3E%3Ccircle cx='22' cy='22' r='1' %3E%3Canimate values='1; 20' attributeName='r' begin='0s' dur='1.8s' calcMode='spline' keyTimes='0; 1' keySplines='0.165, 0.84, 0.44, 1' repeatCount='indefinite' /%3E%3Canimate values='1; 0' attributeName='stroke-opacity' begin='0s' dur='1.8s' calcMode='spline' keyTimes='0; 1' keySplines='0.3, 0.61, 0.355, 1' repeatCount='indefinite' /%3E%3C/circle%3E%3Ccircle cx='22' cy='22' r='1' %3E%3Canimate values='1; 20' attributeName='r' begin='-0.9s' dur='1.8s' calcMode='spline' keyTimes='0; 1' keySplines='0.165, 0.84, 0.44, 1' repeatCount='indefinite' /%3E%3Canimate values='1; 0' attributeName='stroke-opacity' begin='-0.9s' dur='1.8s' calcMode='spline' keyTimes='0; 1' keySplines='0.3, 0.61, 0.355, 1' repeatCount='indefinite' /%3E%3C/circle%3E%3C/g%3E%3C/svg%3E");
+
+  /*
+   * Light: a cool off-white canvas, white panels and navy text, with the same cyan and violet.
+   * Status colours are darker than Dark's, so text in them reads on white (WCAG AA); text on a
+   * coloured fill is white.
+   */
+  @variant theme-light {
+    color-scheme: light;
+
+    --color-canvas: #f2f6f9;
+    --color-surface: #ffffff;
+    --color-surface-subtle: #f6f9fb;
+    --color-surface-muted: #edf2f6;
+    --color-surface-strong: #e2eaf1;
+    --color-surface-heavy: #d2dee8;
+
+    --color-foreground-strong: #0a1826;
+    --color-foreground: #152a3c;
+    --color-foreground-muted: #425b72;
+    --color-foreground-subtle: #4e6680;
+    --color-foreground-faint: #8399ac;
+
+    --color-field: #ffffff;
+
+    --color-line: #d3dee7;
+    --color-line-strong: #b3c4d3;
+
+    --color-on-primary: #ffffff;
+    --color-on-neutral: #eaf6ff;
+
+    --color-brand: #0a6f96;
+    --color-accent: #6d3fd6;
+
+    --color-primary: #0a6f96;
+    --color-secondary: #d3dee7;
+    --color-success: #08744f;
+    --color-info: #2f55c8;
+    --color-warning: #8a5300;
+    --color-pending: #a8480c;
+    --color-danger: #c42744;
+    --color-light: #e2eaf1;
+    --color-dark: #0f2233;
+
+    --shadow-2xs: 0 1px 0 rgb(15 34 51 / 0.06);
+    --shadow-xs: 0 1px 2px rgb(15 34 51 / 0.08);
+    --shadow-sm: 0 1px 3px rgb(15 34 51 / 0.1);
+    --shadow-md: 0 6px 14px -4px rgb(15 34 51 / 0.12);
+    --shadow-lg: 0 12px 24px -8px rgb(15 34 51 / 0.14);
+    --shadow-xl: 0 20px 36px -12px rgb(15 34 51 / 0.16);
+    --shadow-2xl: 0 28px 56px -16px rgb(15 34 51 / 0.18);
+    --shadow-box: 0 10px 28px -18px rgb(15 34 51 / 0.28), inset 0 1px 0 rgb(255 255 255 / 0.6);
+    --shadow-overlay: 0 16px 40px -12px rgb(15 34 51 / 0.24), 0 0 0 1px rgb(10 111 150 / 0.14);
+    --shadow-glow: 0 0 10px rgb(10 111 150 / 0.18);
+    --shadow-glow-accent: 0 0 10px rgb(109 63 214 / 0.18);
+
+    /* The cold glow and data lines are Dark's; on white they are only a hint. */
+    --decoration-aurora-start: rgb(10 111 150 / 0.06);
+    --decoration-aurora-end: rgb(109 63 214 / 0.05);
+    --decoration-hero-start: rgb(10 111 150 / 0.1);
+    --decoration-hero-end: rgb(109 63 214 / 0.08);
+    --decoration-scanline-color: rgb(10 111 150 / 0.025);
+    --decoration-text-glow: none;
+
+    --image-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2300000095' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    --image-loading-puff: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='25' viewBox='0 0 44 44' %3E%3Cg stroke='%230a6f96' fill='none' fill-rule='evenodd' stroke-width='4' %3E%3Ccircle cx='22' cy='22' r='1' %3E%3Canimate values='1; 20' attributeName='r' begin='0s' dur='1.8s' calcMode='spline' keyTimes='0; 1' keySplines='0.165, 0.84, 0.44, 1' repeatCount='indefinite' /%3E%3Canimate values='1; 0' attributeName='stroke-opacity' begin='0s' dur='1.8s' calcMode='spline' keyTimes='0; 1' keySplines='0.3, 0.61, 0.355, 1' repeatCount='indefinite' /%3E%3C/circle%3E%3Ccircle cx='22' cy='22' r='1' %3E%3Canimate values='1; 20' attributeName='r' begin='-0.9s' dur='1.8s' calcMode='spline' keyTimes='0; 1' keySplines='0.165, 0.84, 0.44, 1' repeatCount='indefinite' /%3E%3Canimate values='1; 0' attributeName='stroke-opacity' begin='-0.9s' dur='1.8s' calcMode='spline' keyTimes='0; 1' keySplines='0.3, 0.61, 0.355, 1' repeatCount='indefinite' /%3E%3C/circle%3E%3C/g%3E%3C/svg%3E");
+  }
 }

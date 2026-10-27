@@ -1,7 +1,7 @@
 /*
  * CMM's decorations: a cold aurora over the deep-navy backdrop, faint horizontal data lines,
- * frosted floating panels and a soft cyan glow on primary actions. Values come from the
- * decoration variables in styles/design-tokens.css.
+ * frosted floating panels and a soft cyan glow on primary actions (much fainter in Light). Values
+ * come from the decoration variables in styles/design-tokens.css.
  */
 @utility decoration-grid-backdrop {
   &::before {
@@ -20,8 +20,8 @@
 @utility decoration-hero-backdrop {
   background-color: var(--color-canvas);
   background-image:
-    radial-gradient(ellipse at 75% 15%, rgb(76 201 240 / 0.2), transparent 50%),
-    radial-gradient(ellipse at 10% 95%, rgb(179 136 255 / 0.16), transparent 45%),
+    radial-gradient(ellipse at 75% 15%, var(--decoration-hero-start), transparent 50%),
+    radial-gradient(ellipse at 10% 95%, var(--decoration-hero-end), transparent 45%),
     repeating-linear-gradient(to bottom, var(--decoration-scanline-color) 0 1px, transparent 1px 6px);
 }
 

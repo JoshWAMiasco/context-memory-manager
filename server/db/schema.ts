@@ -17,6 +17,8 @@ export const users = sqliteTable("users", {
   role: text("role", { enum: ["admin", "editor", "viewer"] }).notNull(),
   disabled: integer("disabled", { mode: "boolean" }).notNull().default(false),
   mustChangePassword: integer("must_change_password", { mode: "boolean" }).notNull().default(false),
+  /** Light, Dark or System (follow the computer); each user's own. */
+  theme: text("theme", { enum: ["dark", "light", "system"] }).notNull().default("dark"),
   createdAt: createdAtColumn(),
   lastLoginAt: integer("last_login_at", { mode: "timestamp_ms" }),
 });

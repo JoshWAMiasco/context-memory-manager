@@ -74,6 +74,8 @@ export interface AuthUser {
   username: string;
   role: "admin" | "editor" | "viewer";
   mustChangePassword: boolean;
+  /** The user's colour theme: dark, light, or system (follow the computer). */
+  theme: "dark" | "light" | "system";
 }
 
 export interface StepUpStatus {

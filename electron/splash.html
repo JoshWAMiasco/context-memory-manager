@@ -42,6 +42,20 @@
         color: #9ab8cf;
         font-size: 13px;
       }
+      /* The light theme (nativeTheme follows the user's choice from the last launch). */
+      @media (prefers-color-scheme: light) {
+        body {
+          background: #f2f6f9;
+          color: #152a3c;
+          border-color: #d3dee7;
+        }
+        h1 {
+          color: #0a6f96;
+        }
+        p {
+          color: #425b72;
+        }
+      }
       .dots::after {
         display: inline-block;
         width: 1em;

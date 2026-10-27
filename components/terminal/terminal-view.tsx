@@ -9,6 +9,7 @@ import { showToastNotification } from "@/components/interactive/toast-notificati
 import { readDesktopBridge } from "@/lib/client/desktop";
 import { ENTRY_DRAG_TYPE, readDraggedEntries } from "@/lib/client/entry-drag";
 import { requestDroppedPathText } from "@/lib/client/terminals";
+import { resolvedTheme } from "@/lib/client/theme";
 import {
   buildTerminalSocketPath,
   formatDroppedPaths,
@@ -24,11 +25,46 @@ export type TerminalConnection = "connecting" | "connected" | "disconnected";
 /** Waits before reconnecting a dropped socket: quickly at first, then every 5 seconds. */
 const RECONNECT_DELAYS_MILLISECONDS = [500, 1000, 2000, 5000];
 
-/** The terminal's colours, from the theme's tokens, so it matches the rest of CMM. */
-function readTerminalTheme(): NonNullable<ConstructorParameters<typeof Terminal>[0]>["theme"] {
+type TerminalTheme = NonNullable<ConstructorParameters<typeof Terminal>[0]>["theme"];
+
+/**
+ * The ANSI colours on Light: darker than the theme's tokens for the dark colours, so yellow and
+ * the "white" programs use for plain text stay readable on a white background.
+ */
+const LIGHT_ANSI_COLORS: TerminalTheme = {
+  black: "#1d2b38",
+  red: "#c42744",
+  green: "#08744f",
+  yellow: "#8a5300",
+  blue: "#2f55c8",
+  magenta: "#6d3fd6",
+  cyan: "#0a6f96",
+  white: "#5d7082",
+  brightBlack: "#4e6680",
+  brightRed: "#a81f3a",
+  brightGreen: "#065f41",
+  brightYellow: "#6f4300",
+  brightBlue: "#2445a8",
+  brightMagenta: "#5a2fbf",
+  brightCyan: "#075a7a",
+  brightWhite: "#0a1826",
+};
+
+/** The terminal's colours, from the theme's tokens, so it matches the rest of CMM in Dark and Light. */
+function readTerminalTheme(): TerminalTheme {
   const styles = getComputedStyle(document.documentElement);
   const token = (name: string, fallback: string) => styles.getPropertyValue(name).trim() || fallback;
   const foreground = token("--color-foreground", "#d8f1ff");
+  if (resolvedTheme.read() === "light") {
+    return {
+      ...LIGHT_ANSI_COLORS,
+      background: token("--color-field", "#ffffff"),
+      foreground,
+      cursor: token("--color-brand", "#0a6f96"),
+      cursorAccent: token("--color-field", "#ffffff"),
+      selectionBackground: "rgba(10, 111, 150, 0.22)",
+    };
+  }
   return {
     background: token("--color-field", "#061420"),
     foreground,
@@ -188,6 +224,12 @@ export function TerminalView({
       disposers.push(() => resizeObserver.disconnect());
       const inputSubscription = terminal.onData((data) => send({ type: "input", data }));
       disposers.push(() => inputSubscription.dispose());
+      // A theme change (or the computer's, under System) recolours the terminal in place.
+      disposers.push(
+        resolvedTheme.subscribe(() => {
+          terminal.options.theme = readTerminalTheme();
+        }),
+      );
 
       const connect = () => {
         callbacksRef.current.onConnectionChange("connecting");
