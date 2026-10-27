@@ -638,6 +638,10 @@ certificate (renewed weekly), nginx in front of CMM, and Claude Code for the ter
    Add `--storage <path>` for the folders CMM may use, `--no-libreoffice` to leave LibreOffice out, and
    `--no-claude` to leave Claude Code out. If the machine isn't on the tailnet yet, it runs `tailscale up` and prints
    a link to sign it in.
+
+   If another site on the server already uses port 443, give CMM its own port with `--https-port`, for example
+   `--https-port 8443`: CMM is then at `https://<machine>.<tailnet>.ts.net:8443`, and ports 80 and 443 are left
+   alone. `--port` changes CMM's own port on `127.0.0.1` (7420 by default).
 4. Open the address it prints from any device on the tailnet, and finish setup with the setup code.
 
 What it sets up:
@@ -645,12 +649,13 @@ What it sets up:
 | | |
 |---|---|
 | CMM | Listens on `127.0.0.1:7420` only, with `trustedProxies` `["127.0.0.1"]` and `"tls": null`: nginx does HTTPS |
-| nginx | `/etc/nginx/sites-available/cmm`: port 443 (and 80, which redirects), tailnet addresses and the server itself only, no buffering of uploads, downloads or live updates, terminal WebSockets passed through |
+| nginx | `/etc/nginx/sites-available/cmm`: port 443 (and 80, which redirects) or the `--https-port`, tailnet addresses and the server itself only, no buffering of uploads, downloads or live updates, terminal WebSockets passed through |
 | Certificate | `/etc/nginx/tailscale/`, renewed by `/etc/cron.weekly/cmm-tailscale-cert` |
-| Firewall | If `ufw` is on, ports 443 and 80 on `tailscale0` |
+| Firewall | If `ufw` is on, ports 443 and 80 (or the `--https-port`) on `tailscale0` |
 
 The script is safe to run again, for example with a newer package to upgrade. It keeps an nginx site you have
-edited by hand (it only rewrites the one it wrote).
+edited by hand (it only rewrites the one it wrote), so to change the port of such a site, either edit it yourself or
+delete `/etc/nginx/sites-available/cmm` and run the script again with `--https-port`.
 
 > [!NOTE]
 > Every device on the tailnet counts as **remote** (see *Security confirmation behaviour*): Tailscale gives the

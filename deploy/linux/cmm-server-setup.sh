@@ -2,8 +2,9 @@
 # CMM server setup for Ubuntu, in one file: CMM behind nginx, served on your tailnet with a real HTTPS certificate
 # from Tailscale, plus Claude Code for the terminals.
 #
-#   CMM    127.0.0.1:7420, plain HTTP, only reachable through nginx (trustedProxies ["127.0.0.1"])
-#   nginx  :443 (and :80 -> https) for https://<machine>.<tailnet>.ts.net, tailnet and loopback only
+#   CMM    127.0.0.1:7420 (--port), plain HTTP, only reachable through nginx (trustedProxies ["127.0.0.1"])
+#   nginx  :443 (--https-port; :80 redirects when it is 443) for https://<machine>.<tailnet>.ts.net,
+#          tailnet and loopback only
 #
 # Fast way: copy this script and a CMM server package (cmm-server-<version>-linux-<arch>.tar.gz, plus its .sha256)
 # to the new server and run:
@@ -21,6 +22,9 @@
 #   --storage <path>     a folder CMM may use; repeat for more (default on a fresh install: /srv/cmm)
 #   --no-libreoffice     skip LibreOffice (previews of .pptx, .doc, .xls, .odt, .rtf; several hundred MB)
 #   --no-claude          don't install Claude Code for the cmm user
+#   --https-port <n>     the port nginx serves CMM on (default 443). Any other port leaves 80 and 443 alone,
+#                        for example for another site on the same server, and the address becomes host:<n>
+#   --port <n>           CMM's own port on 127.0.0.1 (default 7420, or the one already in /etc/cmm/config.json)
 #   --yes, -y            don't ask before starting
 #
 # Safe to run again: it upgrades or repairs CMM and rewrites the nginx site it wrote (a site you edited is kept).
@@ -34,6 +38,8 @@ STORAGES=()
 WITH_LIBREOFFICE=1
 WITH_CLAUDE=1
 ASSUME_YES=0
+HTTPS_PORT=443
+CMM_PORT=""
 
 say() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 die() { printf '\ncmm-setup: %s\n' "$*" >&2; exit 1; }
@@ -46,11 +52,18 @@ while [ $# -gt 0 ]; do
     --storage) STORAGES+=("${2:?--storage needs a path}"); shift 2 ;;
     --no-libreoffice) WITH_LIBREOFFICE=0; shift ;;
     --no-claude) WITH_CLAUDE=0; shift ;;
+    --https-port) HTTPS_PORT="${2:?--https-port needs a number}"; shift 2 ;;
+    --port) CMM_PORT="${2:?--port needs a number}"; shift 2 ;;
     --yes | -y) ASSUME_YES=1; shift ;;
     --help | -h) awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;;
     *) die "unknown option $1 (see --help)" ;;
   esac
 done
+
+is_port() { case "$1" in "" | *[!0-9]*) return 1 ;; esac; [ "$1" -ge 1 ] && [ "$1" -le 65535 ]; }
+is_port "$HTTPS_PORT" || die "--https-port must be a port number (1-65535), not $HTTPS_PORT"
+[ -z "$CMM_PORT" ] || is_port "$CMM_PORT" || die "--port must be a port number (1-65535), not $CMM_PORT"
+[ -z "$CMM_PORT" ] || [ "$CMM_PORT" != "$HTTPS_PORT" ] || die "--port and --https-port can't be the same port"
 
 # ---------------------------------------------------------------------------------------------------------------
 # 0. Checks
@@ -71,6 +84,7 @@ BUILD_USER="${SUDO_USER:-root}"
 echo "CMM server setup on $(hostname) (${PRETTY_NAME}, $ARCH)"
 echo "  package:      ${PACKAGE:-build from $REPO_URL @ $REF}"
 echo "  storages:     ${STORAGES[*]:-(default /srv/cmm on a fresh install)}"
+echo "  ports:        nginx $HTTPS_PORT$([ "$HTTPS_PORT" = 443 ] && echo " (and 80)"), CMM ${CMM_PORT:-7420 or the configured one}"
 echo "  LibreOffice:  $([ $WITH_LIBREOFFICE = 1 ] && echo yes || echo no)    Claude Code for cmm: $([ $WITH_CLAUDE = 1 ] && echo yes || echo no)"
 if [ $ASSUME_YES = 0 ]; then
   read -r -p "Continue? [y/N] " answer
@@ -160,6 +174,7 @@ PKG_DIR="$(find "$WORK_DIR" -maxdepth 1 -type d -name 'cmm-server-*' | head -1)"
 # 4. Install CMM on 127.0.0.1 and make it trust nginx
 say "Installing CMM"
 INSTALL_ARGS=(--bind 127.0.0.1 --yes)
+if [ -n "$CMM_PORT" ]; then INSTALL_ARGS+=(--port "$CMM_PORT"); fi
 for storage in "${STORAGES[@]}"; do INSTALL_ARGS+=(--storage "$storage"); done
 (cd "$PKG_DIR" && ./install.sh "${INSTALL_ARGS[@]}")
 # nginx does HTTPS, so CMM speaks plain HTTP behind it. Don't run `cmm gen-cert` on this server.
@@ -169,6 +184,9 @@ const c = JSON.parse(fs.readFileSync(f, "utf8"));
 c.bindHost = "127.0.0.1"; c.trustedProxies = ["127.0.0.1"]; c.tls = null;
 fs.writeFileSync(f, JSON.stringify(c, null, 2) + "\n");'
 systemctl restart cmm
+# The port CMM really uses (an existing install keeps its own unless --port was given): nginx must match it.
+CMM_PORT="$(/opt/cmm/current/node/bin/node -e 'console.log(JSON.parse(require("fs").readFileSync("/etc/cmm/config.json", "utf8")).port || 7420)')"
+URL="https://$HOST$([ "$HTTPS_PORT" = 443 ] || echo ":$HTTPS_PORT")"
 
 # ---------------------------------------------------------------------------------------------------------------
 # 5. Tailscale certificate for nginx, renewed weekly
@@ -192,17 +210,29 @@ chmod 0755 /etc/cron.weekly/cmm-tailscale-cert
 # ---------------------------------------------------------------------------------------------------------------
 # 6. nginx site
 say "Configuring nginx"
+ACCESS="allow 100.64.0.0/10; allow fd7a:115c:a1e0::/48; allow 127.0.0.1; allow ::1; deny all;"
 # http2 is its own directive from nginx 1.25.1; older nginx (Ubuntu 24.04 has 1.24) takes it on the listen line.
 NGINX_VERSION="$(nginx -v 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)"
 if [ "$(printf '%s\n1.25.1\n' "$NGINX_VERSION" | sort -V | head -1)" = 1.25.1 ]; then
-  LISTEN_SSL="listen 443 ssl;
-    listen [::]:443 ssl;
+  LISTEN_SSL="listen $HTTPS_PORT ssl;
+    listen [::]:$HTTPS_PORT ssl;
     http2 on;"
 else
-  LISTEN_SSL="listen 443 ssl http2;
-    listen [::]:443 ssl http2;"
+  LISTEN_SSL="listen $HTTPS_PORT ssl http2;
+    listen [::]:$HTTPS_PORT ssl http2;"
 fi
-ACCESS="allow 100.64.0.0/10; allow fd7a:115c:a1e0::/48; allow 127.0.0.1; allow ::1; deny all;"
+# On 443, port 80 redirects to it. On any other port, 80 belongs to someone else.
+REDIRECT_80=""
+if [ "$HTTPS_PORT" = 443 ]; then
+  REDIRECT_80="server {
+    listen 80;
+    listen [::]:80;
+    server_name $HOST;
+    $ACCESS
+    return 301 https://$HOST\$request_uri;
+}
+"
+fi
 rm -f /etc/nginx/sites-enabled/default
 SITE=/etc/nginx/sites-available/cmm
 if [ -f "$SITE" ] && ! grep -q 'written by cmm-server-setup.sh' "$SITE"; then
@@ -210,21 +240,14 @@ if [ -f "$SITE" ] && ! grep -q 'written by cmm-server-setup.sh' "$SITE"; then
   echo "keeping your own $SITE (delete it and run this again to get the default one)"
 else
 cat >"$SITE" <<EOF
-# CMM behind nginx on the tailnet (written by cmm-server-setup.sh). CMM listens on 127.0.0.1:7420
+# CMM behind nginx on the tailnet (written by cmm-server-setup.sh). CMM listens on 127.0.0.1:$CMM_PORT
 # with trustedProxies ["127.0.0.1"].
 map \$http_upgrade \$cmm_connection_upgrade {
     default upgrade;
     ''      close;
 }
 
-server {
-    listen 80;
-    listen [::]:80;
-    server_name $HOST;
-    $ACCESS
-    return 301 https://$HOST\$request_uri;
-}
-
+${REDIRECT_80}
 server {
     $LISTEN_SSL
     server_name $HOST;
@@ -239,7 +262,7 @@ server {
     client_max_body_size 0;
 
     location / {
-        proxy_pass http://127.0.0.1:7420;
+        proxy_pass http://127.0.0.1:$CMM_PORT;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
         # Overwrite, don't append: CMM must see the real client, not whatever the browser sent.
@@ -263,8 +286,8 @@ systemctl enable --now nginx
 systemctl reload nginx
 
 if command -v ufw >/dev/null && ufw status | grep -q "Status: active"; then
-  ufw allow in on tailscale0 to any port 443 proto tcp
-  ufw allow in on tailscale0 to any port 80 proto tcp
+  ufw allow in on tailscale0 to any port "$HTTPS_PORT" proto tcp
+  if [ "$HTTPS_PORT" = 443 ]; then ufw allow in on tailscale0 to any port 80 proto tcp; fi
 fi
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -283,7 +306,7 @@ fi
 # 8. Done
 say "Checking"
 cmm status --wait 30 >/dev/null || true
-HEALTH="$(curl -sS --max-time 10 "https://$HOST/api/health" || true)"
+HEALTH="$(curl -sS --max-time 10 "$URL/api/health" || true)"
 case "$HEALTH" in
   *'"ok":true'*) echo "CMM answers through nginx: $HEALTH" ;;
   *) echo "WARNING: CMM doesn't answer through nginx (got: ${HEALTH:0:120}). Check: sudo cmm logs" ;;
@@ -294,7 +317,7 @@ cat <<EOF
 +------------------------------------------------------------------------------
 | CMM is installed behind nginx on your tailnet.
 |
-| Open from any device on the tailnet:   https://$HOST
+| Open from any device on the tailnet:   $URL
 | Setup code (first page asks for it):   ${SETUP_CODE:-none, setup is already done}
 |
 | Terminals: turn them on in Settings > Security > Terminals.$([ $WITH_CLAUDE = 1 ] && printf '\n|   Then run "claude" in one and sign in once.')
