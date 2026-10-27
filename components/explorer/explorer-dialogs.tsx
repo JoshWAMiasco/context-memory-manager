@@ -9,6 +9,7 @@ import { GitRequiredDialog } from "@/components/versioning/git-required-dialog";
 import { NewMemoryDialog } from "@/components/memory/new-memory-dialog";
 import { useExplorer } from "@/components/explorer/explorer-context";
 import { DeleteConfirmDialog } from "@/components/explorer/dialogs/delete-confirm";
+import { MoveDialog } from "@/components/explorer/dialogs/move-dialog";
 import { NewItemDialog } from "@/components/explorer/dialogs/new-item";
 import { PropertiesDialog } from "@/components/explorer/dialogs/properties";
 import { RenameDialog } from "@/components/explorer/dialogs/rename";
@@ -17,7 +18,7 @@ import { joinEntryPath, readBaseName } from "@/lib/client/query-keys";
 import { announceError } from "@/components/explorer/explorer-context";
 
 /**
- * Renders the explorer dialog that is open, if any: move to Trash, new item, rename, properties,
+ * Renders the explorer dialog that is open, if any: move to Trash, move to a folder, new item, rename, properties,
  * new memory or convert to memory, Folder settings, the Enable encryption wizard, the encrypted
  * download choice and the "this copy will be decrypted" confirmation. Cmd/Ctrl+, opens Folder
  * settings for the selected folder.
@@ -54,6 +55,7 @@ export function ExplorerDialogs() {
       />
     );
   }
+  if (dialog.kind === "move") return <MoveDialog paths={dialog.paths} onClose={close} />;
   if (dialog.kind === "new-item") {
     return (
       <NewItemDialog

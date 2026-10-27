@@ -1,9 +1,10 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
 import type { JobProgress, JobStatus, JobSummary } from "@/lib/api-types";
 import { requestJson } from "@/lib/client/api";
-import { QUERY_KEYS } from "@/lib/client/query-keys";
+import { isInsideFolder, QUERY_KEYS } from "@/lib/client/query-keys";
 
 const ACTIVE_STATUSES: readonly JobStatus[] = ["queued", "running", "paused"];
 
@@ -72,6 +73,46 @@ export function useActiveJobs(): JobSummary[] {
  */
 export function useFolderJob(storageId: string, folderPath: string): JobSummary | undefined {
   return useActiveJobs().find((job) => job.target?.storageId === storageId && job.target.path === folderPath);
+}
+
+/**
+ * The folders of `storageId` that active jobs keep busy (a move's source and destination folders),
+ * as storage-relative paths.
+ *
+ * @example
+ * readBusyFolders(jobs, "home"); // Set { "notes", "" }
+ */
+export function readBusyFolders(jobs: readonly JobSummary[], storageId: string): ReadonlySet<string> {
+  const busyFolders = new Set<string>();
+  for (const job of jobs) {
+    if (!isActiveJob(job)) continue;
+    for (const lock of job.locks ?? []) if (lock.storageId === storageId) busyFolders.add(lock.path);
+  }
+  return busyFolders;
+}
+
+/**
+ * Whether `entryPath` is one of `busyFolders` or inside one, with the reason to show.
+ *
+ * @example
+ * readBusyReason(busyFolders, "notes/today.md"); // "Files are being moved here. Wait for the move to finish."
+ */
+export function readBusyReason(busyFolders: ReadonlySet<string>, entryPath: string): string | undefined {
+  for (const busyFolder of busyFolders) {
+    if (isInsideFolder(entryPath, busyFolder)) return "Files are being moved here. Wait for the move to finish.";
+  }
+  return undefined;
+}
+
+/**
+ * The folders of a storage that running moves keep busy, live from the cached job list.
+ *
+ * @example
+ * const busyFolders = useBusyFolders(storage.id);
+ */
+export function useBusyFolders(storageId: string): ReadonlySet<string> {
+  const { data: jobs } = useJobs();
+  return useMemo(() => readBusyFolders(jobs ?? [], storageId), [jobs, storageId]);
 }
 
 /** Writes a `job.progress` event into the cached job list. */

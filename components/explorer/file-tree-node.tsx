@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, LoaderCircle } from "lucide-react";
 import { useState, type DragEvent, type KeyboardEvent, type MouseEvent } from "react";
 import { FileIcon } from "@/components/explorer/file-icon";
 import { ItemBadges } from "@/components/explorer/item-badges";
@@ -100,6 +100,8 @@ export interface FileTreeNodeProps {
   isDropTarget: boolean;
   isRenaming: boolean;
   isCut: boolean;
+  /** A running move keeps this entry's folder busy: it can't be opened, dragged or dropped on. */
+  isBusy?: boolean;
   onClick: (mouseEvent: MouseEvent<HTMLDivElement>) => void;
   onToggle: () => void;
   onContextMenu: (mouseEvent: MouseEvent<HTMLDivElement>) => void;
@@ -127,6 +129,7 @@ export function FileTreeNode({
   isDropTarget,
   isRenaming,
   isCut,
+  isBusy = false,
   onClick,
   onToggle,
   onContextMenu,
@@ -144,7 +147,10 @@ export function FileTreeNode({
       aria-level={depth + 1}
       aria-expanded={isDirectory ? isExpanded : undefined}
       aria-selected={isSelected}
-      draggable={!isRenaming}
+      aria-disabled={isBusy || undefined}
+      aria-busy={isBusy || undefined}
+      title={isBusy ? "Files are being moved here. Wait for the move to finish." : undefined}
+      draggable={!isRenaming && !isBusy}
       data-testid={`tree-row-${entry.path}`}
       data-path={entry.path}
       onClick={onClick}
@@ -160,6 +166,7 @@ export function FileTreeNode({
         isFocused && "outline outline-1 -outline-offset-1 outline-brand/70",
         isDropTarget && "bg-brand/25 outline outline-1 -outline-offset-1 outline-brand",
         isCut && "opacity-50",
+        isBusy && "cursor-progress opacity-60",
       )}
     >
       {isDirectory ? (
@@ -197,6 +204,13 @@ export function FileTreeNode({
             entry.name
           )}
         </span>
+      )}
+      {isBusy && (
+        <LoaderCircle
+          className="h-3.5 w-3.5 flex-none animate-spin text-brand motion-reduce:animate-none"
+          aria-label="Moving"
+          data-testid="tree-row-busy"
+        />
       )}
       <ItemBadges badges={entry.badges} path={entry.path} />
     </div>

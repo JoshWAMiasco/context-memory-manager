@@ -15,6 +15,7 @@ import {
   type StoragePath,
   type TransferResult,
 } from "@/lib/client/fs";
+import { readBusyReason, useBusyFolders } from "@/lib/client/jobs";
 import { isInsideFolder, joinEntryPath, QUERY_KEYS, readBaseName, readParentPath } from "@/lib/client/query-keys";
 import { buildMemoryHref, buildStorageHref } from "@/lib/client/routes";
 import { protectionReason } from "@/lib/client/protection";
@@ -28,6 +29,7 @@ export type ExplorerDialog =
   | { kind: "delete"; paths: string[] }
   | { kind: "new-item"; type: "file" | "directory"; parentPath: string }
   | { kind: "rename"; path: string }
+  | { kind: "move"; paths: string[] }
   | { kind: "properties"; path: string }
   | { kind: "new-memory"; parentPath: string }
   | { kind: "convert-memory"; path: string }
@@ -109,10 +111,15 @@ export interface ExplorerContextValue {
   /** The folder new items, uploads and pastes go to: the selected folder, or the selected file's folder. */
   readTargetFolder: (entryPath?: string) => string;
   /**
-   * Why nothing can be changed in or at `entryPath` (storage access, or protection from the cached
-   * listing), or undefined when it can. "" is the storage root.
+   * Why nothing can be changed in or at `entryPath` (storage access, a running move that keeps
+   * the folder busy, or protection from the cached listing), or undefined when it can. "" is the
+   * storage root.
    */
   readWriteReason: (entryPath: string) => string | undefined;
+  /** The folders a running move keeps busy (its source and destination folders), storage-relative. */
+  busyFolders: ReadonlySet<string>;
+  /** Why `entryPath` can't be opened right now: it is in a folder a running move keeps busy. */
+  readBusyReason: (entryPath: string) => string | undefined;
   findEntry: (entryPath: string) => FileEntry | undefined;
   /** The selection when it contains `entryPath`, otherwise just `entryPath`. */
   readActionPaths: (entryPath: string) => string[];
@@ -246,6 +253,8 @@ export function ExplorerProvider({
 
   const canWrite = storage.access === "write";
   const readOnlyReason = canWrite ? undefined : (storage.readOnlyReason ?? "You can only view files in this storage.");
+  const busyFolders = useBusyFolders(storage.id);
+  const readEntryBusyReason = useCallback((entryPath: string) => readBusyReason(busyFolders, entryPath), [busyFolders]);
 
   // A memory's own folder isn't in a loaded listing there (its parent isn't shown), so its stat stands in.
   const findEntry = useCallback(
@@ -292,6 +301,8 @@ export function ExplorerProvider({
         confirmLeave(() => router.push(buildStorageHref(storage.id, entryPath)));
         return;
       }
+      // A folder a move is working in stays as it was until the move ends: nothing in it opens.
+      if (entryPath !== selectedPath && readEntryBusyReason(entryPath) !== undefined) return;
       const applySelection = () => {
         setSelection(new Set(entryPath ? [entryPath] : []));
         setAnchorPath(entryPath);
@@ -307,7 +318,7 @@ export function ExplorerProvider({
       if (entryPath === selectedPath) applySelection();
       else confirmLeave(applySelection);
     },
-    [anchorPath, rootPath, router, selectedPath, showInUrl, storage.id],
+    [anchorPath, readEntryBusyReason, rootPath, router, selectedPath, showInUrl, storage.id],
   );
 
   const setExpanded = useCallback((entryPath: string, isExpanded: boolean) => {
@@ -331,8 +342,11 @@ export function ExplorerProvider({
   );
 
   const readWriteReason = useCallback(
-    (entryPath: string) => readOnlyReason ?? (entryPath === "" ? undefined : protectionReason(findEntry(entryPath))),
-    [findEntry, readOnlyReason],
+    (entryPath: string) =>
+      readOnlyReason ??
+      readEntryBusyReason(entryPath) ??
+      (entryPath === "" ? undefined : protectionReason(findEntry(entryPath))),
+    [findEntry, readEntryBusyReason, readOnlyReason],
   );
 
   const readActionPaths = useCallback(
@@ -536,6 +550,8 @@ export function ExplorerProvider({
       openContextMenu: setContextMenu,
       readTargetFolder,
       readWriteReason,
+      busyFolders,
+      readBusyReason: readEntryBusyReason,
       findEntry,
       readActionPaths,
       deletePaths,
@@ -570,6 +586,8 @@ export function ExplorerProvider({
       commitDraft,
       readTargetFolder,
       readWriteReason,
+      busyFolders,
+      readEntryBusyReason,
       findEntry,
       readActionPaths,
       deletePaths,

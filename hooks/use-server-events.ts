@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { showToastNotification } from "@/components/interactive/toast-notification";
 import { useEffect } from "react";
 import { getServerEventsClient, type ServerEventMap, type ServerEventName } from "@/lib/client/events";
-import { applyJobProgress, applyJobState } from "@/lib/client/jobs";
+import { applyJobProgress, applyJobState, isActiveJob } from "@/lib/client/jobs";
 import { QUERY_KEYS, readParentPath } from "@/lib/client/query-keys";
 import { goToSessionPage } from "@/lib/client/session-channel";
 
@@ -72,6 +72,12 @@ export function useServerEventInvalidation(): void {
       eventsClient.on("job.state", ({ job }) => {
         applyJobState(queryClient, job);
         void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.jobs() });
+        // A finished move frees its source and destination folders: show what is there now.
+        if (job.locks && !isActiveJob(job)) {
+          for (const lock of job.locks) {
+            void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.directory(lock.storageId, lock.path) });
+          }
+        }
         if (job.type === "backup.run") {
           void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.backup() });
           // A memory backup makes a memory on its destination.

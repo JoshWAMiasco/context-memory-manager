@@ -53,6 +53,8 @@ export interface JobDefinition<Payload, Checkpoint> {
   describe: (payload: Payload) => string;
   /** The folder the job works on, so the UI can show its progress there (an encrypted folder). */
   readTarget?: (payload: Payload) => JobTarget;
+  /** Folders nothing else should touch while the job runs (a move's source and destination folders). */
+  readLocks?: (payload: Payload) => JobTarget[];
   /** Where a backup reads and writes, for the Backup page's topology. */
   readTransfer?: (payload: Payload) => JobTransfer;
   /** Restart automatically after CMM was stopped mid-run. Off by default: the job waits, paused. */
@@ -65,6 +67,7 @@ interface JobScope {
   volumeKeys: string[];
   title: string;
   target?: JobTarget;
+  locks?: JobTarget[];
   transfer?: JobTransfer;
 }
 
@@ -114,6 +117,7 @@ export function toJobSummary(jobRow: JobRow): JobSummary {
     updatedAt: jobRow.updatedAt.toISOString(),
   };
   if (scope.target) summary.target = scope.target;
+  if (scope.locks && scope.locks.length > 0) summary.locks = scope.locks;
   if (scope.transfer) summary.transfer = scope.transfer;
   if (jobRow.error) summary.error = jobRow.error;
   return summary;
@@ -135,6 +139,7 @@ export class JobQueue {
       volumeKeys: definition.readVolumeKeys(payload),
       title: definition.describe(payload),
       target: definition.readTarget?.(payload),
+      locks: definition.readLocks?.(payload),
       transfer: definition.readTransfer?.(payload),
     };
     const jobRow = getDatabase()

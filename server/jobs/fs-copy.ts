@@ -180,11 +180,39 @@ async function runFileCopy({
   reportProgress({ done: totalBytes, total: totalBytes, unit: "bytes" });
 }
 
+/** The parent folder of a storage-relative path ("" for a top-level entry). */
+function parentOf(relativePath: string): string {
+  const slashIndex = relativePath.lastIndexOf("/");
+  return slashIndex === -1 ? "" : relativePath.slice(0, slashIndex);
+}
+
+/**
+ * The folders a move keeps busy until it ends: each source's folder and the destination, once
+ * each. A copy locks nothing: its sources stay as they are.
+ *
+ * @example
+ * readMoveLocks(payload); // [{ storageId: "home", path: "notes" }, { storageId: "usb", path: "" }]
+ */
+export function readMoveLocks(
+  payload: Pick<FileCopyPayload, "sources" | "destination" | "move">,
+): StoragePathReference[] {
+  if (!payload.move) return [];
+  const locks = new Map<string, StoragePathReference>();
+  for (const folder of [
+    ...payload.sources.map((source) => ({ storageId: source.storageId, path: parentOf(source.path) })),
+    payload.destination,
+  ]) {
+    locks.set(`${folder.storageId}\u0000${folder.path}`, folder);
+  }
+  return [...locks.values()];
+}
+
 export const fileCopyJob: JobDefinition<FileCopyPayload, FileCopyCheckpoint> = {
   run: runFileCopy,
   readVolumeKeys: (payload) => [
     ...new Set([...payload.sources.map((source) => source.storageId), payload.destination.storageId]),
   ],
+  readLocks: readMoveLocks,
   describe: (payload) => {
     const verb = payload.move ? "Move" : "Copy";
     const firstSource = payload.sources[0];

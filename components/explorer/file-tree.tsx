@@ -213,6 +213,7 @@ export function FileTree() {
   };
 
   const handleRowClick = (entry: FileEntry, mouseEvent: MouseEvent<HTMLDivElement>) => {
+    if (explorer.readBusyReason(entry.path) !== undefined) return;
     setFocusedPath(entry.path);
     if (mouseEvent.metaKey || mouseEvent.ctrlKey) explorer.selectPath(entry.path, "toggle", visiblePaths);
     else if (mouseEvent.shiftKey) explorer.selectPath(entry.path, "range", visiblePaths);
@@ -336,6 +337,10 @@ export function FileTree() {
     entry === undefined ? rootPath : entry.type === "directory" ? entry.path : readParentPath(entry.path);
 
   const handleDragStart = (entry: FileEntry, dragEvent: DragEvent<HTMLDivElement>) => {
+    if (explorer.readBusyReason(entry.path) !== undefined) {
+      dragEvent.preventDefault();
+      return;
+    }
     const paths = explorer.readActionPaths(entry.path);
     dragEvent.dataTransfer.setData(
       ENTRY_DRAG_TYPE,
@@ -355,8 +360,12 @@ export function FileTree() {
       dragEvent.dataTransfer.dropEffect = "none";
       return;
     }
-    dragEvent.dataTransfer.dropEffect = isEntries && !dragEvent.altKey ? "move" : "copy";
     const folderPath = readDropFolder(entry);
+    if (explorer.readBusyReason(folderPath) !== undefined) {
+      dragEvent.dataTransfer.dropEffect = "none";
+      return;
+    }
+    dragEvent.dataTransfer.dropEffect = isEntries && !dragEvent.altKey ? "move" : "copy";
     if (dropTargetPath !== folderPath) setDropTargetPath(folderPath);
   };
 
@@ -366,6 +375,11 @@ export function FileTree() {
     setDropTargetPath(undefined);
     if (!canWrite) return;
     const folderPath = readDropFolder(entry);
+    const busyReason = explorer.readBusyReason(folderPath);
+    if (busyReason !== undefined) {
+      showToastNotification({ title: busyReason, tone: "warning" });
+      return;
+    }
     const destination = { storageId: storage.id, path: folderPath };
     const draggedEntries = readDraggedEntries(dragEvent.dataTransfer);
     if (draggedEntries) {
@@ -497,6 +511,7 @@ export function FileTree() {
                     isDropTarget={dropTargetPath !== undefined && dropTargetPath === entry.path}
                     isRenaming={renamingPath === entry.path}
                     isCut={cutPaths.has(entry.path)}
+                    isBusy={explorer.readBusyReason(entry.path) !== undefined}
                     onClick={(mouseEvent) => handleRowClick(entry, mouseEvent)}
                     onToggle={() => explorer.setExpanded(entry.path, !row.isExpanded)}
                     onContextMenu={(mouseEvent) => {

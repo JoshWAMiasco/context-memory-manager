@@ -1,25 +1,13 @@
 "use client";
 
-import {
-  autoUpdate,
-  flip,
-  FloatingFocusManager,
-  FloatingPortal,
-  offset,
-  shift,
-  size,
-  useDismiss,
-  useFloating,
-  useInteractions,
-  useListNavigation,
-  useRole,
-} from "@floating-ui/react";
 import { useRouter } from "next/navigation";
 import {
+  ClipboardCopy,
   ClipboardPaste,
   Copy,
   Download,
   FilePlus,
+  FolderInput,
   FolderOpen,
   FolderOpenDot,
   FolderPlus,
@@ -35,31 +23,27 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-import { useRef, useState, type ComponentType } from "react";
 import { BrainIcon } from "@/components/icons/cmm-icons";
+import { ContextMenu, type ContextMenuAction } from "@/components/interactive/context-menu";
 import { announce, announceError, useExplorer } from "@/components/explorer/explorer-context";
 import { useOpenTerminal } from "@/components/terminal/use-open-terminal";
 import { useMemoryMutations } from "@/lib/client/memory";
 import { useFileClipboard } from "@/lib/client/clipboard";
-import { isDesktopApp, openInFileManager, readFileManagerName, revealInFileManager } from "@/lib/client/desktop";
+import {
+  copyEntryPath,
+  isDesktopApp,
+  openInFileManager,
+  readFileManagerName,
+  revealInFileManager,
+} from "@/lib/client/desktop";
 import { readParentPath } from "@/lib/client/query-keys";
 import { buildMemoryBackupHref, buildMemoryHref } from "@/lib/client/routes";
-import { mergeClassNames } from "@/utilities/merge-class-names";
-
-interface MenuAction {
-  key: string;
-  label: string;
-  icon: ComponentType<{ className?: string }>;
-  onSelect: () => void;
-  disabledReason?: string;
-  tone?: "danger";
-  dividerBefore?: boolean;
-}
 
 /**
- * The right-click menu of the tree, positioned at the pointer with Floating UI. Actions
- * the user can't take are disabled with the reason in a tooltip; arrow keys move between items and
- * Escape closes it.
+ * The right-click menu of the tree: open, new items, rename, copy, cut, move to a folder,
+ * paste, trash, upload, download, backup, terminal, the file manager and the full path (desktop
+ * app), memory conversion, folder settings and properties. Actions the user can't take are
+ * disabled with the reason in a tooltip.
  *
  * @example
  * <ExplorerContextMenu />
@@ -77,38 +61,6 @@ export function ExplorerContextMenu() {
   const clipboard = useFileClipboard();
   const terminal = useOpenTerminal();
   const { contextMenu, canWrite, readOnlyReason } = explorer;
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const listRef = useRef<(HTMLElement | null)[]>([]);
-  const isOpen = contextMenu !== undefined;
-  const [floatingElement, setFloatingElement] = useState<HTMLDivElement | null>(null);
-  const [anchorElement, setAnchorElement] = useState<HTMLSpanElement | null>(null);
-  const { floatingStyles, context } = useFloating({
-    elements: { reference: anchorElement, floating: floatingElement },
-    open: isOpen,
-    onOpenChange: (nextIsOpen) => {
-      if (!nextIsOpen) explorer.openContextMenu(undefined);
-    },
-    placement: "bottom-start",
-    strategy: "fixed",
-    middleware: [
-      offset({ mainAxis: 2, alignmentAxis: 2 }),
-      flip({ padding: 8 }),
-      shift({ padding: 8 }),
-      // At most as tall as the room left on screen; the rest scrolls (scrollbar-visible).
-      size({
-        padding: 8,
-        apply({ availableHeight, elements }) {
-          elements.floating.style.maxHeight = `${Math.max(120, Math.floor(availableHeight))}px`;
-        },
-      }),
-    ],
-    whileElementsMounted: autoUpdate,
-  });
-  const { getFloatingProps, getItemProps } = useInteractions([
-    useDismiss(context),
-    useRole(context, { role: "menu" }),
-    useListNavigation(context, { listRef, activeIndex, onNavigate: setActiveIndex, loop: true }),
-  ]);
 
   if (!contextMenu) return null;
   const { entry } = contextMenu;
@@ -118,7 +70,7 @@ export function ExplorerContextMenu() {
   const entryReason = entry ? explorer.readWriteReason(entry.path) : folderReason;
   const close = () => explorer.openContextMenu(undefined);
 
-  const actions: MenuAction[] = [];
+  const actions: ContextMenuAction[] = [];
   if (entry) {
     actions.push({
       key: "open",
@@ -179,6 +131,13 @@ export function ExplorerContextMenu() {
         icon: Scissors,
         onSelect: () => explorer.copyToClipboard("cut", actionPaths),
         disabledReason: entryReason,
+      },
+      {
+        key: "move",
+        label: actionPaths.length > 1 ? `Move ${actionPaths.length} items to…` : "Move to…",
+        icon: FolderInput,
+        onSelect: () => explorer.openDialog({ kind: "move", paths: actionPaths }),
+        disabledReason: entryReason ?? actionPaths.map(explorer.readWriteReason).find(Boolean),
       },
     );
   }
@@ -257,14 +216,27 @@ export function ExplorerContextMenu() {
         disabledReason: desktopReason,
       });
     }
-    actions.push({
-      key: "reveal",
-      label: `Reveal in ${readFileManagerName()}`,
-      icon: SquareArrowOutUpRight,
-      onSelect: () =>
-        showInFileManager(() => revealInFileManager(explorer.storage.id, revealPath), "Couldn't reveal it"),
-      disabledReason: desktopReason,
-    });
+    actions.push(
+      {
+        key: "reveal",
+        label: `Reveal in ${readFileManagerName()}`,
+        icon: SquareArrowOutUpRight,
+        onSelect: () =>
+          showInFileManager(() => revealInFileManager(explorer.storage.id, revealPath), "Couldn't reveal it"),
+        disabledReason: desktopReason,
+      },
+      {
+        key: "copy-path",
+        label: "Copy full path",
+        icon: ClipboardCopy,
+        onSelect: () =>
+          copyEntryPath(explorer.storage.id, revealPath).then(
+            (absolutePath) => announce("Copied", absolutePath),
+            (copyError: unknown) => announceError("Couldn't copy the path", copyError),
+          ),
+        disabledReason: desktopReason ?? (actionPaths.length > 1 ? "Select one item to copy its path." : undefined),
+      },
+    );
   }
   if (entry?.type === "directory") {
     actions.push(
@@ -309,60 +281,5 @@ export function ExplorerContextMenu() {
     });
   }
 
-  return (
-    <FloatingPortal>
-      <span
-        ref={setAnchorElement}
-        aria-hidden="true"
-        style={{ position: "fixed", left: contextMenu.x, top: contextMenu.y, width: 0, height: 0 }}
-      />
-      <FloatingFocusManager context={context} modal={false}>
-        <div
-          ref={setFloatingElement}
-          style={floatingStyles}
-          data-testid="explorer-context-menu"
-          tabIndex={-1}
-          className="scrollbar-visible z-[70] min-w-56 overflow-y-auto overscroll-contain rounded-md border border-line-strong bg-surface-strong p-1 text-sm shadow-overlay"
-          {...getFloatingProps()}
-        >
-          {actions.map((action, actionIndex) => {
-            const ActionIcon = action.icon;
-            const isDisabled = action.disabledReason !== undefined;
-            return (
-              <div key={action.key}>
-                {action.dividerBefore && <div className="my-1 border-t border-line/60" />}
-                <button
-                  type="button"
-                  role="menuitem"
-                  ref={(element) => {
-                    listRef.current[actionIndex] = element;
-                  }}
-                  aria-disabled={isDisabled}
-                  title={action.disabledReason}
-                  tabIndex={activeIndex === actionIndex ? 0 : -1}
-                  data-testid={`menu-${action.key}`}
-                  {...getItemProps({
-                    onClick: () => {
-                      if (isDisabled) return;
-                      close();
-                      action.onSelect();
-                    },
-                  })}
-                  className={mergeClassNames(
-                    "flex w-full cursor-pointer items-center gap-2.5 rounded-sm px-2.5 py-1.5 text-left outline-none",
-                    action.tone === "danger" ? "text-danger" : "text-foreground",
-                    isDisabled ? "cursor-not-allowed opacity-45" : "hover:bg-surface-muted focus:bg-surface-muted",
-                  )}
-                >
-                  <ActionIcon className="h-4 w-4 flex-none stroke-[1.5]" />
-                  <span className="flex-1">{action.label}</span>
-                  {action.disabledReason && <span className="sr-only">({action.disabledReason})</span>}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      </FloatingFocusManager>
-    </FloatingPortal>
-  );
+  return <ContextMenu position={contextMenu} actions={actions} onClose={close} testId="explorer-context-menu" />;
 }

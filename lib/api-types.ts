@@ -240,6 +240,8 @@ export interface JobSummary {
   title: string;
   /** The folder the job works on (an encrypted folder being encrypted or decrypted). */
   target?: JobTarget;
+  /** Folders the job keeps busy until it ends: the source and destination folders of a move. */
+  locks?: JobTarget[];
   /** Where a backup reads and writes, so the Backup page can draw it. */
   transfer?: JobTransfer;
   /** Why it failed, or why it is paused ("Drive disconnected — …"). */

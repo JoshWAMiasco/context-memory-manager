@@ -2,7 +2,8 @@
 
 import { useSyncExternalStore } from "react";
 import { requestJson } from "@/lib/client/api";
-import type { CmmDesktopBridge } from "@/lib/desktop-bridge";
+import { copyTextToClipboard } from "@/lib/client/copy-text";
+import { isBridgePath, type CmmDesktopBridge } from "@/lib/desktop-bridge";
 
 declare global {
   interface Window {
@@ -111,9 +112,30 @@ export async function openInFileManager(storageId: string, folderPath: string): 
   return bridge.openFolder(await readEntryAbsolutePath(storageId, folderPath));
 }
 
-async function readEntryAbsolutePath(storageId: string, entryPath: string): Promise<string> {
+/**
+ * The absolute path of a storage entry, from the server (desktop mode only, through the path
+ * jail). Refuses anything that isn't an absolute path.
+ *
+ * @example
+ * const absolutePath = await readEntryAbsolutePath(storageId, "notes/today.md");
+ */
+export async function readEntryAbsolutePath(storageId: string, entryPath: string): Promise<string> {
   const query = new URLSearchParams({ storageId, path: entryPath });
   const { absolutePath } = await requestJson<{ absolutePath: string }>(`/api/fs/abs-path?${query}`);
+  if (!isBridgePath(absolutePath)) throw new Error("The server did not return an absolute path.");
+  return absolutePath;
+}
+
+/**
+ * Copies a storage entry's absolute path to the clipboard ("Copy full path"), resolved by the
+ * server in desktop mode. Resolves to the path copied.
+ *
+ * @example
+ * announce("Copied", await copyEntryPath(storageId, "notes/today.md"));
+ */
+export async function copyEntryPath(storageId: string, entryPath: string): Promise<string> {
+  const absolutePath = await readEntryAbsolutePath(storageId, entryPath);
+  await copyTextToClipboard(absolutePath);
   return absolutePath;
 }
 
