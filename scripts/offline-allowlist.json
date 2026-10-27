@@ -145,6 +145,21 @@
       "reason": "JSZip documentation link in an error message (bundled with docx-preview)",
       "files": "**",
       "urlPattern": "^https://stuk\\.github\\.io/jszip/"
+    },
+    {
+      "reason": "node-pty (terminals): Windows API, man page and GNU screen links in comments and its test file. Server-only; the runtime offline guard blocks network use regardless",
+      "files": "standalone/**node_modules/node-pty/**",
+      "urlPattern": "^https?://"
+    },
+    {
+      "reason": "ws (terminal sockets): a link to a UTF-8 validation reference in a comment. Server-only; the runtime offline guard blocks network use regardless",
+      "files": "standalone/**node_modules/ws/**",
+      "urlPattern": "^https://www\\.cl\\.cam\\.ac\\.uk/"
+    },
+    {
+      "reason": "The `homepage` field of CMM's own package.json, bundled where code imports package.json for the version; nothing reads or fetches it",
+      "files": "standalone/**",
+      "urlPattern": "^https://joshwamiasco\\.github\\.io/context-memory-manager/$"
     }
   ]
 }
