@@ -35,6 +35,11 @@ npx playwright install chromium   # once: used to build the PDF guides and the a
 npm run dev                       # http://127.0.0.1:7420, data in .cmm-dev-data/
 ```
 
+Before sending a change, run `npm run lint`, `npm run typecheck` and `npm test`. For the end-to-end tests, build the
+web server and run them: `npm run build:web && npm run test:e2e`. They start two throwaway CMM servers (server mode and
+desktop mode, ports 7432 and 7433) on their own data folders under `.cmm-test-data/`, drive them with Playwright, and
+stop them again. They use the built server, not the Electron app, and never touch your own data or an installed CMM.
+
 The first visit opens the setup wizard; the terminal prints the one-time setup code. See
 [Getting started](README.md#getting-started) for listing folders to browse, building the desktop app and the server
 package.

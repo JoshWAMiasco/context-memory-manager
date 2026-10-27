@@ -109,6 +109,16 @@ const eslintConfig = defineConfig([
     rules: { "import/no-default-export": "off", "no-console": "off" },
   },
   {
+    /* Playwright fixtures are called `use`, which the React hooks rules take for a hook. */
+    files: ["e2e/**/*.ts", "e2e-electron/**/*.ts", "playwright.config.ts", "playwright.electron.config.ts"],
+    rules: { "react-hooks/rules-of-hooks": "off" },
+  },
+  {
+    /* Playwright loads the global setup by its default export. */
+    files: ["e2e/global-setup.ts"],
+    rules: { "import/no-default-export": "off" },
+  },
+  {
     files: ["scripts/stubs/**/*.cjs"],
     rules: { "@typescript-eslint/no-require-imports": "off" },
   },
@@ -133,6 +143,10 @@ const eslintConfig = defineConfig([
     "node_modules/**",
     "server/db/migrations/**",
     ".cmm-test-data/**",
+    "test-results/**",
+    "playwright-report/**",
+    "test-results-electron/**",
+    "playwright-report-electron/**",
     ".cmm-dev-data/**",
     "public/vendor/**",
   ]),

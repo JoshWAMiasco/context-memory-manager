@@ -25,6 +25,13 @@ next-env.d.ts
 # CMM's own storage manifest when this repo is added as a storage
 /.cmm/
 
+# end-to-end run (npm run test:e2e): throwaway servers and reports
+/.cmm-test-data/
+/test-results/
+/playwright-report/
+/test-results-electron/
+/playwright-report-electron/
+
 # misc
 .DS_Store
 *.pem

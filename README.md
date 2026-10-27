@@ -222,6 +222,7 @@ through the install.
 | Command | What it does |
 |---|---|
 | `npm run lint` / `npm run typecheck` / `npm test` | ESLint, TypeScript and the Vitest suite (`tests/`) |
+| `npm run build:web` then `npm run test:e2e` | Builds only the web server, then runs the Playwright end-to-end suite (`e2e/`) against it on throwaway servers and data in `.cmm-test-data/`; the desktop app is not started or installed |
 | `npm run check:offline` | Builds and fails if the output contains a fetchable external URL |
 | `npm run docs:pdf` | Builds the PDF guides from `docs/guides/` |
 | `npm run icons:app` | Regenerates the desktop app icons from `public/icons/cmm/logo.svg` |
