@@ -10,6 +10,7 @@ import { FileIcon } from "@/components/explorer/file-icon";
 import type { DirectoryListing, FileEntry } from "@/lib/api-types";
 import { useFileClipboard } from "@/lib/client/clipboard";
 import { ENTRY_DRAG_TYPE, readDraggedEntries, type DraggedEntries } from "@/lib/client/entry-drag";
+import { captureDroppedEntries } from "@/lib/client/folder-upload";
 import { getServerEventsClient } from "@/lib/client/events";
 import { directoryQueryOptions, loadMoreEntries, type StoragePath } from "@/lib/client/fs";
 import { isInsideFolder, readParentPath } from "@/lib/client/query-keys";
@@ -48,29 +49,6 @@ function buildRows(
   };
   addFolder(rootPath, 0);
   return rows;
-}
-
-/**
- * The files of an OS drop; folders are left out (the explorer uploads files, not folder trees).
- *
- * @example
- * const { files, skippedFolders } = readDroppedFiles(dropEvent.dataTransfer);
- */
-export function readDroppedFiles(dataTransfer: DataTransfer): { files: File[]; skippedFolders: number } {
-  const files: File[] = [];
-  let skippedFolders = 0;
-  const items = [...dataTransfer.items];
-  if (items.length === 0) return { files: [...dataTransfer.files], skippedFolders };
-  for (const item of items) {
-    if (item.kind !== "file") continue;
-    if (item.webkitGetAsEntry?.()?.isDirectory) {
-      skippedFolders += 1;
-      continue;
-    }
-    const file = item.getAsFile();
-    if (file) files.push(file);
-  }
-  return { files, skippedFolders };
 }
 
 function useDirectoryWatches(storageId: string, directoryPaths: readonly string[]): void {
@@ -380,15 +358,7 @@ export function FileTree() {
       if (folderPath !== rootPath) explorer.setExpanded(folderPath, true);
       return;
     }
-    const { files, skippedFolders } = readDroppedFiles(dragEvent.dataTransfer);
-    if (skippedFolders > 0) {
-      showToastNotification({
-        title: "Folders were skipped",
-        tone: "warning",
-        description: "Drop the files inside a folder to upload them.",
-      });
-    }
-    explorer.uploadFiles(files, folderPath);
+    explorer.uploadDropped(captureDroppedEntries(dragEvent.dataTransfer), folderPath);
   };
 
   const firstVisibleIndex = Math.max(0, Math.floor(scrollTop / TREE_ROW_HEIGHT) - OVERSCAN_ROWS);

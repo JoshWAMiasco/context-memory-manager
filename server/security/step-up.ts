@@ -1,7 +1,12 @@
 import "server-only";
 import { createHash, randomBytes } from "node:crypto";
 import { and, eq, gt, isNull } from "drizzle-orm";
-import type { StepUpAction, StepUpMode } from "@/lib/auth/policy";
+import {
+  FOLDER_UPLOAD_GRANT_MILLISECONDS,
+  isFolderUploadResource,
+  type StepUpAction,
+  type StepUpMode,
+} from "@/lib/auth/policy";
 import type { ResolvedSession, SessionNetworkClass } from "@/server/auth/session";
 import { hashToken } from "@/server/auth/session";
 import type { ApplicationMode } from "@/server/config";
@@ -33,7 +38,16 @@ function hashResource(resource: string): string {
   return createHash("sha256").update(resource).digest("hex");
 }
 
-/** Marks a matching, unused, unexpired action token as used. Returns false when there is none. */
+/** Whether a token is a folder upload grant: reusable for its resource until it expires. */
+function isFolderGrant(action: StepUpAction, resource: string): boolean {
+  return action === "upload" && isFolderUploadResource(resource);
+}
+
+/**
+ * Marks a matching, unused, unexpired action token as used. Returns false when there is none. A
+ * folder upload grant (`upload` of `<storage>:<folder>/**`) isn't used up: it covers every file of
+ * that folder upload until it expires.
+ */
 export function consumeActionToken(
   sessionIdHash: string,
   action: StepUpAction,
@@ -41,6 +55,20 @@ export function consumeActionToken(
   actionToken: string,
   now = Date.now(),
 ): boolean {
+  const matchesToken = and(
+    eq(stepUpTokens.idHash, hashToken(actionToken)),
+    eq(stepUpTokens.sessionId, sessionIdHash),
+    eq(stepUpTokens.action, action),
+    eq(stepUpTokens.resource, hashResource(resource)),
+    isNull(stepUpTokens.usedAt),
+    gt(stepUpTokens.expiresAt, new Date(now)),
+  );
+  if (isFolderGrant(action, resource)) {
+    return (
+      getDatabase().orm.select({ idHash: stepUpTokens.idHash }).from(stepUpTokens).where(matchesToken).get() !==
+      undefined
+    );
+  }
   const consumedToken = getDatabase()
     .orm.update(stepUpTokens)
     .set({ usedAt: new Date(now) })
@@ -97,7 +125,7 @@ export interface StepUpConfirmation extends Omit<StepUpCheck, "actionToken"> {
 /**
  * Checks the password, then records the confirmation: for `lan-once` the session is marked
  * confirmed; for `per-action` a single-use token valid for 2 minutes is returned, bound to this
- * session, action and resource.
+ * session, action and resource (a folder upload grant: reusable, for 10 minutes).
  */
 export async function confirmStepUp(
   { resolvedSession, action, resource, networkClass, mode, password, ip }: StepUpConfirmation,
@@ -123,7 +151,9 @@ export async function confirmStepUp(
       sessionId: resolvedSession.session.idHash,
       action,
       resource: hashResource(resource),
-      expiresAt: new Date(now + ACTION_TOKEN_LIFETIME_MILLISECONDS),
+      expiresAt: new Date(
+        now + (isFolderGrant(action, resource) ? FOLDER_UPLOAD_GRANT_MILLISECONDS : ACTION_TOKEN_LIFETIME_MILLISECONDS),
+      ),
     })
     .run();
   return { actionToken };

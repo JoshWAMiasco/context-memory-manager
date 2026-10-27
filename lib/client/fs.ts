@@ -10,6 +10,7 @@ import {
 } from "@tanstack/react-query";
 import type {
   DirectoryListing,
+  DownloadMeasurement,
   FileEntry,
   FileStat,
   JobSummary,
@@ -391,14 +392,51 @@ export async function downloadEntry(
   const query = buildQuery(asStored ? { storageId, path: entryPath, raw: "1" } : { storageId, path: entryPath });
   const downloadUrl = await getStepUpDownloadUrl(`/api/fs/download?${query}`, "download", `${storageId}:${entryPath}`);
   if (!downloadUrl) return false;
+  startBrowserDownload(downloadUrl);
+  return true;
+}
+
+/** Starts a browser download of `url` (a same-origin attachment). */
+function startBrowserDownload(url: string): void {
   const downloadLink = document.createElement("a");
-  downloadLink.href = downloadUrl;
+  downloadLink.href = url;
   downloadLink.download = "";
   downloadLink.rel = "noopener";
   document.body.append(downloadLink);
   downloadLink.click();
   downloadLink.remove();
+}
+
+/**
+ * Downloads several selected items as one zip (each at the top of the zip under its own name),
+ * after the `download` step-up when the server needs it. Resolves false when the user cancels.
+ *
+ * @example
+ * await downloadSelection(storageId, ["notes/a.md", "docs"]);
+ */
+export async function downloadSelection(storageId: string, entryPaths: readonly string[]): Promise<boolean> {
+  const query = buildQuery({ storageId, paths: JSON.stringify(entryPaths) });
+  const downloadUrl = await getStepUpDownloadUrl(
+    `/api/fs/download?${query}`,
+    "download",
+    `${storageId}:${entryPaths.join("\n")}`,
+  );
+  if (!downloadUrl) return false;
+  startBrowserDownload(downloadUrl);
   return true;
+}
+
+/**
+ * What a zip of these items will hold: files, bytes, and how many are encrypted (and so come
+ * decrypted in the zip).
+ *
+ * @example
+ * const { fileCount, totalBytes } = await measureDownload(storageId, ["notes"]);
+ */
+export function measureDownload(storageId: string, entryPaths: readonly string[]): Promise<DownloadMeasurement> {
+  return requestJson<DownloadMeasurement>(
+    `/api/fs/download-info?${buildQuery({ storageId, paths: JSON.stringify(entryPaths) })}`,
+  );
 }
 
 /** Ejects or mounts a drive, refreshing the storage list afterwards. */

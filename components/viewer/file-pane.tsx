@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, FilePlus, FolderPlus, Info, Pencil, Trash2, Upload } from "lucide-react";
+import { Download, FilePlus, FolderPlus, FolderUp, Info, Pencil, Trash2, Upload } from "lucide-react";
 import type { ReactNode } from "react";
 import { EmptyState } from "@/components/primitives/empty-state";
 import { UnsavedChangesGuard } from "@/components/editor/unsaved-changes-guard";
@@ -81,6 +81,12 @@ export function FilePane() {
         icon={Upload}
         disabledReason={writeReason}
         onClick={() => explorer.openUploadPicker(targetFolder)}
+      />
+      <PaneAction
+        label="Upload a folder"
+        icon={FolderUp}
+        disabledReason={writeReason}
+        onClick={() => explorer.openFolderUploadPicker(targetFolder)}
       />
     </>
   );
@@ -177,7 +183,7 @@ export function FilePane() {
       className="flex h-full min-h-0 flex-col overflow-auto"
       folderLabel={uploadFolder === "" ? storage.label : readBaseName(uploadFolder)}
       isEnabled={explorer.readWriteReason(uploadFolder) === undefined}
-      onFiles={(files) => explorer.uploadFiles(files, uploadFolder)}
+      onDrop={(dropped) => explorer.uploadDropped(dropped, uploadFolder)}
     >
       <div className="flex min-h-0 flex-1 flex-col" data-testid="file-pane">
         {content}

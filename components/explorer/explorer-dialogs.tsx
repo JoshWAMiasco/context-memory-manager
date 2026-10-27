@@ -13,6 +13,7 @@ import { MoveDialog } from "@/components/explorer/dialogs/move-dialog";
 import { NewItemDialog } from "@/components/explorer/dialogs/new-item";
 import { PropertiesDialog } from "@/components/explorer/dialogs/properties";
 import { RenameDialog } from "@/components/explorer/dialogs/rename";
+import { formatFileSize } from "@/components/page-sections/applications/file-manager/format-file-size";
 import { useFileMutations } from "@/lib/client/fs";
 import { joinEntryPath, readBaseName } from "@/lib/client/query-keys";
 import { announceError } from "@/components/explorer/explorer-context";
@@ -20,7 +21,7 @@ import { announceError } from "@/components/explorer/explorer-context";
 /**
  * Renders the explorer dialog that is open, if any: move to Trash, move to a folder, new item, rename, properties,
  * new memory or convert to memory, Folder settings, the Enable encryption wizard, the encrypted
- * download choice and the "this copy will be decrypted" confirmation. Cmd/Ctrl+, opens Folder
+ * download choice, the "this zip holds decrypted files" and "this copy will be decrypted" confirmations. Cmd/Ctrl+, opens Folder
  * settings for the selected folder.
  *
  * @example
@@ -135,6 +136,26 @@ export function ExplorerDialogs() {
       >
         {dialog.message} Anyone who can read that folder on disk can read{" "}
         {transfer.sources.length === 1 ? "it" : "them"}.
+      </ConfirmDialog>
+    );
+  }
+  if (dialog.kind === "confirm-zip") {
+    const { measurement, paths } = dialog;
+    return (
+      <ConfirmDialog
+        isOpen
+        onOpenChange={(isOpen) => !isOpen && close()}
+        title="Download encrypted files decrypted?"
+        confirmLabel="Download zip"
+        confirmVariant="danger"
+        testId="confirm-zip-dialog"
+        onConfirm={() => explorer.downloadMany(paths, { isConfirmed: true })}
+      >
+        The zip holds {measurement.fileCount.toLocaleString()} file{measurement.fileCount === 1 ? "" : "s"}
+        {` (${formatFileSize(measurement.totalBytes)}). `}
+        {measurement.encryptedFileCount.toLocaleString()} of them{" "}
+        {measurement.encryptedFileCount === 1 ? "is" : "are"} encrypted and will be decrypted into the zip, so anyone
+        with the zip can read {measurement.encryptedFileCount === 1 ? "it" : "them"}. Their folders must be unlocked.
       </ConfirmDialog>
     );
   }

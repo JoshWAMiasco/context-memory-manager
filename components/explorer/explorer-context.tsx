@@ -2,15 +2,18 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ConfirmDialog } from "@/components/interactive/confirm-dialog";
 import { showToastNotification } from "@/components/interactive/toast-notification";
-import type { FileEntry, FileStat, StorageSummary } from "@/lib/api-types";
+import type { DownloadMeasurement, FileEntry, FileStat, StorageSummary } from "@/lib/api-types";
 import type { UserRole } from "@/lib/auth/policy";
 import { ApiError, requestJson } from "@/lib/client/api";
 import { readFileClipboard, setFileClipboard } from "@/lib/client/clipboard";
+import { formatFileSize } from "@/components/page-sections/applications/file-manager/format-file-size";
 import {
   downloadEntry,
+  downloadSelection,
+  measureDownload,
   readCachedEntries,
   useFileMutations,
   type StoragePath,
@@ -21,6 +24,7 @@ import { isInsideFolder, joinEntryPath, QUERY_KEYS, readBaseName, readParentPath
 import { buildMemoryHref, buildStorageHref, parseChangesParameter, type HistoryFocus } from "@/lib/client/routes";
 import { protectionReason } from "@/lib/client/protection";
 import { confirmLeave } from "@/lib/client/unsaved-changes";
+import { readDroppedTree, readPickedFolder, startFolderUpload, type FolderTree } from "@/lib/client/folder-upload";
 import { getUploadQueue } from "@/lib/client/upload-queue";
 import { readExtension } from "@/lib/file-kinds";
 import type { MemorySummary } from "@/lib/memory";
@@ -39,6 +43,7 @@ export type ExplorerDialog =
   | { kind: "encrypt-folder"; path: string }
   | { kind: "enable-versioning"; path: string }
   | { kind: "download-encrypted"; path: string; isUnlocked: boolean }
+  | { kind: "confirm-zip"; paths: string[]; measurement: DownloadMeasurement }
   | {
       kind: "confirm-decrypt";
       transfer: { kind: "move" | "copy"; sources: StoragePath[]; destination: StoragePath };
@@ -143,13 +148,28 @@ export interface ExplorerContextValue {
   uploadFiles: (files: readonly File[], folderPath: string) => void;
   /** Opens the computer's file picker and uploads the chosen files into `folderPath`. */
   openUploadPicker: (folderPath: string) => void;
+  /** Opens the computer's folder picker and uploads the chosen folder, with everything in it, into `folderPath`. */
+  openFolderUploadPicker: (folderPath: string) => void;
+  /**
+   * Uploads what was dropped from the computer into `folderPath`: files as they are, folders with
+   * everything in them (one confirmation for the whole folder, OS clutter and `.git` left out).
+   */
+  uploadDropped: (dropped: readonly (FileSystemEntry | File)[], folderPath: string) => void;
   /**
    * "Replace with file from computer…": opens the file picker, then uploads the chosen file over
    * `entryPath`, keeping its name. It is refused if the file changes in between.
    */
   replaceFile: (entryPath: string) => void;
-  /** Downloads an entry; an encrypted file first asks "Decrypted" or "Encrypted (raw)". */
+  /**
+   * Downloads an entry; an encrypted file first asks "Decrypted" or "Encrypted (raw)". A folder
+   * comes as a zip, after a confirmation when it holds encrypted files (they are decrypted).
+   */
   download: (entryPath: string, options?: { asStored?: boolean }) => Promise<void>;
+  /**
+   * Downloads several entries as one zip (one entry: as `download`). Asks first when the zip would
+   * hold encrypted files decrypted; `isConfirmed` skips that question once it was answered.
+   */
+  downloadMany: (paths: readonly string[], options?: { isConfirmed?: boolean }) => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -258,6 +278,7 @@ export function ExplorerProvider({
   const [syncedChanges, setSyncedChanges] = useState(`${initialPath}\u0000${initialChanges ?? ""}`);
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const uploadFolderRef = useRef("");
+  const folderInputRef = useRef<HTMLInputElement>(null);
   const replaceInputRef = useRef<HTMLInputElement>(null);
   const replaceTargetRef = useRef<{ path: string; etag: Promise<string | undefined> }>(undefined);
   const [pendingReplace, setPendingReplace] = useState<{ file: File; path: string; expectedEtag?: string }>();
@@ -520,6 +541,48 @@ export function ExplorerProvider({
     uploadInputRef.current?.click();
   }, []);
 
+  const openFolderUploadPicker = useCallback((folderPath: string) => {
+    uploadFolderRef.current = folderPath;
+    folderInputRef.current?.click();
+  }, []);
+
+  // React has no prop for the folder picker attribute.
+  useEffect(() => {
+    folderInputRef.current?.setAttribute("webkitdirectory", "");
+  }, []);
+
+  const uploadTree = useCallback(
+    async (tree: FolderTree, folderPath: string) => {
+      try {
+        const result = await startFolderUpload(tree, storage.id, folderPath);
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.directory(storage.id, folderPath) });
+        if (result && result.skippedCount > 0) {
+          showToastNotification({
+            title: `${result.skippedCount} item${result.skippedCount === 1 ? " was" : "s were"} left out`,
+            tone: "info",
+            description: "System files (.DS_Store, Thumbs.db, desktop.ini) and .git folders aren't uploaded.",
+          });
+        }
+      } catch (uploadError) {
+        announceError("Couldn't upload the folder", uploadError);
+      }
+    },
+    [queryClient, storage.id],
+  );
+
+  const uploadDropped = useCallback(
+    (dropped: readonly (FileSystemEntry | File)[], folderPath: string) => {
+      void readDroppedTree(dropped).then(
+        (tree) => {
+          if (tree.directories.length === 0) uploadFiles(tree.files.map(({ file }) => file), folderPath);
+          else void uploadTree(tree, folderPath);
+        },
+        (readError: unknown) => announceError("Couldn't read what was dropped", readError),
+      );
+    },
+    [uploadFiles, uploadTree],
+  );
+
   const queueReplacement = useCallback(
     (file: File, entryPath: string, expectedEtag: string | undefined) => {
       getUploadQueue().addReplacement(file, storage.id, readParentPath(entryPath), readBaseName(entryPath), expectedEtag);
@@ -556,10 +619,9 @@ export function ExplorerProvider({
     [queueReplacement],
   );
 
-  const download = useCallback(
-    async (entryPath: string, options?: { asStored?: boolean }) => {
-      const entry =
-        findEntry(entryPath) ?? queryClient.getQueryData<FileStat>(QUERY_KEYS.stat(storage.id, entryPath))?.entry;
+  /** One file: an encrypted one first asks "Decrypted" or "Encrypted (raw)". */
+  const downloadFile = useCallback(
+    async (entryPath: string, entry: FileEntry | undefined, options?: { asStored?: boolean }) => {
       const encryption = entry?.type === "file" ? entry.badges.encryption : undefined;
       if (options === undefined && encryption && !encryption.plaintext) {
         setDialog({ kind: "download-encrypted", path: entryPath, isUnlocked: encryption.unlocked });
@@ -571,7 +633,55 @@ export function ExplorerProvider({
         announceError("Couldn't download", downloadError);
       }
     },
+    [storage.id],
+  );
+
+  const readKnownEntry = useCallback(
+    (entryPath: string) =>
+      findEntry(entryPath) ?? queryClient.getQueryData<FileStat>(QUERY_KEYS.stat(storage.id, entryPath))?.entry,
     [findEntry, queryClient, storage.id],
+  );
+
+  const downloadMany = useCallback(
+    async (paths: readonly string[], options?: { isConfirmed?: boolean }) => {
+      const firstPath = paths[0];
+      if (firstPath === undefined) return;
+      const firstEntry = readKnownEntry(firstPath);
+      if (paths.length === 1 && firstEntry?.type === "file") {
+        await downloadFile(firstPath, firstEntry);
+        return;
+      }
+      try {
+        const measurement = await measureDownload(storage.id, paths);
+        if (!options?.isConfirmed && measurement.encryptedFileCount > 0) {
+          setDialog({ kind: "confirm-zip", paths: [...paths], measurement });
+          return;
+        }
+        const started =
+          paths.length === 1
+            ? await downloadEntry(storage.id, firstPath)
+            : await downloadSelection(storage.id, paths);
+        if (started) {
+          showToastNotification({
+            title: "Preparing the zip",
+            tone: "info",
+            description: `${measurement.fileCount.toLocaleString()} file${measurement.fileCount === 1 ? "" : "s"}, ${formatFileSize(measurement.totalBytes)}. Your browser shows its progress.`,
+          });
+        }
+      } catch (downloadError) {
+        announceError("Couldn't download", downloadError);
+      }
+    },
+    [downloadFile, readKnownEntry, storage.id],
+  );
+
+  const download = useCallback(
+    async (entryPath: string, options?: { asStored?: boolean }) => {
+      const entry = readKnownEntry(entryPath);
+      if (entry?.type === "file" || options !== undefined) await downloadFile(entryPath, entry, options);
+      else await downloadMany([entryPath]);
+    },
+    [downloadFile, downloadMany, readKnownEntry],
   );
 
   const refresh = useCallback(async () => {
@@ -629,8 +739,11 @@ export function ExplorerProvider({
       pasteInto,
       uploadFiles,
       openUploadPicker,
+      openFolderUploadPicker,
+      uploadDropped,
       replaceFile,
       download,
+      downloadMany,
       refresh,
     }),
     [
@@ -667,8 +780,11 @@ export function ExplorerProvider({
       pasteInto,
       uploadFiles,
       openUploadPicker,
+      openFolderUploadPicker,
+      uploadDropped,
       replaceFile,
       download,
+      downloadMany,
       refresh,
     ],
   );
@@ -684,6 +800,17 @@ export function ExplorerProvider({
         onChange={(changeEvent) => {
           uploadFiles([...(changeEvent.target.files ?? [])], uploadFolderRef.current);
           changeEvent.target.value = "";
+        }}
+      />
+      <input
+        ref={folderInputRef}
+        type="file"
+        hidden
+        data-testid="upload-folder-input"
+        onChange={(changeEvent) => {
+          const files = [...(changeEvent.target.files ?? [])];
+          changeEvent.target.value = "";
+          if (files.length > 0) void uploadTree(readPickedFolder(files), uploadFolderRef.current);
         }}
       />
       <input

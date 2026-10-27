@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { readFolderUploadResource } from "@/lib/auth/policy";
 import { withApi, type RouteInput } from "@/server/auth/guard";
 import { storageFromBody, storagePathSchema } from "@/server/http/fs-route-input";
 import { joinRelativePath } from "@/server/security/path-jail";
@@ -13,15 +14,24 @@ const initUploadBodySchema = z.object({
   overwrite: z.boolean().default(false),
   /** "Replace with file from computer…": the existing file, as the user last saw it. */
   replace: z.object({ expectedEtag: z.string().min(1).max(200).optional() }).strict().optional(),
+  /** Part of a folder upload into this folder: one step-up for the whole folder covers it. */
+  batchRoot: storagePathSchema.optional(),
 });
 
-/** The step-up resource of an upload: `<storageId>:<dir>/<name>`. */
+/**
+ * The step-up resource of an upload: `<storageId>:<dir>/<name>`, or for a file of a folder upload
+ * (`batchRoot`, with `dir` inside it) the folder's grant `<storageId>:<batchRoot>/**`.
+ */
 function readUploadResource({ rawBody }: RouteInput): string {
-  const { storageId = "", dir: directory = "", name = "" } = (rawBody ?? {}) as Record<string, unknown>;
-  return `${String(storageId)}:${joinRelativePath(String(directory), String(name))}`;
+  const { storageId = "", dir: directory = "", name = "", batchRoot } = (rawBody ?? {}) as Record<string, unknown>;
+  const folderResource =
+    typeof batchRoot === "string"
+      ? readFolderUploadResource(String(storageId), batchRoot, String(directory))
+      : undefined;
+  return folderResource ?? `${String(storageId)}:${joinRelativePath(String(directory), String(name))}`;
 }
 
-/** Starts a chunked upload. The `upload` step-up is asked for here, once per file. */
+/** Starts a chunked upload. The `upload` step-up is asked for here, once per file or once per folder upload. */
 export const POST = withApi(
   async ({ body, actor, storage }) =>
     NextResponse.json(

@@ -25,6 +25,8 @@ export interface UploadItem {
   replace?: { expectedEtag?: string };
   /** What a finished replace left to compare with. */
   replaced?: ReplaceResult;
+  /** Part of a folder upload: its folder and its one confirmation. */
+  batch?: { root: string; actionToken?: string };
 }
 
 export type ConflictDecision = "replace" | "keep-both" | "skip";
@@ -99,6 +101,38 @@ export class UploadQueue {
           status: "queued",
           uploadedBytes: 0,
           totalBytes: file.size,
+        },
+      });
+    }
+    this.publish();
+    this.pump();
+    return batchId;
+  }
+
+  /**
+   * Queues a folder upload's files, each into its own folder, as one batch (one answer to a name
+   * clash can cover all of them). `batch` is the folder upload's one confirmation.
+   */
+  addTree(
+    files: readonly { file: File; directory: string }[],
+    storageId: string,
+    batch: { root: string; actionToken?: string },
+  ): string {
+    const batchId = createIdentifier("batch");
+    for (const { file, directory } of files) {
+      this.entries.push({
+        file,
+        item: {
+          id: createIdentifier("upload"),
+          batchId,
+          fileName: file.name,
+          targetName: file.name,
+          storageId,
+          directory,
+          status: "queued",
+          uploadedBytes: 0,
+          totalBytes: file.size,
+          batch,
         },
       });
     }
@@ -215,6 +249,7 @@ export class UploadQueue {
               name: queueEntry.item.targetName,
               overwrite,
               replace: queueEntry.item.replace,
+              batch: queueEntry.item.batch,
             },
             {
               transport: this.transport,

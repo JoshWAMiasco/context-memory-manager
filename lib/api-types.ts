@@ -661,3 +661,11 @@ export interface TrashedTextResponse {
   item: TrashItem;
   content: string;
 }
+
+/** What a zip download will hold, for the confirmation before it starts. */
+export interface DownloadMeasurement {
+  fileCount: number;
+  totalBytes: number;
+  /** Files stored encrypted: they are decrypted into the zip. */
+  encryptedFileCount: number;
+}

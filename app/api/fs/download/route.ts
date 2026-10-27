@@ -5,29 +5,42 @@ import { withApi } from "@/server/auth/guard";
 import {
   buildContentDisposition,
   readQueryFileResource,
+  readSelectionPaths,
   storageFromQuery,
   storagePathQuerySchema,
   toResponseBody,
 } from "@/server/http/fs-route-input";
 import { resolveInStorage } from "@/server/security/path-jail";
 import { openFileReadStream } from "@/server/storage/fs-ops";
-import { createFolderZipStream } from "@/server/storage/zip-download";
+import { createFolderZipStream, createZipStream } from "@/server/storage/zip-download";
 
 const downloadQuerySchema = storagePathQuerySchema.extend({
   /** "1": an encrypted file as stored (ciphertext) instead of decrypted. */
   raw: z.enum(["0", "1"]).optional(),
+  /** Several selected items as one zip: a JSON array of storage-relative paths (instead of `path`). */
+  paths: z.string().max(200_000).optional(),
 });
 
 /**
- * Downloads a file as an attachment, or a folder as a zip. Needs the `download` step-up; browsers
- * pass the action token as `?at=` (see `getStepUpDownloadUrl`). Files in an encrypted folder come
- * decrypted (the folder must be unlocked), or with `raw=1` exactly as stored.
+ * Downloads a file as an attachment, a folder as a zip, or with `paths` several selected items as
+ * one zip. Needs the `download` step-up; browsers pass the action token as `?at=` (see
+ * `getStepUpDownloadUrl`). Files in an encrypted folder come decrypted (the folder must be unlocked),
+ * or a single file with `raw=1` exactly as stored.
  */
 export const GET = withApi(
   async ({ query, actor, storage }) => {
     const activeStorage = storage(query.storageId);
-    const resolvedPath = await resolveInStorage(activeStorage, query.path);
     const headers: Record<string, string> = { "cache-control": "no-store", "x-content-type-options": "nosniff" };
+    if (query.paths !== undefined) {
+      const selection = readSelectionPaths(query.paths);
+      headers["content-type"] = "application/zip";
+      headers["content-disposition"] = buildContentDisposition(
+        "attachment",
+        `${activeStorage.label} - ${selection.length} items.zip`,
+      );
+      return new Response(toResponseBody(await createZipStream(activeStorage, selection, actor)), { headers });
+    }
+    const resolvedPath = await resolveInStorage(activeStorage, query.path);
     if ((await stat(resolvedPath.absolutePath)).isDirectory()) {
       const folderName =
         resolvedPath.relativePath === "" ? activeStorage.label : path.basename(resolvedPath.absolutePath);

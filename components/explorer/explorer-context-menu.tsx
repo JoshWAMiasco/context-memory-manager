@@ -12,6 +12,7 @@ import {
   FolderOpen,
   FolderOpenDot,
   FolderPlus,
+  FolderUp,
   HardDriveUpload,
   Info,
   PanelsTopLeft,
@@ -169,6 +170,13 @@ export function ExplorerContextMenu() {
       disabledReason: folderReason,
       dividerBefore: true,
     },
+    {
+      key: "upload-folder",
+      label: "Upload folder here",
+      icon: FolderUp,
+      onSelect: () => explorer.openFolderUploadPicker(folderPath),
+      disabledReason: folderReason,
+    },
     ...(entry?.type === "file"
       ? [
           {
@@ -182,9 +190,17 @@ export function ExplorerContextMenu() {
       : []),
     {
       key: "download",
-      label: entry?.type === "file" ? "Download" : "Download as zip",
+      label:
+        actionPaths.length > 1
+          ? `Download ${actionPaths.length} items as zip`
+          : entry?.type === "file"
+            ? "Download"
+            : "Download as zip",
       icon: Download,
-      onSelect: () => void explorer.download(entry?.path ?? explorer.rootPath),
+      onSelect: () =>
+        void (actionPaths.length > 1
+          ? explorer.downloadMany(actionPaths)
+          : explorer.download(entry?.path ?? explorer.rootPath)),
     },
   );
   if (entry) {

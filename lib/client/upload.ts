@@ -1,6 +1,7 @@
 import type { FileEntry, ReplaceResult, UploadSession } from "@/lib/api-types";
 import { ApiError, requestJson } from "@/lib/client/api";
 import { goToSessionPage } from "@/lib/client/session-channel";
+import { ACTION_TOKEN_HEADER } from "@/lib/client/step-up";
 
 export interface UploadTarget {
   storageId: string;
@@ -10,6 +11,8 @@ export interface UploadTarget {
   overwrite: boolean;
   /** Replaces this existing file, which must still be the version the user saw. */
   replace?: { expectedEtag?: string };
+  /** Part of a folder upload into `root`: its one confirmation (`actionToken` from a remote network) covers this file. */
+  batch?: { root: string; actionToken?: string };
 }
 
 /** A finished upload: the file, and for a replace what it left to compare with. */
@@ -180,7 +183,9 @@ export const xhrUploadTransport: UploadTransport = {
         size,
         overwrite: target.overwrite,
         replace: target.replace,
+        batchRoot: target.batch?.root,
       },
+      headers: target.batch?.actionToken ? { [ACTION_TOKEN_HEADER]: target.batch.actionToken } : undefined,
     }),
   status: (uploadId) => requestJson<UploadSession>(`/api/fs/upload/${encodeURIComponent(uploadId)}`),
   sendChunk: sendChunkWithXhr,

@@ -27,6 +27,49 @@ export const STEP_UP_ACTION_LABELS: Record<StepUpAction, string> = {
 /** `lan-once`: confirm once per session (loopback or local network). `per-action`: confirm every action (remote). */
 export type StepUpMode = "lan-once" | "per-action";
 
+/** How long one confirmation for a whole folder upload lasts. */
+export const FOLDER_UPLOAD_GRANT_MILLISECONDS = 10 * 60 * 1000;
+
+const FOLDER_RESOURCE_SUFFIX = "/**";
+
+/**
+ * The step-up resource of a whole folder upload: one confirmation covers every file uploaded into
+ * `folderPath` (and its subfolders) for 10 minutes, instead of one per file.
+ *
+ * @example
+ * buildFolderUploadResource("home", "notes/import"); // "home:notes/import/**"
+ */
+export function buildFolderUploadResource(storageId: string, folderPath: string): string {
+  return `${storageId}:${folderPath}${FOLDER_RESOURCE_SUFFIX}`;
+}
+
+/** Whether a step-up resource is a folder upload's grant (reusable until it expires). */
+export function isFolderUploadResource(resource: string): boolean {
+  return resource.endsWith(FOLDER_RESOURCE_SUFFIX);
+}
+
+/** A storage-relative path's segments, or undefined when it has `.` or `..` (never trusted for a grant). */
+function readPlainSegments(relativePath: string): string[] | undefined {
+  const segments = relativePath.split("/").filter((segment) => segment !== "");
+  return segments.some((segment) => segment === "." || segment === "..") ? undefined : segments;
+}
+
+/**
+ * The folder upload grant that covers an upload into `directory`, when it is inside `batchRoot`
+ * (both plain storage-relative paths), else undefined. Paths with `.` or `..` never match.
+ *
+ * @example
+ * readFolderUploadResource("home", "import", "import/docs"); // "home:import/**"
+ * readFolderUploadResource("home", "import", "import/../secrets"); // undefined
+ */
+export function readFolderUploadResource(storageId: string, batchRoot: string, directory: string): string | undefined {
+  const rootSegments = readPlainSegments(batchRoot);
+  const directorySegments = readPlainSegments(directory);
+  if (!rootSegments || !directorySegments || directorySegments.length < rootSegments.length) return undefined;
+  if (rootSegments.some((segment, segmentIndex) => directorySegments[segmentIndex] !== segment)) return undefined;
+  return buildFolderUploadResource(storageId, rootSegments.join("/"));
+}
+
 export const PASSWORD_MINIMUM_LENGTH = 10;
 export const PASSWORD_MAXIMUM_LENGTH = 1024;
 

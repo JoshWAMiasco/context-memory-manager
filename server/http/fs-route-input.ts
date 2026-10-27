@@ -55,7 +55,25 @@ export function storagesOfTransfer(sourceLevel: StorageAccessLevel) {
 
 /** The step-up resource of a file: `<storageId>:<path>`, the same string the client confirms. */
 export function readQueryFileResource({ searchParams }: RouteInput): string {
+  const selection = searchParams.get("paths");
+  if (selection !== null) return `${searchParams.get("storageId") ?? ""}:${readSelectionPaths(selection).join("\n")}`;
   return `${searchParams.get("storageId") ?? ""}:${searchParams.get("path") ?? ""}`;
+}
+
+/**
+ * The `paths` query parameter of a selection download: a JSON array of storage-relative paths.
+ * Anything else reads as no paths (and is refused by the route).
+ *
+ * @example
+ * readSelectionPaths('["notes/a.md","docs"]'); // ["notes/a.md", "docs"]
+ */
+export function readSelectionPaths(value: string): string[] {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return Array.isArray(parsed) && parsed.every((item) => typeof item === "string") ? (parsed as string[]) : [];
+  } catch {
+    return [];
+  }
 }
 
 /** A `Content-Disposition` value that keeps non-ASCII names (RFC 6266) with an ASCII fallback. */

@@ -2,29 +2,29 @@
 
 import { UploadCloud } from "lucide-react";
 import { useState, type DragEvent, type ReactNode } from "react";
-import { showToastNotification } from "@/components/interactive/toast-notification";
-import { readDroppedFiles } from "@/components/explorer/file-tree";
 import { ENTRY_DRAG_TYPE } from "@/lib/client/entry-drag";
+import { captureDroppedEntries } from "@/lib/client/folder-upload";
 import { mergeClassNames } from "@/utilities/merge-class-names";
 
 /**
- * Wraps the file pane: while files from the computer are dragged over it, an overlay says where
- * they will go, and dropping them queues the uploads. Entries dragged inside CMM are
- * ignored here; the tree handles those.
+ * Wraps the file pane: while files or folders from the computer are dragged over it, an overlay
+ * says where they will go, and dropping them queues the uploads (folders with everything in them).
+ * Entries dragged inside CMM are ignored here; the tree handles those.
  *
  * @example
- * <UploadDropzone folderLabel="notes" isEnabled={canWrite} onFiles={(files) => uploadFiles(files, "notes")}>…</UploadDropzone>
+ * <UploadDropzone folderLabel="notes" isEnabled={canWrite} onDrop={(dropped) => uploadDropped(dropped, "notes")}>…</UploadDropzone>
  */
 export function UploadDropzone({
   folderLabel,
   isEnabled,
-  onFiles,
+  onDrop,
   className,
   children,
 }: {
   folderLabel: string;
   isEnabled: boolean;
-  onFiles: (files: File[]) => void;
+  /** The dropped files and folders, captured during the drop (see `captureDroppedEntries`). */
+  onDrop: (dropped: (FileSystemEntry | File)[]) => void;
   className?: string;
   children: ReactNode;
 }) {
@@ -51,15 +51,8 @@ export function UploadDropzone({
         if (!isFileDrag(dragEvent)) return;
         dragEvent.preventDefault();
         setIsDraggingFiles(false);
-        const { files, skippedFolders } = readDroppedFiles(dragEvent.dataTransfer);
-        if (skippedFolders > 0) {
-          showToastNotification({
-            title: "Folders were skipped",
-            tone: "warning",
-            description: "Drop the files inside a folder to upload them.",
-          });
-        }
-        if (files.length > 0) onFiles(files);
+        const dropped = captureDroppedEntries(dragEvent.dataTransfer);
+        if (dropped.length > 0) onDrop(dropped);
       }}
     >
       {children}

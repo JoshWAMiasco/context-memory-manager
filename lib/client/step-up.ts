@@ -47,6 +47,28 @@ export function promptStepUp(prompt: StepUpPrompt): Promise<StepUpResult> {
 }
 
 /**
+ * Confirms an action ahead of time, when the server will want it: resolves `{}` when no
+ * confirmation is needed (or this session already gave it), `{ actionToken }` from a remote network,
+ * or undefined when the user cancels. For downloads (plain navigations, which can't retry a `428`)
+ * and folder uploads (one confirmation for many files).
+ *
+ * @example
+ * const grant = await requestStepUpGrant("upload", "home:notes/import/**");
+ * if (!grant) return; // cancelled
+ */
+export async function requestStepUpGrant(
+  action: StepUpAction,
+  resource: string,
+): Promise<{ actionToken?: string } | undefined> {
+  const { stepUp } = await requestJson<MeResponse>("/api/auth/me");
+  if (stepUp.mode === "none" || !stepUp.actions.includes(action)) return {};
+  if (stepUp.mode === "lan-once" && stepUp.lanConfirmed) return {};
+  const stepUpResult = await promptStepUp({ mode: stepUp.mode, action, resource });
+  if (!stepUpResult.confirmed) return undefined;
+  return stepUpResult.actionToken ? { actionToken: stepUpResult.actionToken } : {};
+}
+
+/**
  * Downloads are plain navigations, so a `428` can't be retried. This confirms first when needed and
  * returns the URL with `?at=<action token>` for remote clients, the URL unchanged when no
  * confirmation is needed, or undefined when the user cancels.
@@ -60,13 +82,10 @@ export async function getStepUpDownloadUrl(
   action: StepUpAction,
   resource: string,
 ): Promise<string | undefined> {
-  const { stepUp } = await requestJson<MeResponse>("/api/auth/me");
-  if (stepUp.mode === "none" || !stepUp.actions.includes(action)) return url;
-  if (stepUp.mode === "lan-once" && stepUp.lanConfirmed) return url;
-  const stepUpResult = await promptStepUp({ mode: stepUp.mode, action, resource });
-  if (!stepUpResult.confirmed) return undefined;
-  if (!stepUpResult.actionToken) return url;
+  const grant = await requestStepUpGrant(action, resource);
+  if (!grant) return undefined;
+  if (!grant.actionToken) return url;
   const downloadUrl = new URL(url, window.location.origin);
-  downloadUrl.searchParams.set("at", stepUpResult.actionToken);
+  downloadUrl.searchParams.set("at", grant.actionToken);
   return `${downloadUrl.pathname}${downloadUrl.search}`;
 }
