@@ -12,6 +12,7 @@ import {
   TerminalKeyBar,
   type TerminalKey,
 } from "@/components/terminal/terminal-key-bar";
+import { installTouchInput } from "@/components/terminal/touch-input";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { readDesktopBridge } from "@/lib/client/desktop";
 import { ENTRY_DRAG_TYPE, readDraggedEntries } from "@/lib/client/entry-drag";
@@ -31,6 +32,9 @@ export type TerminalConnection = "connecting" | "connected" | "disconnected";
 
 /** Touch screens and phones get the key bar: their keyboards have no arrows, Esc or Tab. */
 const KEY_BAR_MEDIA_QUERY = "(pointer: coarse), (max-width: 767px)";
+
+/** Touch screens type through their on-screen keyboard, which xterm alone garbles on Android. */
+const TOUCH_INPUT_MEDIA_QUERY = "(pointer: coarse)";
 
 /** Waits before reconnecting a dropped socket: quickly at first, then every 5 seconds. */
 const RECONNECT_DELAYS_MILLISECONDS = [500, 1000, 2000, 5000];
@@ -147,7 +151,7 @@ function openSocket(terminalId: string): WebSocket {
  * the shell), reconnects a dropped socket on its own (not after the session locks), and opens links
  * in the browser. Files and folders dropped on it paste their quoted full paths at the prompt,
  * without pressing Enter. On touch screens a key bar underneath sends Esc, Tab, Ctrl, the arrows
- * and Enter.
+ * and Enter; what the on-screen keyboard types is sent as it changes (see `installTouchInput`).
  *
  * @example
  * <TerminalView terminalId={id} shell="zsh" isVisible onOutput={markUnread} onExit={showExit} onConnectionChange={setConnection} />
@@ -177,6 +181,7 @@ export function TerminalView({
   const isVisibleRef = useRef(isVisible);
   const [isDropTarget, setIsDropTarget] = useState(false);
   const sendInputRef = useRef<((data: string) => void) | undefined>(undefined);
+  const resetTouchInputRef = useRef<(() => void) | undefined>(undefined);
   const isControlHeldRef = useRef(false);
   const [isControlHeld, setIsControlHeld] = useState(false);
   const hasKeyBar = useMediaQuery(KEY_BAR_MEDIA_QUERY);
@@ -238,17 +243,24 @@ export function TerminalView({
       resizeObserver.observe(container);
       disposers.push(() => resizeObserver.disconnect());
       sendInputRef.current = (data) => send({ type: "input", data });
-      const inputSubscription = terminal.onData((data) => {
+      const sendTyped = (data: string) => {
         // Ctrl from the key bar applies to the next key typed, then lets go.
         if (isControlHeldRef.current) {
           isControlHeldRef.current = false;
           setIsControlHeld(false);
+          resetTouchInputRef.current?.();
           send({ type: "input", data: applyControlModifier(data) });
           return;
         }
         send({ type: "input", data });
-      });
+      };
+      const inputSubscription = terminal.onData(sendTyped);
       disposers.push(() => inputSubscription.dispose());
+      if (terminal.textarea && window.matchMedia(TOUCH_INPUT_MEDIA_QUERY).matches) {
+        const touchInput = installTouchInput(container, terminal.textarea, sendTyped);
+        resetTouchInputRef.current = touchInput.reset;
+        disposers.push(touchInput.dispose);
+      }
       // A theme change (or the computer's, under System) recolours the terminal in place.
       disposers.push(
         resolvedTheme.subscribe(() => {
@@ -303,6 +315,7 @@ export function TerminalView({
       terminalRef.current = undefined;
       fitRef.current = undefined;
       sendInputRef.current = undefined;
+      resetTouchInputRef.current = undefined;
     };
   }, [terminalId]);
 
@@ -321,6 +334,8 @@ export function TerminalView({
     const terminal = terminalRef.current;
     if (!terminal) return;
     changeControlHeld(false);
+    // The key changes the line under the keyboard's text (Tab completes, the arrows move).
+    resetTouchInputRef.current?.();
     sendInputRef.current?.(readTerminalKeySequence(key, terminal.modes.applicationCursorKeysMode));
     terminal.focus();
   };

@@ -477,7 +477,7 @@ export function ExplorerWorkspace({
     >
       <h1 className="sr-only">{memoryRoot?.memory.name ?? storage.label}</h1>
       <div
-        className="box h-[calc(100dvh-12rem)] min-h-[420px] overflow-hidden md:h-[calc(100dvh-9rem)]"
+        className="box h-[calc(100dvh-12rem)] min-h-[240px] overflow-hidden md:h-[calc(100dvh-9rem)] md:min-h-[420px]"
         data-testid="explorer"
         data-full-width
       >

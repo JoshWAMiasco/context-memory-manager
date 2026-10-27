@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { THEME_FONT_VARIABLE_CLASS_NAMES } from "@/configuration/theme-fonts";
@@ -13,6 +13,12 @@ export const metadata: Metadata = {
   description: THEME_IDENTITY.productName,
   icons: { icon: { url: "/icons/cmm/logo.svg", type: "image/svg+xml" } },
 };
+
+/**
+ * On phones the page shrinks above the on-screen keyboard (`dvh` follows it), so the terminal's
+ * key bar and the line being typed stay in view rather than under the keyboard.
+ */
+export const viewport: Viewport = { width: "device-width", initialScale: 1, interactiveWidget: "resizes-content" };
 
 /**
  * Every page renders per request: the CSP nonce from `proxy.ts` only reaches dynamically rendered

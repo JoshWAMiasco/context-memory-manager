@@ -21,6 +21,8 @@ import { Slideover } from "@/components/interactive/slideover";
 import { lockNow, readInitials, signOut, type AccountMenuAccount } from "@/components/layout-shell/account-menu";
 import { ThemeSwitch } from "@/components/layout-shell/theme-switch";
 import { openQuickSearch } from "@/components/shell/quick-search";
+import { useIsTyping } from "@/hooks/use-is-typing";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { useEncryptedFolders } from "@/lib/client/encryption";
 import { mergeClassNames } from "@/utilities/merge-class-names";
 
@@ -218,7 +220,8 @@ const BOTTOM_ITEM_CLASS_NAMES =
 /**
  * The bottom bar on phones, like other mobile apps: Drives, Search, Backup, Trash and Menu (the
  * drawer with the account and system actions). Hidden from the `md` breakpoint up, where the top
- * bar has room for them.
+ * bar has room for them, and on touch screens while the keyboard is up, so the room above the
+ * keyboard goes to what is being typed in (the terminal and its key bar).
  *
  * @example
  * <MobileBottomBar />
@@ -226,6 +229,9 @@ const BOTTOM_ITEM_CLASS_NAMES =
 export function MobileBottomBar() {
   const currentPathname = usePathname();
   const isOpen = useIsDrawerOpen();
+  const isTouch = useMediaQuery("(pointer: coarse)");
+  const isTyping = useIsTyping();
+  if (isTouch && isTyping) return null;
   return (
     <nav
       aria-label="Main menu"

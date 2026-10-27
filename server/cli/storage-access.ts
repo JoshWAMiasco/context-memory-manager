@@ -73,10 +73,26 @@ function printManualAccessSteps(
 }
 
 /**
+ * The ACL entries (access and default) `setfacl -R -m` applies to a storage root: the service
+ * account, and the folder's owner when that is a person. Files CMM creates belong to the service
+ * account, so without the owner's entry the person whose folder it is couldn't open or `cd` into
+ * them from their own terminal on the server.
+ *
+ * @example
+ * readStorageAclEntries(1000, 999); // "u:cmm:rwX,d:u:cmm:rwX,u:1000:rwX,d:u:1000:rwX"
+ */
+export function readStorageAclEntries(ownerUserId: number, serviceUserId: number | undefined): string {
+  const entries = [`u:${SERVICE_ACCOUNT}:rwX`];
+  if (ownerUserId !== 0 && ownerUserId !== serviceUserId) entries.push(`u:${ownerUserId}:rwX`);
+  return entries.flatMap((entry) => [entry, `d:${entry}`]).join(",");
+}
+
+/**
  * Lets the service account read and write `rootPath`: an ACL entry on everything inside, a default
  * ACL so new files inherit it, and execute-only entries on parent folders it can't pass through
- * (home folders are 0750 on current Ubuntu). A folder the service account already owns (install.sh
- * creates them so) keeps its permissions. Without `setfacl` it prints chgrp/chmod steps instead.
+ * (home folders are 0750 on current Ubuntu). The folder's owner gets the same entries, so files CMM
+ * creates there stay open to them. A folder the service account already owns (install.sh creates
+ * them so) keeps its permissions. Without `setfacl` it prints chgrp/chmod steps instead.
  */
 export async function grantServiceAccess(context: CliContext, rootPath: string): Promise<void> {
   if (isSandbox(context)) {
@@ -84,12 +100,14 @@ export async function grantServiceAccess(context: CliContext, rootPath: string):
     return;
   }
   const closedAncestors = listClosedAncestors(rootPath, (folder) => statSync(folder).mode);
-  const isOwned = statSync(rootPath).uid === readServiceOwner(context.paths)?.userId;
+  const ownerUserId = statSync(rootPath).uid;
+  const serviceUserId = readServiceOwner(context.paths)?.userId;
+  const isOwned = ownerUserId === serviceUserId;
   if (isOwned) context.print(`${rootPath} already belongs to ${SERVICE_ACCOUNT}.`);
   if (isOwned && closedAncestors.length === 0) return;
-  const entry = `u:${SERVICE_ACCOUNT}:rwX`;
+  const entries = readStorageAclEntries(ownerUserId, serviceUserId);
   const steps: { target: string; aclArguments: string[] }[] = [
-    ...(isOwned ? [] : [{ target: rootPath, aclArguments: ["-R", "-m", `${entry},d:${entry}`, rootPath] }]),
+    ...(isOwned ? [] : [{ target: rootPath, aclArguments: ["-R", "-m", entries, rootPath] }]),
     ...closedAncestors.map((ancestor) => ({
       target: ancestor,
       aclArguments: ["-m", `u:${SERVICE_ACCOUNT}:--x`, ancestor],
@@ -107,5 +125,6 @@ export async function grantServiceAccess(context: CliContext, rootPath: string):
     context.warn(problem);
   }
   const passThrough = closedAncestors.length > 0 ? ` (pass-through on ${closedAncestors.join(", ")})` : "";
-  context.print(`Granted ${SERVICE_ACCOUNT} read and write access to ${rootPath}${passThrough}.`);
+  const owner = !isOwned && ownerUserId !== 0 ? ` and kept it open to its owner (uid ${ownerUserId})` : "";
+  context.print(`Granted ${SERVICE_ACCOUNT} read and write access to ${rootPath}${owner}${passThrough}.`);
 }

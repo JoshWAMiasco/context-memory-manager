@@ -6,8 +6,9 @@ import { expect, test, treeRow, waitForPageReady } from "./support/fixtures";
 /*
  * CMM on a phone (412×915, touch): the top bar fits without overflowing, the page links are in a
  * bottom bar and the account and system actions in a menu drawer; the explorer shows Files, the
- * file pane and Terminal one at a time; the terminal has a key bar for the arrows, Enter and Esc;
- * and the Markdown toolbar stays on one row that fits the screen.
+ * file pane and Terminal one at a time; the terminal has a key bar for the arrows, Enter and Esc,
+ * and types what a composing (Android) keyboard settles on; and the Markdown toolbar stays on one
+ * row that fits the screen.
  */
 test.use({ viewport: { width: 412, height: 915 }, hasTouch: true, isMobile: true });
 
@@ -159,6 +160,36 @@ test("the terminal has keys a phone keyboard lacks", async ({ page, request, wor
     await expect(keyBar.getByTestId("terminal-key-control")).toHaveAttribute("aria-pressed", "false");
     await page.keyboard.type("echo after-$((40+2))\n");
     await expect(screen).toContainText("after-42", { timeout: 15_000 });
+
+    /*
+     * An Android keyboard composes each word in the text area and autocorrects it after a space
+     * by rewriting it there ("imw " becomes "ime "): the shell gets the corrected line once.
+     */
+    await docked.locator(".xterm-helper-textarea").evaluate((textarea: HTMLTextAreaElement) => {
+      const fire = (event: Event) => textarea.dispatchEvent(event);
+      const compose = (before: string, steps: string[]) => {
+        fire(new CompositionEvent("compositionstart", { data: "" }));
+        for (const word of steps) {
+          fire(new KeyboardEvent("keydown", { key: "Unidentified", keyCode: 229, bubbles: true }));
+          textarea.value = before + word;
+          fire(new CompositionEvent("compositionupdate", { data: word }));
+          fire(new InputEvent("input", { inputType: "insertCompositionText", data: word, isComposing: true, bubbles: true }));
+        }
+        fire(new CompositionEvent("compositionend", { data: steps.at(-1) }));
+      };
+      const typeSpace = () => {
+        fire(new KeyboardEvent("keydown", { key: "Unidentified", keyCode: 229, bubbles: true }));
+        textarea.value += " ";
+        fire(new InputEvent("input", { inputType: "insertText", data: " ", bubbles: true }));
+      };
+      compose("", ["e", "ec", "ech", "echo"]);
+      typeSpace();
+      compose("echo ", ["i", "im", "imw"]);
+      typeSpace();
+      compose("echo ", ["ime "]);
+    });
+    await page.keyboard.type("$((6*7))\n");
+    await expect(screen).toContainText("$ echo ime $((6*7))ime 42", { timeout: 15_000 });
   } finally {
     if (terminalId) await request.delete(`/api/terminals/${terminalId}`);
     await request.put("/api/settings/terminal.enabled", { data: { value: false } });

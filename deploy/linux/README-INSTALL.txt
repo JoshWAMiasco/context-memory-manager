@@ -111,7 +111,9 @@ folders are read-only too (ProtectHome=read-only). To let CMM use a folder, alwa
     sudo cmm add-storage /home/alex/notes --label "Alex's notes"
 
 This checks the folder, grants the cmm user read and write access with ACLs (setfacl, package
-"acl"; new files inherit the access), lets it pass through parent folders such as /home/alex,
+"acl"; new files inherit the access), gives the folder's owner the same entries (files CMM
+creates belong to cmm, and stay open to alex in their own terminal), lets it pass through
+parent folders such as /home/alex,
 adds the folder to config.json, writes the systemd drop-in
 /etc/systemd/system/cmm.service.d/storage.conf (ReadWritePaths=) and restarts CMM. Without
 setfacl it prints the chgrp/chmod commands to run instead.
