@@ -217,6 +217,10 @@ the terminal module there. This makes an offline tarball with its own Node.js ru
 up as a hardened systemd service with the `cmm` admin command. The [Server Guide](docs/guides/server-guide.md) walks
 through the install.
 
+Each release has the x64 package ready to download, with `cmm-server-setup.sh`
+([deploy/linux/cmm-server-setup.sh](deploy/linux/cmm-server-setup.sh)): one script that installs it behind nginx on a
+Tailscale network, with a real HTTPS certificate (`sudo ./cmm-server-setup.sh --package ./cmm-server-<version>-linux-x64.tar.gz`).
+
 ### Other commands
 
 | Command | What it does |

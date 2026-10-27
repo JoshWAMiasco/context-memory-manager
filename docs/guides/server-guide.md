@@ -143,7 +143,8 @@ cmm-server-<version>-linux-arm64.tar.gz
 cmm-server-<version>-linux-arm64.tar.gz.sha256
 ```
 
-You need the pair that matches your server. Copy both files.
+You need the pair that matches your server. Copy both files. Each GitHub release also has `cmm-server-setup.sh`,
+which installs the package behind nginx on a Tailscale network in one step (see *Option D* under *HTTPS*).
 
 ## Copy with a USB stick
 
@@ -429,14 +430,14 @@ Your next steps:
 Without HTTPS, passwords, session cookies and files cross the network unencrypted. Anyone who can watch the
 network can read them. On anything other than a network you fully control, turn HTTPS on.
 
-There are three ways:
+There are four ways:
 
-| | Self-signed (`cmm gen-cert`) | Your own certificate | Caddy |
-|---|---|---|---|
-| Effort | One command | Copy two files, edit the config | Install Caddy, edit two configs |
-| Works offline | Yes | Yes | Yes (`tls internal`) |
-| Browser warning | Yes, until you accept it | No, if your clients trust the issuer | No, once clients trust Caddy's local authority |
-| Port | 7420 | 7420 | 443 |
+| | Self-signed (`cmm gen-cert`) | Your own certificate | Caddy | nginx and Tailscale |
+|---|---|---|---|---|
+| Effort | One command | Copy two files, edit the config | Install Caddy, edit two configs | One script |
+| Works offline | Yes | Yes | Yes (`tls internal`) | No: Tailscale and its certificates need internet |
+| Browser warning | Yes, until you accept it | No, if your clients trust the issuer | No, once clients trust Caddy's local authority | No (a Let's Encrypt certificate) |
+| Port | 7420 | 7420 | 443 | 443, on your tailnet only |
 
 ## Option A: a self-signed certificate with cmm gen-cert
 
@@ -617,6 +618,49 @@ access (`tls internal`). Use it if you want CMM on port 443 or already use Caddy
 To stop the browser warning, make the clients trust Caddy's local authority: copy
 `/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt` to each client and import it into the system
 or browser certificate store.
+
+## Option D: nginx and Tailscale, with one script
+
+If the server and the people using it are on a [Tailscale](https://tailscale.com) network (a tailnet), CMM can be
+reached as `https://<machine>.<tailnet>.ts.net` with a real certificate, from every device on the tailnet and from
+nowhere else. `cmm-server-setup.sh` sets up all of it in one go: the system packages, Tailscale, CMM itself, the
+certificate (renewed weekly), nginx in front of CMM, and Claude Code for the terminals.
+
+1. In the Tailscale admin console, on the **DNS** page, turn on **MagicDNS** and **HTTPS Certificates**.
+2. Copy `cmm-server-setup.sh` (from the release, or `deploy/linux/` in the repository) and the server package with
+   its `.sha256` to the server, into one folder.
+3. Run it there:
+
+   ```bash
+   sudo ./cmm-server-setup.sh --package ./cmm-server-<version>-linux-x64.tar.gz
+   ```
+
+   Add `--storage <path>` for the folders CMM may use, `--no-libreoffice` to leave LibreOffice out, and
+   `--no-claude` to leave Claude Code out. If the machine isn't on the tailnet yet, it runs `tailscale up` and prints
+   a link to sign it in.
+4. Open the address it prints from any device on the tailnet, and finish setup with the setup code.
+
+What it sets up:
+
+| | |
+|---|---|
+| CMM | Listens on `127.0.0.1:7420` only, with `trustedProxies` `["127.0.0.1"]` and `"tls": null`: nginx does HTTPS |
+| nginx | `/etc/nginx/sites-available/cmm`: port 443 (and 80, which redirects), tailnet addresses and the server itself only, no buffering of uploads, downloads or live updates, terminal WebSockets passed through |
+| Certificate | `/etc/nginx/tailscale/`, renewed by `/etc/cron.weekly/cmm-tailscale-cert` |
+| Firewall | If `ufw` is on, ports 443 and 80 on `tailscale0` |
+
+The script is safe to run again, for example with a newer package to upgrade. It keeps an nginx site you have
+edited by hand (it only rewrites the one it wrote).
+
+> [!NOTE]
+> Every device on the tailnet counts as **remote** (see *Security confirmation behaviour*): Tailscale gives the
+> server a single address of its own, so no other device shares its subnet. Uploads and downloads ask for the
+> password each time.
+
+> [!WARNING]
+> Don't run `sudo cmm gen-cert` on a server set up this way. It turns on HTTPS in CMM itself, and nginx, which
+> talks plain HTTP to CMM, then gets no answer (`502 Bad Gateway`). To undo it, set `"tls": null` in
+> `/etc/cmm/config.json` and run `sudo systemctl restart cmm`.
 
 # Firewall
 
