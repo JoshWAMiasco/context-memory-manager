@@ -126,7 +126,22 @@ export function useMemoryMutations() {
     mutationFn: (
       input: { storageId: string; path: string } & (({ to: "memory" } & MemoryFieldsInput) | { to: "folder" }),
     ) => requestJson<{ memory: MemorySummary | null }>("/api/memory/convert", { method: "POST", body: input }),
-    onSuccess: (_result, input) => refresh(input.storageId, input.path),
+    onSuccess: (_result, input) => {
+      if (input.to === "folder") {
+        // Leaves the dashboard's list at once, without waiting for the listing to be fetched again.
+        queryClient.setQueryData<MemoryListing>(
+          QUERY_KEYS.memories(),
+          (listing) =>
+            listing && {
+              ...listing,
+              memories: listing.memories.filter(
+                (location) => !(location.storageId === input.storageId && location.path === input.path),
+              ),
+            },
+        );
+      }
+      refresh(input.storageId, input.path);
+    },
   });
   const updateMemory = useMutation({
     mutationFn: (input: Partial<MemoryFieldsInput> & { storageId: string; path: string }) =>

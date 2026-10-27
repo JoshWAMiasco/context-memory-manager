@@ -4,6 +4,7 @@ import { MEMORY_COLORS, MEMORY_ICONS } from "@/lib/memory";
 import { withApi } from "@/server/auth/guard";
 import { storageFromBody, storagePathSchema } from "@/server/http/fs-route-input";
 import { convertToFolder, convertToMemory } from "@/server/memory";
+import { forgetMemory } from "@/server/memory/discovery";
 
 const convertBodySchema = z.discriminatedUnion("to", [
   z.object({
@@ -23,6 +24,7 @@ export const POST = withApi(
   async ({ body, storage }) => {
     if (body.to === "folder") {
       await convertToFolder(storage(body.storageId), body.path);
+      forgetMemory(body.storageId, body.path);
       return NextResponse.json({ memory: null });
     }
     const { name, description, icon, color } = body;

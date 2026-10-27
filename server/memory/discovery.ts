@@ -238,6 +238,19 @@ async function readRememberedMemories(storage: ActiveStorage): Promise<FoundMemo
   return memories.filter((memory): memory is FoundMemory => memory !== undefined);
 }
 
+/**
+ * Drops a folder that stopped being a memory from the walk of its storage and from the remembered
+ * memories. A walk still running when the folder was converted may have read its manifest before
+ * that and would keep listing it until the walk ends.
+ */
+export function forgetMemory(storageId: string, memoryPath: string): void {
+  getStorageWalks().get(storageId)?.memories.delete(memoryPath);
+  getDatabase()
+    .orm.delete(memoryLocations)
+    .where(and(eq(memoryLocations.storageId, storageId), eq(memoryLocations.path, memoryPath)))
+    .run();
+}
+
 /** The storage's current walk: a running one, a recent one nothing has changed since, or a new one. */
 function readCurrentWalk(storage: ActiveStorage): StorageWalk {
   const walks = getStorageWalks();
