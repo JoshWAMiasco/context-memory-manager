@@ -122,11 +122,15 @@ export function TrashComparison({ entry, trashItemId }: { entry: FileEntry; tras
         <div>
           <p className="text-sm">
             <span className="text-foreground-subtle">Before:</span> the version replaced
-            {keptAt ? ` on ${keptAt}` : ""}, kept in Trash ·{" "}
-            <span className="text-foreground-subtle">After:</span> the file now
+            {keptAt ? ` on ${keptAt}` : ""}, kept in Trash · <span className="text-foreground-subtle">After:</span> the
+            file now
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
-            <Tooltip content={explorer.readWriteReason(readParentPath(entry.path)) ?? "Put the previous version back next to this one"}>
+            <Tooltip
+              content={
+                explorer.readWriteReason(readParentPath(entry.path)) ?? "Put the previous version back next to this one"
+              }
+            >
               <Button
                 variant="outline-primary"
                 size="small"
@@ -174,8 +178,8 @@ export function TrashComparison({ entry, trashItemId }: { entry: FileEntry; tras
           }
         }}
       >
-        It comes back next to {entry.name} as a copy (&ldquo;{entry.name} (restored)&rdquo; or similar), so nothing
-        is overwritten.
+        It comes back next to {entry.name} as a copy (&ldquo;{entry.name} (restored)&rdquo; or similar), so nothing is
+        overwritten.
       </ConfirmDialog>
     </div>
   );

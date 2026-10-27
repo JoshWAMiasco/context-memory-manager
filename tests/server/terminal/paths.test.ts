@@ -32,7 +32,9 @@ describe("buildDroppedPathText", () => {
 
   it("refuses a user who can't use terminals, before resolving any path", async () => {
     readTerminalAvailability.mockReturnValue({ available: false, reason: "Only admins can open terminals." });
-    await expect(buildDroppedPathText({ id: "u2", role: "viewer" as const }, "term-1", storage, ["a.md"])).rejects.toMatchObject({
+    await expect(
+      buildDroppedPathText({ id: "u2", role: "viewer" as const }, "term-1", storage, ["a.md"]),
+    ).rejects.toMatchObject({
       status: 403,
     });
     expect(readAbsolutePath).not.toHaveBeenCalled();

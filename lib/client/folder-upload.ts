@@ -121,7 +121,9 @@ export function readPickedFolder(files: readonly File[]): FolderTree {
 
 /** A tree without OS clutter and `.git/`, and how many items were left out. */
 export function withoutJunk(tree: FolderTree): FolderTree & { skippedCount: number } {
-  const files = tree.files.filter(({ file, relativeDirectory }) => !isJunkPath(joinEntryPath(relativeDirectory, file.name)));
+  const files = tree.files.filter(
+    ({ file, relativeDirectory }) => !isJunkPath(joinEntryPath(relativeDirectory, file.name)),
+  );
   const directories = tree.directories.filter((directory) => !isJunkPath(directory));
   return {
     files,

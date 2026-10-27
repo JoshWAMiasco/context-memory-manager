@@ -28,7 +28,8 @@ function readUniqueZipName(name: string, isDirectory: boolean, takenNames: Set<s
   const dotIndex = name.lastIndexOf(".");
   const [stem, extension] = isDirectory || dotIndex <= 0 ? [name, ""] : [name.slice(0, dotIndex), name.slice(dotIndex)];
   let candidate = name;
-  for (let attempt = 2; takenNames.has(candidate.toLowerCase()); attempt += 1) candidate = `${stem} (${attempt})${extension}`;
+  for (let attempt = 2; takenNames.has(candidate.toLowerCase()); attempt += 1)
+    candidate = `${stem} (${attempt})${extension}`;
   takenNames.add(candidate.toLowerCase());
   return candidate;
 }
@@ -37,7 +38,11 @@ function readUniqueZipName(name: string, isDirectory: boolean, takenNames: Set<s
  * The selected items, resolved and checked (read guards): a single folder's zip holds its
  * contents; several items each get a top-level entry named after them.
  */
-async function resolveZipRoots(storage: ActiveStorage, relativePaths: readonly string[], actor: FileActor): Promise<ZipRoot[]> {
+async function resolveZipRoots(
+  storage: ActiveStorage,
+  relativePaths: readonly string[],
+  actor: FileActor,
+): Promise<ZipRoot[]> {
   if (relativePaths.length === 0) throw validationFailed("Choose something to download.");
   if (relativePaths.length > MAX_ZIP_ITEMS) throw validationFailed(`Download at most ${MAX_ZIP_ITEMS} items at once.`);
   const takenNames = new Set<string>();
@@ -55,7 +60,11 @@ async function resolveZipRoots(storage: ActiveStorage, relativePaths: readonly s
     });
     const name = resolved.relativePath === "" ? storage.label : path.basename(resolved.absolutePath);
     const isLoneFolder = relativePaths.length === 1 && isDirectory;
-    roots.push({ resolved, isDirectory, zipName: isLoneFolder ? "" : readUniqueZipName(name, isDirectory, takenNames) });
+    roots.push({
+      resolved,
+      isDirectory,
+      zipName: isLoneFolder ? "" : readUniqueZipName(name, isDirectory, takenNames),
+    });
   }
   return roots;
 }
@@ -148,6 +157,10 @@ export async function createZipStream(
 }
 
 /** Streams a folder as a zip of its contents (see `createZipStream`). */
-export function createFolderZipStream(storage: ActiveStorage, relativePath: string, actor: FileActor): Promise<Readable> {
+export function createFolderZipStream(
+  storage: ActiveStorage,
+  relativePath: string,
+  actor: FileActor,
+): Promise<Readable> {
   return createZipStream(storage, [relativePath], actor);
 }

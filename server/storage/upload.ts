@@ -121,9 +121,14 @@ async function checkReplaceTarget(storage: ActiveStorage, targetPath: string, re
   const currentEtag = await readCurrentEtag(storage, targetPath);
   if (currentEtag === undefined) throw notFound("The file to replace is no longer there.");
   if (replace.expectedEtag !== undefined && currentEtag !== replace.expectedEtag) {
-    throw new ApiRouteError(409, "ETAG_MISMATCH", "The file changed since you chose to replace it. Look at it, then try again.", {
-      etag: currentEtag,
-    });
+    throw new ApiRouteError(
+      409,
+      "ETAG_MISMATCH",
+      "The file changed since you chose to replace it. Look at it, then try again.",
+      {
+        etag: currentEtag,
+      },
+    );
   }
 }
 

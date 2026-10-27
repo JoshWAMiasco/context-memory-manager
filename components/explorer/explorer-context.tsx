@@ -574,7 +574,11 @@ export function ExplorerProvider({
     (dropped: readonly (FileSystemEntry | File)[], folderPath: string) => {
       void readDroppedTree(dropped).then(
         (tree) => {
-          if (tree.directories.length === 0) uploadFiles(tree.files.map(({ file }) => file), folderPath);
+          if (tree.directories.length === 0)
+            uploadFiles(
+              tree.files.map(({ file }) => file),
+              folderPath,
+            );
           else void uploadTree(tree, folderPath);
         },
         (readError: unknown) => announceError("Couldn't read what was dropped", readError),
@@ -585,7 +589,13 @@ export function ExplorerProvider({
 
   const queueReplacement = useCallback(
     (file: File, entryPath: string, expectedEtag: string | undefined) => {
-      getUploadQueue().addReplacement(file, storage.id, readParentPath(entryPath), readBaseName(entryPath), expectedEtag);
+      getUploadQueue().addReplacement(
+        file,
+        storage.id,
+        readParentPath(entryPath),
+        readBaseName(entryPath),
+        expectedEtag,
+      );
     },
     [storage.id],
   );
@@ -658,9 +668,7 @@ export function ExplorerProvider({
           return;
         }
         const started =
-          paths.length === 1
-            ? await downloadEntry(storage.id, firstPath)
-            : await downloadSelection(storage.id, paths);
+          paths.length === 1 ? await downloadEntry(storage.id, firstPath) : await downloadSelection(storage.id, paths);
         if (started) {
           showToastNotification({
             title: "Preparing the zip",
@@ -833,8 +841,8 @@ export function ExplorerProvider({
           testId="replace-type-dialog"
           onConfirm={() => queueReplacement(pendingReplace.file, pendingReplace.path, pendingReplace.expectedEtag)}
         >
-          &ldquo;{pendingReplace.file.name}&rdquo; is a different kind of file. It is saved under the name{" "}
-          &ldquo;{readBaseName(pendingReplace.path)}&rdquo;, which may make it open in the wrong viewer.
+          &ldquo;{pendingReplace.file.name}&rdquo; is a different kind of file. It is saved under the name &ldquo;
+          {readBaseName(pendingReplace.path)}&rdquo;, which may make it open in the wrong viewer.
         </ConfirmDialog>
       )}
     </ExplorerContext.Provider>

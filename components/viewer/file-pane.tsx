@@ -95,10 +95,7 @@ export function FilePane() {
   if (entry && explorer.historyPath === selectedPath && entry.path === selectedPath) {
     const focus = explorer.historyFocus;
     content = (
-      <HistoryPanel
-        key={`${storage.id}:${entry.path}:${focus?.sha ?? ""}:${focus?.trashItemId ?? ""}`}
-        entry={entry}
-      />
+      <HistoryPanel key={`${storage.id}:${entry.path}:${focus?.sha ?? ""}:${focus?.trashItemId ?? ""}`} entry={entry} />
     );
   } else if (isRoot) {
     content = (

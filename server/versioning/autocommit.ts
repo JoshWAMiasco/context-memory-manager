@@ -24,16 +24,7 @@ const DEFAULT_BATCH_MILLISECONDS = 2000;
 const APP_WRITE_MEMORY_MILLISECONDS = 30_000;
 
 type ChangeKind =
-  | "write"
-  | "create"
-  | "mkdir"
-  | "rename"
-  | "move"
-  | "copy"
-  | "delete"
-  | "restore"
-  | "upload"
-  | "replace";
+  "write" | "create" | "mkdir" | "rename" | "move" | "copy" | "delete" | "restore" | "upload" | "replace";
 
 interface PendingChange {
   kind: ChangeKind;

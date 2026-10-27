@@ -194,7 +194,11 @@ export async function moveToTrash(storage: ActiveStorage, relativePath: string, 
  * @example
  * const kept = await copyFileToTrash(storage, "notes/report.md", actor);
  */
-export async function copyFileToTrash(storage: ActiveStorage, relativePath: string, actor: FileActor): Promise<TrashItem> {
+export async function copyFileToTrash(
+  storage: ActiveStorage,
+  relativePath: string,
+  actor: FileActor,
+): Promise<TrashItem> {
   const { absolutePath, relativePath: normalizedPath, rootPath } = await resolveInStorage(storage, relativePath);
   const fileStats = await stat(absolutePath);
   if (!fileStats.isFile()) throw validationFailed("Only a file can be kept in the trash before it is replaced.");

@@ -153,9 +153,9 @@ export function ExplorerDialogs() {
       >
         The zip holds {measurement.fileCount.toLocaleString()} file{measurement.fileCount === 1 ? "" : "s"}
         {` (${formatFileSize(measurement.totalBytes)}). `}
-        {measurement.encryptedFileCount.toLocaleString()} of them{" "}
-        {measurement.encryptedFileCount === 1 ? "is" : "are"} encrypted and will be decrypted into the zip, so anyone
-        with the zip can read {measurement.encryptedFileCount === 1 ? "it" : "them"}. Their folders must be unlocked.
+        {measurement.encryptedFileCount.toLocaleString()} of them {measurement.encryptedFileCount === 1 ? "is" : "are"}{" "}
+        encrypted and will be decrypted into the zip, so anyone with the zip can read{" "}
+        {measurement.encryptedFileCount === 1 ? "it" : "them"}. Their folders must be unlocked.
       </ConfirmDialog>
     );
   }

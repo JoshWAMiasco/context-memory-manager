@@ -13,7 +13,10 @@ const initUploadBodySchema = z.object({
   size: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
   overwrite: z.boolean().default(false),
   /** "Replace with file from computer…": the existing file, as the user last saw it. */
-  replace: z.object({ expectedEtag: z.string().min(1).max(200).optional() }).strict().optional(),
+  replace: z
+    .object({ expectedEtag: z.string().min(1).max(200).optional() })
+    .strict()
+    .optional(),
   /** Part of a folder upload into this folder: one step-up for the whole folder covers it. */
   batchRoot: storagePathSchema.optional(),
 });
