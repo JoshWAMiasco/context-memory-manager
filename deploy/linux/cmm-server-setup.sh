@@ -284,7 +284,10 @@ fi
 say "Checking"
 cmm status --wait 30 >/dev/null || true
 HEALTH="$(curl -sS --max-time 10 "https://$HOST/api/health" || true)"
-echo "GET https://$HOST/api/health -> $HEALTH"
+case "$HEALTH" in
+  *'"ok":true'*) echo "CMM answers through nginx: $HEALTH" ;;
+  *) echo "WARNING: CMM doesn't answer through nginx (got: ${HEALTH:0:120}). Check: sudo cmm logs" ;;
+esac
 SETUP_CODE="$(cmm setup-code --plain 2>/dev/null || true)"
 cat <<EOF
 
@@ -294,9 +297,9 @@ cat <<EOF
 | Open from any device on the tailnet:   https://$HOST
 | Setup code (first page asks for it):   ${SETUP_CODE:-none, setup is already done}
 |
-| Terminals: turn them on in Settings > Security > Terminals.$([ $WITH_CLAUDE = 1 ] && printf '\n|   Then run `claude` in one and sign in once.')
+| Terminals: turn them on in Settings > Security > Terminals.$([ $WITH_CLAUDE = 1 ] && printf '\n|   Then run "claude" in one and sign in once.')
 |
 | Useful:  sudo cmm status | sudo cmm logs | sudo cmm add-storage <path> | sudo cmm rollback
-| Don't run `sudo cmm gen-cert` here: nginx does HTTPS, and CMM must stay on plain HTTP behind it.
+| Don't run "sudo cmm gen-cert" here: nginx does HTTPS, and CMM must stay on plain HTTP behind it.
 +------------------------------------------------------------------------------
 EOF
