@@ -681,6 +681,8 @@
                 source, code opens in a code editor, and images, PDFs and CSV tables have their own viewers.
               </p>
               <ul>
+                <li>Excel and Word previews, and other Office files as PDFs</li>
+                <li>Upload whole folders, replace a file and see what changed</li>
                 <li>Drag and drop, copy and paste across drives</li>
                 <li>Download as zip, and a trash you can restore from</li>
               </ul>
@@ -797,6 +799,42 @@
                 stroke-width="1.6"
                 aria-hidden="true"
               >
+                <circle cx="12" cy="12" r="8" />
+                <path d="M12 8v4l3 2" />
+              </svg>
+              <h3>Jobs</h3>
+              <p>
+                Make a terminal a job and your agent keeps working after CMM is closed or updated. See when each job
+                started, how long it has run and where.
+              </p>
+            </div>
+            <div class="card">
+              <svg
+                class="icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                aria-hidden="true"
+              >
+                <rect x="7" y="3" width="10" height="18" rx="2" />
+                <path d="M11 18h2" />
+              </svg>
+              <h3>On your phone</h3>
+              <p>
+                Open your CMM server from a phone: a layout made for small screens, and a terminal key bar to drive
+                Claude Code on the go.
+              </p>
+            </div>
+            <div class="card">
+              <svg
+                class="icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                aria-hidden="true"
+              >
                 <circle cx="11" cy="11" r="6" />
                 <path d="m20 20-4.5-4.5" />
               </svg>
@@ -855,8 +893,8 @@
             <div class="card">
               <h3>Server for Ubuntu</h3>
               <p>
-                A systemd service on a machine on your network, opened from any browser on the LAN, with user accounts
-                and HTTPS. Installs from an offline package.
+                A systemd service on a machine on your network, opened from any browser on the LAN, phones included,
+                with user accounts and HTTPS. Installs from an offline package.
               </p>
               <a href="__REPO_URL__/blob/main/docs/guides/server-guide.md">Read the Server Guide →</a>
             </div>
@@ -905,6 +943,14 @@
               </p>
             </details>
             <details>
+              <summary>Can an agent keep working after I close CMM?</summary>
+              <p>
+                Yes. Turn its terminal into a job and it keeps running in the background, like a tmux session, after CMM
+                is closed, restarted or updated. The Jobs page shows every job, and discarding one ends it and leaves no
+                trace.
+              </p>
+            </details>
+            <details>
               <summary>Which AI tools does CMM work with?</summary>
               <p>
                 Any tool that keeps its memory in folders. CMM's terminals run any agent CLI inside a memory folder,
@@ -916,7 +962,7 @@
               <summary>Which platforms does CMM run on?</summary>
               <p>
                 CMM is a desktop app for macOS, Windows and Linux, and a server for Ubuntu 22.04 or later that you open
-                from any browser on your network.
+                from any browser on your network, including your phone's.
               </p>
             </details>
             <details>

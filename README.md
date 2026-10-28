@@ -27,23 +27,26 @@
 
 AI agents and chat tools keep their memory in plain folders: personas, project knowledge, scratchpads, notes,
 datasets. CMM gives those folders a proper home. Browse and edit them in one app, mark folders as memories, run any
-agent CLI (Claude Code, Gemini CLI, Codex…) right inside them, lock or encrypt the sensitive ones, keep a history of
+agent CLI (Claude Code, Gemini CLI, Codex…) right inside them and keep it working as a background job, lock or encrypt the sensitive ones, keep a history of
 every change, and back everything up to a USB stick or external drive, ready to clone onto another computer.
 Nothing leaves your machine: there is no account, no cloud and no telemetry.
 
 CMM runs two ways:
 
 - **Desktop app** for macOS, Windows and Linux (Electron). Your files stay where they are on your computer.
-- **Server** on an Ubuntu machine on your network (systemd service), opened from any browser on the LAN, with user
-  accounts and HTTPS.
+- **Server** on an Ubuntu machine on your network (systemd service), opened from any browser on the LAN, phones
+  included, with user accounts and HTTPS.
 
 ## Features
 
 ### Explorer and editors
 
 A file tree and a file pane, side by side. Markdown opens formatted and edits in a rich editor or as source; code opens
-with syntax colours in a code editor; images, PDFs and CSV/TSV tables have their own viewers. Drag and drop, copy and
-paste across drives, upload, download as zip, and a trash you can restore from. Hide the tree (<kbd>⌘</kbd>/<kbd>Ctrl</kbd>+<kbd>\\</kbd>)
+with syntax colours in a code editor; images, PDFs and CSV/TSV tables have their own viewers. Excel and Word files open
+in the browser, and PowerPoint, older Office, OpenDocument and RTF files are shown as PDFs when LibreOffice is installed;
+videos show a still frame with their length. Drag and drop, copy and paste across drives, upload files or whole folders,
+replace a file and see what changed, download as zip, and a trash you can restore from. Light, dark or system theme,
+per user. Hide the tree (<kbd>⌘</kbd>/<kbd>Ctrl</kbd>+<kbd>\\</kbd>)
 to give the editor the whole window.
 
 ![The explorer with a Markdown file open.](docs/guides/assets/screens/explorer.png)
@@ -109,11 +112,24 @@ running transfer.
 scripts and Git. Open a terminal on a folder or memory and it starts there, with your own shell, PATH and tools, so the
 agent reads and writes that memory directly. Terminals dock along the bottom of the window like chat windows: keep
 several open at once (one per agent or memory), minimize them (a dot shows new output), resize them, and pick up where
-you left off after a reload. Make one a **job** and it keeps running in the background, like a `tmux` session, after
-CMM is closed, restarted or updated; the Jobs page and the dashboard show each job's start time, running time and
-folder. Admins only; on a server they stay off until an admin turns them on.
+you left off after a reload. Admins only; on a server they stay off until an admin turns them on.
 
 ![Claude Code, Gemini CLI and opencode in a memory's terminal, with two more terminals minimized.](docs/guides/assets/screens/terminals.png)
+
+### Jobs
+
+Leave an agent working while you're away. **Run as a job** on a terminal's title bar turns it into a job: it keeps
+running in the background, like a `tmux` session, after CMM is closed, restarted, updated or even crashes. The **Jobs**
+page shows a card for each one, with when it started, how long it has run and in which folder, and the dashboard and
+navigation show them too. Open a job to see its terminal across the whole window, then open it in the editor, turn it
+back into an ordinary terminal, or discard it, which ends it and leaves no trace.
+
+### On your phone
+
+Open a CMM server from your phone's browser. Phones get a bottom bar and a menu drawer, and the explorer shows the
+files, the open file or the terminal one at a time. Terminals work with the on-screen keyboard (autocorrect and all),
+scroll with a swipe, and have a key bar with Esc, Tab, Ctrl, ^C, arrows and Enter, enough to drive Claude Code from a
+phone.
 
 ### Users and security
 
@@ -222,6 +238,8 @@ through the install.
 Each release has the x64 package ready to download, with `cmm-server-setup.sh`
 ([deploy/linux/cmm-server-setup.sh](deploy/linux/cmm-server-setup.sh)): one script that installs it behind nginx on a
 Tailscale network, with a real HTTPS certificate (`sudo ./cmm-server-setup.sh --package ./cmm-server-<version>-linux-x64.tar.gz`).
+`scripts/update-installer.sh` copies the package for the version in `package.json` and that script into an installer
+folder (`~/cmm-installer`, or `--dir`) and removes older packages; `--build` builds the package first.
 
 ### Other commands
 
