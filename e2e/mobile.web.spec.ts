@@ -7,8 +7,8 @@ import { expect, test, treeRow, waitForPageReady } from "./support/fixtures";
  * CMM on a phone (412×915, touch): the top bar fits without overflowing, the page links are in a
  * bottom bar and the account and system actions in a menu drawer; the explorer shows Files, the
  * file pane and Terminal one at a time; the terminal has a key bar for the arrows, Enter and Esc,
- * and types what a composing (Android) keyboard settles on; and the Markdown toolbar stays on one
- * row that fits the screen.
+ * and types what a composing (Android) keyboard settles on, and scrolls with a swipe; and the
+ * Markdown toolbar stays on one row that fits the screen.
  */
 test.use({ viewport: { width: 412, height: 915 }, hasTouch: true, isMobile: true });
 
@@ -165,6 +165,7 @@ test("the terminal has keys a phone keyboard lacks", async ({ page, request, wor
      * An Android keyboard composes each word in the text area and autocorrects it after a space
      * by rewriting it there ("imw " becomes "ime "): the shell gets the corrected line once.
      */
+    const cdp = await page.context().newCDPSession(page);
     await docked.locator(".xterm-helper-textarea").evaluate((textarea: HTMLTextAreaElement) => {
       const fire = (event: Event) => textarea.dispatchEvent(event);
       const compose = (before: string, steps: string[]) => {
@@ -190,6 +191,23 @@ test("the terminal has keys a phone keyboard lacks", async ({ page, request, wor
     });
     await page.keyboard.type("$((6*7))\n");
     await expect(screen).toContainText("$ echo ime $((6*7))ime 42", { timeout: 15_000 });
+
+    // A swipe down scrolls back through the output, like the scroll wheel.
+    await page.keyboard.type("for i in $(seq 1 120); do echo row-$i-end; done\n");
+    await expect(screen).toContainText("row-120-end", { timeout: 15_000 });
+    await expect(screen).not.toContainText("row-60-end");
+    const screenBox = await screen.boundingBox();
+    if (!screenBox) throw new Error("The terminal screen has no box.");
+    const x = screenBox.x + screenBox.width / 2;
+    for (let swipe = 0; swipe < 4; swipe += 1) {
+      const y = screenBox.y + 20;
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y }] });
+      for (let step = 1; step <= 10; step += 1) {
+        await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x, y: y + step * 20 }] });
+      }
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    }
+    await expect(screen).toContainText("row-60-end");
   } finally {
     if (terminalId) await request.delete(`/api/terminals/${terminalId}`);
     await request.put("/api/settings/terminal.enabled", { data: { value: false } });

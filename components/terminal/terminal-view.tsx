@@ -12,7 +12,7 @@ import {
   TerminalKeyBar,
   type TerminalKey,
 } from "@/components/terminal/terminal-key-bar";
-import { installTouchInput } from "@/components/terminal/touch-input";
+import { installSwipeScroll, installTouchInput } from "@/components/terminal/touch-input";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { readDesktopBridge } from "@/lib/client/desktop";
 import { ENTRY_DRAG_TYPE, readDraggedEntries } from "@/lib/client/entry-drag";
@@ -151,7 +151,8 @@ function openSocket(terminalId: string): WebSocket {
  * the shell), reconnects a dropped socket on its own (not after the session locks), and opens links
  * in the browser. Files and folders dropped on it paste their quoted full paths at the prompt,
  * without pressing Enter. On touch screens a key bar underneath sends Esc, Tab, Ctrl, the arrows
- * and Enter; what the on-screen keyboard types is sent as it changes (see `installTouchInput`).
+ * and Enter; what the on-screen keyboard types is sent as it changes (see `installTouchInput`),
+ * and a swipe scrolls (see `installSwipeScroll`).
  *
  * @example
  * <TerminalView terminalId={id} shell="zsh" isVisible onOutput={markUnread} onExit={showExit} onConnectionChange={setConnection} />
@@ -261,6 +262,7 @@ export function TerminalView({
         resetTouchInputRef.current = touchInput.reset;
         disposers.push(touchInput.dispose);
       }
+      if (window.matchMedia(TOUCH_INPUT_MEDIA_QUERY).matches) disposers.push(installSwipeScroll(container, terminal));
       // A theme change (or the computer's, under System) recolours the terminal in place.
       disposers.push(
         resolvedTheme.subscribe(() => {

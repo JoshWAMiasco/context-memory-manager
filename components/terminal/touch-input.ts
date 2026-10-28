@@ -1,3 +1,5 @@
+import type { Terminal } from "@xterm/xterm";
+
 /**
  * The bytes that turn what the shell got from `previous` into `next`: a DEL (`\x7f`, Backspace)
  * for each character after their common start, then the rest of `next`. A line break the
@@ -116,5 +118,82 @@ export function installTouchInput(
     dispose: () => {
       for (const [type, listener] of listeners) container.removeEventListener(type, listener, true);
     },
+  };
+}
+
+/** How far a finger moves before a touch counts as a swipe rather than a tap. */
+const SWIPE_THRESHOLD_PIXELS = 8;
+
+/**
+ * Scrolling a terminal by swiping on it. In a shell (and Claude Code, which draws in the normal
+ * screen) the swipe moves through the scrollback a line per row height; full-screen programs
+ * (less, vim, htop) get it as the scroll wheel, which xterm passes on to them. A tap still focuses
+ * the terminal and opens the keyboard. Returns `dispose`.
+ *
+ * @example
+ * const disposeSwipe = installSwipeScroll(container, terminal);
+ */
+export function installSwipeScroll(container: HTMLElement, terminal: Terminal): () => void {
+  let lastY: number | undefined;
+  let startY = 0;
+  let isSwiping = false;
+  /** Pixels swiped that don't make a whole line yet. */
+  let pendingPixels = 0;
+
+  const scrollBy = (deltaY: number, clientX: number, clientY: number) => {
+    if (terminal.buffer.active.type === "normal") {
+      const rowHeight = container.querySelector(".xterm-rows")?.clientHeight ?? 0;
+      const lineHeight = rowHeight > 0 ? rowHeight / terminal.rows : 15;
+      pendingPixels += deltaY;
+      const lines = Math.trunc(pendingPixels / lineHeight);
+      pendingPixels -= lines * lineHeight;
+      if (lines !== 0) terminal.scrollLines(lines);
+      return;
+    }
+    terminal.element?.dispatchEvent(
+      new WheelEvent("wheel", {
+        deltaY,
+        deltaMode: WheelEvent.DOM_DELTA_PIXEL,
+        clientX,
+        clientY,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  };
+  /** The one finger on the screen; a pinch or two-finger touch isn't a swipe. */
+  const readFinger = (event: TouchEvent) => (event.touches.length === 1 ? event.touches.item(0) : null);
+  const handleTouchStart = (event: TouchEvent) => {
+    const finger = readFinger(event);
+    lastY = finger?.clientY;
+    startY = finger?.clientY ?? 0;
+    isSwiping = false;
+    pendingPixels = 0;
+  };
+  const handleTouchMove = (event: TouchEvent) => {
+    const finger = readFinger(event);
+    if (lastY === undefined || !finger) return;
+    const y = finger.clientY;
+    if (!isSwiping && Math.abs(y - startY) < SWIPE_THRESHOLD_PIXELS) return;
+    isSwiping = true;
+    // The page stays put; the terminal scrolls instead.
+    event.preventDefault();
+    const deltaY = lastY - y;
+    lastY = y;
+    if (deltaY !== 0) scrollBy(deltaY, finger.clientX, y);
+  };
+  const handleTouchEnd = () => {
+    lastY = undefined;
+  };
+
+  container.addEventListener("touchstart", handleTouchStart, { passive: true });
+  container.addEventListener("touchmove", handleTouchMove, { passive: false });
+  container.addEventListener("touchend", handleTouchEnd);
+  container.addEventListener("touchcancel", handleTouchEnd);
+  return () => {
+    container.removeEventListener("touchstart", handleTouchStart);
+    container.removeEventListener("touchmove", handleTouchMove);
+    container.removeEventListener("touchend", handleTouchEnd);
+    container.removeEventListener("touchcancel", handleTouchEnd);
   };
 }
