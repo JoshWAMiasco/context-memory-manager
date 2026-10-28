@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDroppedPaths, quoteShellPath, readShellQuoting } from "@/lib/terminal";
+import { formatDroppedPaths, formatRunningTime, quoteShellPath, readShellQuoting } from "@/lib/terminal";
 
 describe("readShellQuoting", () => {
   it("knows cmd.exe and PowerShell, and treats every other shell as POSIX", () => {
@@ -59,5 +59,19 @@ describe("formatDroppedPaths", () => {
 
   it("throws when one of the paths can't be pasted safely", () => {
     expect(() => formatDroppedPaths(["/srv/a.md", "/srv/b\n.md"], "posix")).toThrow("can't be pasted");
+  });
+});
+
+describe("formatRunningTime", () => {
+  const startedAt = "2026-10-28T08:00:00Z";
+  it("counts minutes, then hours and minutes, then days and hours", () => {
+    expect(formatRunningTime(startedAt, Date.parse("2026-10-28T08:00:20Z"))).toBe("less than a minute");
+    expect(formatRunningTime(startedAt, Date.parse("2026-10-28T08:42:59Z"))).toBe("42m");
+    expect(formatRunningTime(startedAt, Date.parse("2026-10-28T10:14:30Z"))).toBe("2h 14m");
+    expect(formatRunningTime(startedAt, Date.parse("2026-10-30T11:00:00Z"))).toBe("2d 3h");
+  });
+
+  it("never goes negative when the clocks disagree", () => {
+    expect(formatRunningTime(startedAt, Date.parse("2026-10-28T07:59:00Z"))).toBe("less than a minute");
   });
 });

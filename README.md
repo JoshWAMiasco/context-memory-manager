@@ -109,7 +109,9 @@ running transfer.
 scripts and Git. Open a terminal on a folder or memory and it starts there, with your own shell, PATH and tools, so the
 agent reads and writes that memory directly. Terminals dock along the bottom of the window like chat windows: keep
 several open at once (one per agent or memory), minimize them (a dot shows new output), resize them, and pick up where
-you left off after a reload. Admins only; on a server they stay off until an admin turns them on.
+you left off after a reload. Make one a **job** and it keeps running in the background, like a `tmux` session, after
+CMM is closed, restarted or updated; the Jobs page and the dashboard show each job's start time, running time and
+folder. Admins only; on a server they stay off until an admin turns them on.
 
 ![Claude Code, Gemini CLI and opencode in a memory's terminal, with two more terminals minimized.](docs/guides/assets/screens/terminals.png)
 

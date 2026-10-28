@@ -16,6 +16,10 @@ ExecStart=/opt/cmm/current/node/bin/node /opt/cmm/current/app/entry.js
 Restart=on-failure
 RestartSec=3
 TimeoutStopSec=20
+# Stopping or restarting CMM (an update does both) ends only CMM itself. Its terminal host stays,
+# with the terminals kept as jobs; it ends the other terminals itself when CMM disconnects, and
+# exits once it has no jobs left. The default (control-group) would kill the jobs too.
+KillMode=process
 NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=read-only

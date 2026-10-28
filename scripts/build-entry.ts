@@ -1,6 +1,7 @@
 /*
  * Bundles server/entry.ts into dist/server/entry.js and the `cmm` admin CLI (server/cli/index.ts)
- * into dist/cli/cmm.js (CommonJS, Node 22). Next and the native packages stay external: at runtime
+ * into dist/cli/cmm.js, and the terminal host (server/terminal/host-process.ts) into
+ * dist/server/terminal-host.js (CommonJS, Node 22). Next and the native packages stay external: at runtime
  * they resolve from the app's own node_modules. The CLI's pure-JS dependencies (selfsigned) are
  * bundled in.
  */
@@ -42,6 +43,7 @@ async function bundle(entryPoint: string, outfile: string): Promise<void> {
 async function buildEntry(): Promise<void> {
   await bundle("server/entry.ts", "dist/server/entry.js");
   await bundle("server/cli/index.ts", "dist/cli/cmm.js");
+  await bundle("server/terminal/host-process.ts", "dist/server/terminal-host.js");
 }
 
 buildEntry().catch((buildError: unknown) => {

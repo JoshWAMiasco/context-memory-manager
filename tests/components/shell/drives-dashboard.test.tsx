@@ -12,6 +12,7 @@ const routerPush = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: routerPush, replace: vi.fn() }) }));
 vi.mock("@/hooks/use-server-events", () => ({ useServerEvent: vi.fn() }));
 vi.mock("@/lib/client/trash", () => ({ useTrash: () => ({ data: undefined }) }));
+vi.mock("@/lib/client/terminals", () => ({ useTerminals: () => ({ data: undefined }) }));
 vi.mock("@/lib/client/fs", () => ({
   useStorages: () => ({
     data: [{ id: "home", kind: "internal", label: "Home", available: true, access: "write" }],

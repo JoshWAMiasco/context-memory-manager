@@ -46,6 +46,7 @@ export type ApiErrorCode =
   | "GIT_COMMAND_FAILED"
   | "BACKUP_RUNNING"
   | "TOO_MANY_TERMINALS"
+  | "TERMINAL_FAILED"
   | "OFFICE_UNAVAILABLE"
   | "OFFICE_CONVERSION_FAILED"
   | "OFFICE_TIMEOUT"
@@ -669,6 +670,11 @@ export interface TerminalSummary {
   status: "running" | "exited";
   exitCode?: number;
   createdAt: string;
+  /**
+   * A job: it keeps running in the background after CMM is closed, restarted or updated, and is
+   * listed on the Jobs page. Any terminal can be made a job, and a job a terminal again.
+   */
+  isJob: boolean;
 }
 
 /** `GET /api/terminals`: whether this user may open terminals, and the ones they have open. */

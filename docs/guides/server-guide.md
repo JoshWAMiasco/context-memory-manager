@@ -1044,6 +1044,17 @@ path on the server; this is the one place a browser learns where files live on t
 owns that terminal. Files dragged from the browser's own computer have no path on the server, so CMM explains that
 instead (drop them on the file pane to upload them).
 
+## Jobs
+
+**Run as a job** on a terminal's title bar makes it a job: it moves to the **Jobs** page and keeps running when the
+`cmm` service stops, restarts or is updated (the service stops only CMM itself, `KillMode=process`; a small
+`terminal-host.js` process keeps the jobs). Ordinary terminals still end when CMM stops. A job's cards show when it
+started, how long it has run and where; it can be opened across the page, docked in the editor again, or discarded,
+which leaves nothing behind. Rebooting the server, or uninstalling CMM, ends every job.
+
+Jobs get `TMPDIR=/var/lib/cmm/tmp`, because the service's private `/tmp` is deleted when it stops. A program that writes
+to `/tmp` by name, ignoring `TMPDIR`, loses those files on the next restart.
+
 ## Claude Code in terminals
 
 Terminals run as `cmm`, not as your own account, so a `claude` installed for you isn't there. Install it for the

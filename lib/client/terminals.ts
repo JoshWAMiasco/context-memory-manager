@@ -166,6 +166,29 @@ export function setDockMinimized(isDockMinimized: boolean): void {
   updateDockState((current) => ({ ...current, isDockMinimized }));
 }
 
+/** Takes a panel out of the dock, as when its terminal becomes a job (it is on the Jobs page then). */
+export function removePanel(terminalId: string): void {
+  updateDockState((current) => {
+    const remainingDocked = current.order.filter(
+      (id) => id !== terminalId && current.panels[id]?.placement === "docked",
+    );
+    return {
+      ...current,
+      order: current.order.filter((id) => id !== terminalId),
+      panels: Object.fromEntries(Object.entries(current.panels).filter(([id]) => id !== terminalId)),
+      dockedActiveId: current.dockedActiveId === terminalId ? remainingDocked[0] : current.dockedActiveId,
+    };
+  });
+}
+
+/**
+ * Whether a terminal belongs in the dock: every terminal does, a job only once it is opened in the
+ * editor from the Jobs page (it has a panel then). Otherwise jobs run out of the way.
+ */
+export function isShownInDock(state: TerminalDockState, terminal: TerminalSummary): boolean {
+  return !terminal.isJob || terminal.id in state.panels;
+}
+
 /** Whether a terminal is docked (shown in the column when the explorer has one). */
 export function isDockedPanel(state: TerminalDockState, terminalId: string): boolean {
   return state.panels[terminalId]?.placement === "docked";
@@ -243,7 +266,8 @@ export function useTerminals() {
 }
 
 /**
- * Opening and closing terminals. Opening one brings its panel to the front of the dock.
+ * Opening and closing terminals, and making one a job (or a job a terminal again). Opening one
+ * brings its panel to the front of the dock; a job opens on the Jobs page instead.
  *
  * @example
  * const { openTerminal } = useTerminalMutations();
@@ -253,7 +277,7 @@ export function useTerminalMutations() {
   const queryClient = useQueryClient();
   const refresh = () => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.terminals() });
   const openTerminal = useMutation({
-    mutationFn: (target: { storageId: string; path: string }) =>
+    mutationFn: (target: { storageId: string; path: string; isJob?: boolean }) =>
       requestJson<{ terminal: TerminalSummary }>("/api/terminals", { method: "POST", body: target }).then(
         ({ terminal }) => terminal,
       ),
@@ -261,6 +285,7 @@ export function useTerminalMutations() {
       queryClient.setQueryData<TerminalListResponse>(QUERY_KEYS.terminals(), (current) =>
         current ? { ...current, terminals: [...current.terminals, terminal] } : current,
       );
+      if (terminal.isJob) return;
       bringPanelToFront(terminal.id);
       // Opened where the user keeps terminals: docked beside the editor when they last docked one.
       if (loadDockState().prefersDocked && dockColumnCount > 0) dockTerminal(terminal.id);
@@ -279,5 +304,22 @@ export function useTerminalMutations() {
     },
     onSettled: refresh,
   });
-  return { openTerminal, closeTerminal };
+  const setJob = useMutation({
+    mutationFn: ({ terminalId, isJob }: { terminalId: string; isJob: boolean }) =>
+      requestJson<{ terminal: TerminalSummary }>(`/api/terminals/${encodeURIComponent(terminalId)}`, {
+        method: "PATCH",
+        body: { isJob },
+      }).then(({ terminal }) => terminal),
+    onSuccess: (terminal) => {
+      queryClient.setQueryData<TerminalListResponse>(QUERY_KEYS.terminals(), (current) =>
+        current
+          ? { ...current, terminals: current.terminals.map((known) => (known.id === terminal.id ? terminal : known)) }
+          : current,
+      );
+      // A new job leaves the dock for the Jobs page.
+      if (terminal.isJob) removePanel(terminal.id);
+    },
+    onSettled: refresh,
+  });
+  return { openTerminal, closeTerminal, setJob };
 }

@@ -75,6 +75,8 @@ if [ "$ASSUME_YES" -ne 1 ]; then
 fi
 
 system systemctl disable --now cmm || warn "could not stop cmm (it may not be installed)"
+# Jobs outlive the service (KillMode=process): their terminal host ends them all on SIGTERM.
+system pkill -TERM -u cmm -f 'terminal-host[.]js' 2>/dev/null || true
 rm -f "$SYSTEMD_DIR/cmm.service"
 rm -rf "$SYSTEMD_DIR/cmm.service.d"
 rm -f "$SANDBOX/etc/polkit-1/rules.d/50-cmm-udisks.rules"

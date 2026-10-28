@@ -1274,7 +1274,7 @@ agent's command to start it in that memory.
   one in the same folder.
 
 Terminals keep running while they are minimized, and when you go to another page or reload it: the window comes back
-with what happened meanwhile. They stop when you close them or quit CMM. When CMM locks, the windows disconnect and
+with what happened meanwhile. They stop when you close them or quit CMM, unless you run them as jobs (below). When CMM locks, the windows disconnect and
 the programs keep running; they reconnect when you unlock.
 
 Links a program prints, such as a sign-in link, open in your browser after CMM asks.
@@ -1292,6 +1292,21 @@ right of the file you are viewing: file tree, then the file, then the terminal. 
 
 The program inside keeps running when you dock, undock, minimize or reload, and its screen comes back as it was.
 On other pages, and in a narrow window, docked terminals wait along the bottom.
+
+## Jobs: keep a terminal running after CMM closes
+
+A job is a terminal that keeps running in the background, like a `tmux` session: after you quit CMM, when it restarts,
+and while you install an update. Use it for an agent or a long task you don't want to stop.
+
+- To make one, click **Run as a job** on a terminal's title bar (or on the docked column's header). It leaves the
+  windows along the bottom and moves to the **Jobs** page, in the top bar.
+- **Jobs** shows each job as a card: when it started, how long it has been running, and the folder it runs in. The
+  dashboard shows the same cards under **Jobs** while any are running. Click one to open it across the whole page.
+- **Open in editor** docks it beside that folder's files, as a terminal tab; it is still a job there.
+- **Make a terminal** turns it back into an ordinary terminal, which stops when CMM quits.
+- **Discard** stops it and whatever runs in it. Jobs keep no history: a discarded job is gone.
+
+Jobs and terminals together are limited to 10. Restarting the computer ends every job.
 
 ## Pasting a file's path into a terminal
 

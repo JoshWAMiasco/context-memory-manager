@@ -292,7 +292,7 @@ function packageServer(): void {
     if (buildResult.status !== 0) throw new Error(`npm run build failed (${buildResult.status})`);
   }
   const builtApplication = path.join(projectRoot, "dist", "app");
-  for (const requiredFile of ["entry.js", "cli.js", "server.js", "migrations"]) {
+  for (const requiredFile of ["entry.js", "cli.js", "terminal-host.js", "server.js", "migrations"]) {
     if (!existsSync(path.join(builtApplication, requiredFile)))
       throw new Error(`dist/app/${requiredFile} is missing; run without --skip-build.`);
   }

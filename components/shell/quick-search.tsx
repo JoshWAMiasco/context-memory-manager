@@ -3,6 +3,7 @@
 import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
 import {
   ArchiveRestore,
+  ServerCog,
   FileText,
   Folder,
   LayoutGrid,
@@ -54,6 +55,7 @@ interface SearchGroup {
 
 const PAGE_LINKS: { title: string; href: string; icon: LucideIcon }[] = [
   { title: "Drives", href: "/", icon: LayoutGrid },
+  { title: "Jobs", href: "/jobs", icon: ServerCog },
   { title: "Backup", href: "/backup", icon: ArchiveRestore },
   { title: "Trash", href: "/trash", icon: Trash2 },
   { title: "Settings", href: "/settings", icon: Settings },

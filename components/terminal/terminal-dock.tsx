@@ -3,6 +3,7 @@
 import { SquareTerminal } from "lucide-react";
 import { useEffect, useSyncExternalStore } from "react";
 import { announceError } from "@/components/explorer/explorer-context";
+import { runAsJob } from "@/components/jobs/run-as-job";
 import { DropdownMenu, DropdownMenuItem } from "@/components/interactive/dropdown-menu";
 import { TERMINAL_MINIMIZED_WIDTH, TerminalPanel } from "@/components/terminal/terminal-panel";
 import type { TerminalSummary } from "@/lib/api-types";
@@ -10,6 +11,7 @@ import {
   bringPanelToFront,
   dockTerminal,
   isDockedPanel,
+  isShownInDock,
   prunePanels,
   readPanelLayout,
   useIsDockColumnShown,
@@ -83,7 +85,7 @@ function placePanels(
 export function TerminalDock() {
   const { data, refetch } = useTerminals();
   const dockState = useTerminalDockState();
-  const { openTerminal, closeTerminal } = useTerminalMutations();
+  const { openTerminal, closeTerminal, setJob } = useTerminalMutations();
   const isDockColumnShown = useIsDockColumnShown();
   const windowWidth = useSyncExternalStore(
     subscribeToWindowWidth,
@@ -91,9 +93,10 @@ export function TerminalDock() {
     () => 0,
   );
   const allTerminals = data?.available ? data.terminals : [];
+  const dockTerminals = allTerminals.filter((terminal) => isShownInDock(dockState, terminal));
   const terminals = isDockColumnShown
-    ? allTerminals.filter((terminal) => !isDockedPanel(dockState, terminal.id))
-    : allTerminals;
+    ? dockTerminals.filter((terminal) => !isDockedPanel(dockState, terminal.id))
+    : dockTerminals;
 
   // Panels of terminals that are gone (closed in another tab, or CMM restarted) are forgotten.
   const terminalIdsKey = data ? allTerminals.map((terminal) => terminal.id).join(",") : undefined;
@@ -137,6 +140,7 @@ export function TerminalDock() {
           }
           onRestart={() => restart(terminal)}
           onDock={isDockColumnShown ? () => dockTerminal(terminal.id) : undefined}
+          onRunAsJob={() => runAsJob(setJob, terminal)}
           onDisconnect={() => void refetch()}
         />
       ))}

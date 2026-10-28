@@ -9,11 +9,11 @@
 # Fast way: copy this script and a CMM server package (cmm-server-<version>-linux-<arch>.tar.gz, plus its .sha256)
 # to the new server and run:
 #
-#   sudo ./cmm-server-setup.sh --package ./cmm-server-1.1.4-linux-x64.tar.gz
+#   sudo ./cmm-server-setup.sh --package ./cmm-server-1.1.5-linux-x64.tar.gz
 #
 # Without --package it clones CMM and builds the package here first (needs internet, about 10 minutes):
 #
-#   sudo ./cmm-server-setup.sh --ref v1.1.4
+#   sudo ./cmm-server-setup.sh --ref v1.1.5
 #
 # Options:
 #   --package <file>     install this server package instead of building one

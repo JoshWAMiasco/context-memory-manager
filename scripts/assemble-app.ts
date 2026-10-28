@@ -3,6 +3,7 @@
  *
  *   dist/app/entry.js       the bundled entry (runs migrations, binds, hands requests to Next)
  *   dist/app/cli.js         the bundled `cmm` admin CLI (server installs)
+ *   dist/app/terminal-host.js  the bundled terminal host (runs the shells, keeps jobs running after CMM stops)
  *   dist/app/server.js …    the Next standalone output, with its traced node_modules
  *   dist/app/.next/static   client assets
  *   dist/app/public         public files
@@ -49,6 +50,10 @@ copyFileSync(path.join(projectRoot, "dist", "server", "entry.js"), path.join(app
 copyFileSync(path.join(projectRoot, "dist", "server", "entry.js.map"), path.join(applicationDirectory, "entry.js.map"));
 copyFileSync(path.join(projectRoot, "dist", "cli", "cmm.js"), path.join(applicationDirectory, "cli.js"));
 copyFileSync(path.join(projectRoot, "dist", "cli", "cmm.js.map"), path.join(applicationDirectory, "cli.js.map"));
+copyFileSync(
+  path.join(projectRoot, "dist", "server", "terminal-host.js"),
+  path.join(applicationDirectory, "terminal-host.js"),
+);
 copyNodePty();
 
 /**

@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronUp, Minus, PanelRight, RotateCcw, SquareTerminal, X } from "lucide-react";
+import { ChevronUp, Minus, PanelRight, RotateCcw, ServerCog, SquareTerminal, X } from "lucide-react";
 import { useState, type PointerEvent as ReactPointerEvent } from "react";
 import { ConfirmDialog } from "@/components/interactive/confirm-dialog";
 import { TerminalView, type TerminalConnection } from "@/components/terminal/terminal-view";
@@ -47,7 +47,8 @@ function HeaderButton({ label, onClick, children }: { label: string; onClick: ()
 
 /**
  * One terminal in the dock, like a chat window: a title bar (the memory or folder, its storage,
- * whether the shell ended) with Restart, Dock beside the editor (explorer pages), Minimize and Close,
+ * whether the shell ended) with Restart, Run as a job (it moves to the Jobs page and keeps running
+ * after CMM closes), Dock beside the editor (explorer pages), Minimize and Close,
  * and the terminal below it. Drag the top
  * edge, the left edge or the top-left corner to resize it; the size is remembered. Minimized it is
  * just the title bar, marked when new output arrives; click it to open it again. Closing a running
@@ -66,6 +67,7 @@ export function TerminalPanel({
   onClose,
   onRestart,
   onDock,
+  onRunAsJob,
   onDisconnect,
 }: {
   terminal: TerminalSummary;
@@ -81,6 +83,8 @@ export function TerminalPanel({
   onRestart: () => void;
   /** Docks it beside the editor; undefined where there is no column to dock into. */
   onDock?: () => void;
+  /** Makes it a job; undefined for a job (opened in the editor from the Jobs page). */
+  onRunAsJob?: () => void;
   onDisconnect: () => void;
 }) {
   const [connection, setConnection] = useState<TerminalConnection>("connecting");
@@ -204,6 +208,20 @@ export function TerminalPanel({
             <RotateCcw className="h-3.5 w-3.5" />
           </HeaderButton>
         )}
+        {terminal.isJob && (
+          <span
+            className="flex-none rounded-full border border-brand/40 px-1.5 text-[10px] text-brand"
+            title="Keeps running after CMM is closed"
+            data-testid="terminal-job-badge"
+          >
+            Job
+          </span>
+        )}
+        {onRunAsJob && !terminal.isJob && !hasExited && (
+          <HeaderButton label="Run as a job (keeps running after CMM closes)" onClick={onRunAsJob}>
+            <ServerCog className="h-4 w-4" />
+          </HeaderButton>
+        )}
         {onDock && (
           <HeaderButton label="Dock beside the editor" onClick={onDock}>
             <PanelRight className="h-4 w-4" />
@@ -242,13 +260,13 @@ export function TerminalPanel({
       <ConfirmDialog
         isOpen={isConfirmingClose}
         onOpenChange={setIsConfirmingClose}
-        title={`Close "${terminal.title}"?`}
-        confirmLabel="Close terminal"
+        title={terminal.isJob ? `Discard the job "${terminal.title}"?` : `Close "${terminal.title}"?`}
+        confirmLabel={terminal.isJob ? "Discard job" : "Close terminal"}
         confirmVariant="danger"
         testId="close-terminal-dialog"
         onConfirm={onClose}
       >
-        Whatever is running in it stops.
+        Whatever is running in it stops{terminal.isJob ? ", and nothing of it is kept" : ""}.
       </ConfirmDialog>
     </section>
   );

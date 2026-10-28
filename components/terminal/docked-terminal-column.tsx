@@ -1,9 +1,10 @@
 "use client";
 
-import { Minimize2, PanelBottom, RotateCcw, SquareTerminal, X } from "lucide-react";
+import { Minimize2, PanelBottom, RotateCcw, ServerCog, SquareTerminal, X } from "lucide-react";
 import { useState } from "react";
 import { announceError } from "@/components/explorer/explorer-context";
 import { ConfirmDialog } from "@/components/interactive/confirm-dialog";
+import { runAsJob } from "@/components/jobs/run-as-job";
 import { Tooltip } from "@/components/interactive/tooltip";
 import { TerminalView } from "@/components/terminal/terminal-view";
 import type { TerminalSummary } from "@/lib/api-types";
@@ -40,7 +41,8 @@ function ColumnButton({ label, onClick, children }: { label: string; onClick: ()
 
 /**
  * The docked terminals, as a column beside the editor: a tab per terminal (marked when it has
- * new output), and for the open one Restart (once its shell ended), Undock (back to the floating
+ * new output), and for the open one Restart (once its shell ended), Run as a job (it moves to the
+ * Jobs page and keeps running after CMM closes), Undock (back to the floating
  * dock at the bottom), Minimize (fold the column to its rail, ⌘J) and Close (asks first while it
  * runs). Every docked terminal stays connected; only the open tab is shown. On phones
  * (`isFullWidth`) it fills the explorer: there is nowhere to undock or fold it to.
@@ -61,7 +63,7 @@ export function DockedTerminalColumn({
   isFullWidth?: boolean;
 }) {
   const dockState = useTerminalDockState();
-  const { openTerminal, closeTerminal } = useTerminalMutations();
+  const { openTerminal, closeTerminal, setJob } = useTerminalMutations();
   const [exitCodes, setExitCodes] = useState<Record<string, number>>({});
   const [closingTerminal, setClosingTerminal] = useState<TerminalSummary>();
   const active = terminals.find((terminal) => terminal.id === dockState.dockedActiveId) ?? terminals[0];
@@ -127,6 +129,7 @@ export function DockedTerminalColumn({
                     )}
                   </span>
                   <span className={mergeClassNames("truncate", isActive && "font-medium")}>{terminal.title}</span>
+                  {terminal.isJob && <span className="flex-none text-brand">· job</span>}
                   {hasExited(terminal) && <span className="flex-none text-foreground-subtle">· ended</span>}
                 </button>
                 <button
@@ -144,6 +147,11 @@ export function DockedTerminalColumn({
         {hasExited(active) && (
           <ColumnButton label="Restart in the same folder" onClick={() => restart(active)}>
             <RotateCcw className="h-3.5 w-3.5" />
+          </ColumnButton>
+        )}
+        {!active.isJob && !hasExited(active) && (
+          <ColumnButton label="Run as a job (keeps running after CMM closes)" onClick={() => runAsJob(setJob, active)}>
+            <ServerCog className="h-4 w-4" />
           </ColumnButton>
         )}
         {!isFullWidth && (
@@ -194,15 +202,19 @@ export function DockedTerminalColumn({
       <ConfirmDialog
         isOpen={closingTerminal !== undefined}
         onOpenChange={(isOpen) => !isOpen && setClosingTerminal(undefined)}
-        title={`Close "${closingTerminal?.title ?? ""}"?`}
-        confirmLabel="Close terminal"
+        title={
+          closingTerminal?.isJob
+            ? `Discard the job "${closingTerminal.title}"?`
+            : `Close "${closingTerminal?.title ?? ""}"?`
+        }
+        confirmLabel={closingTerminal?.isJob ? "Discard job" : "Close terminal"}
         confirmVariant="danger"
         testId="close-terminal-dialog"
         onConfirm={() => {
           if (closingTerminal) close(closingTerminal);
         }}
       >
-        Whatever is running in it stops.
+        Whatever is running in it stops{closingTerminal?.isJob ? ", and nothing of it is kept" : ""}.
       </ConfirmDialog>
     </section>
   );

@@ -36,6 +36,22 @@ export function parseTerminalSocketPath(requestPath: string): string | undefined
   }
 }
 
+/**
+ * How long a job has been running, for its card: minutes under an hour, then hours and minutes,
+ * then days and hours.
+ *
+ * @example
+ * formatRunningTime("2026-10-28T08:00:00Z", Date.parse("2026-10-28T10:14:30Z")); // "2h 14m"
+ */
+export function formatRunningTime(startedAt: string, now: number): string {
+  const totalMinutes = Math.max(0, Math.floor((now - Date.parse(startedAt)) / 60_000));
+  if (totalMinutes < 1) return "less than a minute";
+  if (totalMinutes < 60) return `${totalMinutes}m`;
+  const totalHours = Math.floor(totalMinutes / 60);
+  if (totalHours < 24) return `${totalHours}h ${totalMinutes % 60}m`;
+  return `${Math.floor(totalHours / 24)}d ${totalHours % 24}h`;
+}
+
 /** How a terminal's shell wants a path quoted: POSIX shells, PowerShell, or cmd.exe. */
 export type ShellQuoting = "posix" | "powershell" | "cmd";
 

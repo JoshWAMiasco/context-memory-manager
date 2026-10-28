@@ -24,6 +24,7 @@ vi.mock("@/server/events/bus", () => ({ getEventBus: () => ({ on: vi.fn(), emit:
 vi.mock("@/server/terminal", () => ({
   attachToTerminal: vi.fn(() => () => undefined),
   readTerminalAvailability,
+  readTerminalsPending: () => undefined,
   requireTerminal,
   resizeTerminal: vi.fn(),
   writeToTerminal: vi.fn(),

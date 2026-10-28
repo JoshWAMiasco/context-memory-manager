@@ -26,6 +26,7 @@ import { FormInput } from "@/components/primitives/form-input";
 import { ProgressBar } from "@/components/primitives/progress-bar";
 import { formatFileSize } from "@/components/page-sections/applications/file-manager/format-file-size";
 import { MemoryIcon } from "@/components/explorer/memory-icon";
+import { JobCard } from "@/components/jobs/job-card";
 import { BrainIcon, EjectShieldIcon } from "@/components/icons/cmm-icons";
 import { StorageKindIcon } from "@/components/icons/storage-kind-icon";
 import { useServerEvent } from "@/hooks/use-server-events";
@@ -33,6 +34,7 @@ import type { StorageKind, StorageSummary } from "@/lib/api-types";
 import { ApiError } from "@/lib/client/api";
 import { useDriveActions, useStorages } from "@/lib/client/fs";
 import { useMemories, useMemoryMutations } from "@/lib/client/memory";
+import { useTerminals } from "@/lib/client/terminals";
 import { buildMemoryHref, buildStorageHref } from "@/lib/client/routes";
 import { useTrash } from "@/lib/client/trash";
 import type { MemoryLocation } from "@/lib/memory";
@@ -355,14 +357,36 @@ function SystemCard({
   );
 }
 
+/** The jobs running in the background, as cards that open them on the Jobs page; nothing without jobs. */
+function JobsSection() {
+  const { data } = useTerminals();
+  const jobs = data?.available ? data.terminals.filter((terminal) => terminal.isJob) : [];
+  if (jobs.length === 0) return null;
+  return (
+    <section aria-label="Jobs" data-testid="dashboard-jobs">
+      <div className="mb-3 flex items-baseline gap-3">
+        <h2 className="text-xs font-medium tracking-wide text-foreground-muted uppercase">Jobs</h2>
+        <Link href="/jobs" className="text-xs text-brand hover:underline">
+          All jobs
+        </Link>
+      </div>
+      <div className={CARD_GRID_CLASS_NAMES}>
+        {jobs.map((job) => (
+          <JobCard key={job.id} job={job} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 /**
  * The home page after sign-in: every storage the user can open as a card, grouped into internal
  * storages, external drives and USB / flash drives, live over drive events (a new drive is
  * highlighted for a moment), with free space, eject and mount. The memories on the internal
  * storages and plugged-in drives follow the internal storages as cards of their own, each opening the memory's own
  * explorer; a right-click (or the … button) offers to open it elsewhere or convert it back to a
- * normal folder. A filter box appears once there are many storages. Backup, Trash and Settings sit
- * below. Opening a drive card goes to that storage's explorer.
+ * normal folder. A filter box appears once there are many storages. Running jobs follow as cards
+ * (admins with jobs), then Backup, Trash and Settings. Opening a drive card goes to that storage's explorer.
  *
  * @example
  * <DrivesDashboard isAdmin={user.role === "admin"} version={packageManifest.version} />
@@ -491,6 +515,8 @@ export function DrivesDashboard({ isAdmin, version }: { isAdmin: boolean; versio
           </Fragment>
         );
       })}
+
+      {isAdmin && <JobsSection />}
 
       <section aria-label="System">
         <h2 className="mb-3 text-xs font-medium tracking-wide text-foreground-muted uppercase">System</h2>

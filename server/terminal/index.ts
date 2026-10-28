@@ -1,14 +1,12 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { constants, accessSync, chmodSync, existsSync } from "node:fs";
+import { constants, accessSync, chmodSync, existsSync, mkdirSync } from "node:fs";
 import { stat } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
-import { SerializeAddon } from "@xterm/addon-serialize";
-import { Terminal as HeadlessTerminal } from "@xterm/headless";
-import type { IPty } from "node-pty";
 import type { TerminalSummary, TerminalUnavailableCode } from "@/lib/api-types";
 import { MAX_TERMINALS_PER_USER, type TerminalServerMessage } from "@/lib/terminal";
+import { getConfig } from "@/server/config";
 import { ApiRouteError, notFound, validationFailed } from "@/server/http/api-error";
 import { readManifest } from "@/server/meta/effective";
 import { getGlobalSingleton } from "@/server/runtime/global-singleton";
@@ -16,6 +14,13 @@ import { resolveInStorage } from "@/server/security/path-jail";
 import type { BackgroundService } from "@/server/services";
 import { getSetting } from "@/server/settings/store";
 import type { ActiveStorage, StorageActor } from "@/server/storage/roots";
+import {
+  discoverTerminalHosts,
+  disconnectTerminalHosts,
+  requireOwnTerminalHost,
+  type TerminalHostConnection,
+} from "@/server/terminal/host-client";
+import type { TerminalHostSessionState } from "@/server/terminal/host-protocol";
 import { withUserBinOnPath } from "@/server/terminal/shell-path";
 
 /**
@@ -34,27 +39,35 @@ const DEFAULT_ROWS = 24;
  */
 const PRIVATE_ENVIRONMENT_PATTERN = /^(CMM_|CCM_|__NEXT|NEXT_|ELECTRON_|NODE_ENV$|NODE_OPTIONS$|PORT$)/;
 
-type TerminalListener = (message: TerminalServerMessage) => void;
+/** A panel attached to a terminal. Outputs carry the host's sequence number, so a snapshot can skip what it already shows. */
+type SessionListener = (message: TerminalServerMessage, sequence?: number) => void;
 
-interface TerminalSession {
+/**
+ * A terminal as CMM's server knows it. The shell itself and the server's copy of its screen live
+ * in a terminal host process (`host-process.ts`), so a job keeps running after CMM stops; a
+ * program that repaints only what changes (Claude Code, vim, htop) still attaches as a clean screen.
+ */
+export interface TerminalSession {
   summary: TerminalSummary;
   ownerId: string;
-  pty: IPty;
-  /**
-   * The server's copy of the terminal: the shell's output is fed to a headless xterm, so a panel
-   * that attaches gets the screen as it is now (and recent history), not a tail of raw output. A
-   * program that repaints only what changes (Claude Code, vim, htop) would leave a tail of its
-   * repaints as scattered characters.
-   */
-  screen: HeadlessTerminal;
-  serializer: SerializeAddon;
-  listeners: Set<TerminalListener>;
+  host: TerminalHostConnection;
+  listeners: Set<SessionListener>;
 }
 
 type NodePty = typeof import("node-pty");
 
-function getTerminalRegistry(): Map<string, TerminalSession> {
-  return getGlobalSingleton("terminal-sessions", () => new Map<string, TerminalSession>());
+interface TerminalRegistry {
+  sessions: Map<string, TerminalSession>;
+  /** Picking up the jobs that kept running while CMM was closed; set when the service starts. */
+  discovery?: Promise<void>;
+  isDiscovered: boolean;
+}
+
+function getTerminalRegistry(): TerminalRegistry {
+  return getGlobalSingleton("terminal-registry", (): TerminalRegistry => ({
+    sessions: new Map(),
+    isDiscovered: false,
+  }));
 }
 
 /**
@@ -83,7 +96,10 @@ function ensureSpawnHelperIsExecutable(packageDirectory: string): void {
   }
 }
 
-/** node-pty, loaded on first use (a native module), or the reason it can't load on this machine. */
+/**
+ * node-pty, loaded on first use (a native module), or the reason it can't load on this machine.
+ * The terminal host loads its own copy to run shells; this one proves it loads here.
+ */
 function loadNodePty(): { nodePty?: NodePty; problem?: string } {
   return getGlobalSingleton("terminal-node-pty", () => {
     try {
@@ -122,13 +138,11 @@ export function readTerminalAvailability(actor: StorageActor): {
   return { available: true };
 }
 
-function requireTerminalsAvailable(actor: StorageActor): NodePty {
+function requireTerminalsAvailable(actor: StorageActor): void {
   const availability = readTerminalAvailability(actor);
-  const { nodePty } = loadNodePty();
-  if (!availability.available || !nodePty) {
+  if (!availability.available) {
     throw new ApiRouteError(403, "FORBIDDEN", availability.reason ?? "Terminals are not available.");
   }
-  return nodePty;
 }
 
 /** The shell a terminal runs: the user's login shell on macOS and Linux (so their PATH and tools load), cmd.exe on Windows. */
@@ -153,6 +167,15 @@ function buildShellEnvironment(): Record<string, string> {
     const pathValue = withUserBinOnPath(environment.PATH, environment.HOME);
     if (pathValue) environment.PATH = pathValue;
   }
+  /*
+   * The server's systemd unit gives CMM a private /tmp, which systemd deletes when CMM stops: a job
+   * still running after an update would lose its temporary files. They go in CMM's data folder.
+   */
+  if (getConfig().mode === "server" && process.platform === "linux") {
+    const temporaryDirectory = path.join(getConfig().dataDir, "tmp");
+    mkdirSync(temporaryDirectory, { recursive: true, mode: 0o700 });
+    environment.TMPDIR = temporaryDirectory;
+  }
   return environment;
 }
 
@@ -161,28 +184,82 @@ function clampSize(value: number | undefined, fallback: number, maximum: number)
   return Math.min(maximum, Math.max(2, Math.round(value)));
 }
 
-function emit(session: TerminalSession, message: TerminalServerMessage): void {
-  for (const listener of session.listeners) listener(message);
+function emit(session: TerminalSession, message: TerminalServerMessage, sequence?: number): void {
+  for (const listener of session.listeners) listener(message, sequence);
+}
+
+/** Registers a shell a host runs (just started, or found running when CMM started). */
+function registerSession(host: TerminalHostConnection, state: TerminalHostSessionState): TerminalSession {
+  const { ownerId, ...summaryFields } = state.metadata;
+  const session: TerminalSession = {
+    summary: {
+      id: state.id,
+      ...summaryFields,
+      status: state.status,
+      ...(state.exitCode === undefined ? {} : { exitCode: state.exitCode }),
+      isJob: state.isJob,
+    },
+    ownerId,
+    host,
+    listeners: new Set(),
+  };
+  getTerminalRegistry().sessions.set(state.id, session);
+  return session;
+}
+
+/** Routes one host's output, exits and disappearance to the sessions it runs. */
+function handleHostEvents(host: TerminalHostConnection): void {
+  host.onOutput = (terminalId, data, sequence) => {
+    const session = getTerminalRegistry().sessions.get(terminalId);
+    if (session) emit(session, { type: "output", data }, sequence);
+  };
+  host.onExit = (terminalId, exitCode) => {
+    const session = getTerminalRegistry().sessions.get(terminalId);
+    if (!session) return;
+    session.summary = { ...session.summary, status: "exited", exitCode };
+    emit(session, { type: "exit", exitCode });
+  };
+  host.onClose = () => {
+    // The host is gone (killed, or it crashed): so are its shells.
+    for (const session of [...getTerminalRegistry().sessions.values()]) {
+      if (session.host !== host) continue;
+      getTerminalRegistry().sessions.delete(session.summary.id);
+      if (session.summary.status === "running") emit(session, { type: "exit", exitCode: -1 });
+      session.listeners.clear();
+    }
+  };
+}
+
+/** Resolves once the jobs left running by an earlier CMM are listed (right away if they already are). */
+export function whenTerminalsReady(): Promise<void> {
+  return getTerminalRegistry().discovery ?? Promise.resolve();
+}
+
+/** Undefined once terminals are ready; else the promise to wait for (only briefly, as CMM starts). */
+export function readTerminalsPending(): Promise<void> | undefined {
+  const registry = getTerminalRegistry();
+  return registry.isDiscovered || !registry.discovery ? undefined : registry.discovery;
 }
 
 /** A terminal `actor` opened, else 404 (other users' terminals don't exist for them). */
 export function requireTerminal(actor: StorageActor, terminalId: string): TerminalSession {
-  const session = getTerminalRegistry().get(terminalId);
+  const session = getTerminalRegistry().sessions.get(terminalId);
   if (!session || session.ownerId !== actor.id) throw notFound("That terminal does not exist.");
   return session;
 }
 
-/** The terminals `actor` opened, oldest first. */
+/** The terminals `actor` opened (jobs included), oldest first. */
 export function listTerminals(actor: StorageActor): TerminalSummary[] {
-  return [...getTerminalRegistry().values()]
+  return [...getTerminalRegistry().sessions.values()]
     .filter((session) => session.ownerId === actor.id)
-    .map((session) => session.summary);
+    .map((session) => session.summary)
+    .toSorted((first, second) => first.createdAt.localeCompare(second.createdAt));
 }
 
 /**
  * Starts a shell in a folder of a storage `actor` can open, at most 10 per user. The terminal is
- * titled after the memory, the folder or the storage. Its output is kept (the last 256 KB) for
- * panels that attach later; it keeps running, without panels, until it exits or is closed.
+ * titled after the memory, the folder or the storage. It keeps running, without panels, until it
+ * exits or is closed; as a job (`isJob`), also after CMM stops.
  *
  * @example
  * const terminal = await openTerminal(actor, storage, "notes/persona", { cols: 120, rows: 30 });
@@ -191,14 +268,15 @@ export async function openTerminal(
   actor: StorageActor,
   storage: ActiveStorage,
   folderPath: string,
-  size: { cols?: number; rows?: number } = {},
+  options: { cols?: number; rows?: number; isJob?: boolean } = {},
 ): Promise<TerminalSummary> {
-  const nodePty = requireTerminalsAvailable(actor);
+  requireTerminalsAvailable(actor);
+  await whenTerminalsReady();
   if (listTerminals(actor).length >= MAX_TERMINALS_PER_USER) {
     throw new ApiRouteError(
       409,
       "TOO_MANY_TERMINALS",
-      `You have ${MAX_TERMINALS_PER_USER} terminals open. Close one to open another.`,
+      `You have ${MAX_TERMINALS_PER_USER} terminals and jobs open. Close one to open another.`,
     );
   }
   const folder = await resolveInStorage(storage, folderPath);
@@ -212,102 +290,120 @@ export async function openTerminal(
         ? storage.label
         : path.posix.basename(folder.relativePath);
   const shell = resolveShell();
-  const pty = nodePty.spawn(shell.file, shell.args, {
-    name: "xterm-256color",
-    cols: clampSize(size.cols, DEFAULT_COLUMNS, 500),
-    rows: clampSize(size.rows, DEFAULT_ROWS, 200),
-    cwd: folder.realPath ?? folder.absolutePath,
-    env: buildShellEnvironment(),
-  });
-  const session: TerminalSession = {
-    summary: {
-      id: randomUUID(),
+  const host = await requireOwnTerminalHost();
+  handleHostEvents(host);
+  const state: TerminalHostSessionState = {
+    id: randomUUID(),
+    metadata: {
+      ownerId: actor.id,
       storageId: storage.id,
       storageLabel: storage.label,
       path: folder.relativePath,
       title,
       shell: path.basename(shell.file),
-      status: "running",
       createdAt: new Date().toISOString(),
     },
-    ownerId: actor.id,
-    pty,
-    ...createScreen(pty.cols, pty.rows),
-    listeners: new Set(),
+    isJob: options.isJob ?? false,
+    status: "running",
   };
-  pty.onData((data) => {
-    session.screen.write(data);
-    emit(session, { type: "output", data });
-  });
-  pty.onExit(({ exitCode }) => {
-    session.summary = { ...session.summary, status: "exited", exitCode };
-    emit(session, { type: "exit", exitCode });
-  });
-  getTerminalRegistry().set(session.summary.id, session);
+  // Registered first: the shell's first output can arrive before the host confirms the spawn.
+  const session = registerSession(host, state);
+  try {
+    await host.spawn({
+      id: state.id,
+      file: shell.file,
+      args: shell.args,
+      cwd: folder.realPath ?? folder.absolutePath,
+      env: buildShellEnvironment(),
+      cols: clampSize(options.cols, DEFAULT_COLUMNS, 500),
+      rows: clampSize(options.rows, DEFAULT_ROWS, 200),
+      metadata: state.metadata,
+      isJob: state.isJob,
+    });
+  } catch (spawnError) {
+    getTerminalRegistry().sessions.delete(state.id);
+    throw new ApiRouteError(
+      500,
+      "TERMINAL_FAILED",
+      `The terminal could not start: ${spawnError instanceof Error ? spawnError.message : String(spawnError)}`,
+    );
+  }
   return session.summary;
-}
-
-/** A headless xterm the size of the shell, which keeps its screen for panels that attach later. */
-function createScreen(cols: number, rows: number): Pick<TerminalSession, "screen" | "serializer"> {
-  const screen = new HeadlessTerminal({ cols, rows, scrollback: SCROLLBACK_LINES, allowProposedApi: true });
-  const serializer = new SerializeAddon();
-  screen.loadAddon(serializer as unknown as Parameters<HeadlessTerminal["loadAddon"]>[0]);
-  return { screen, serializer };
 }
 
 /**
  * Connects a panel to a terminal: it gets the screen as it is now (with recent history, the cursor
  * and the modes programs set), then everything new, and the exit code if the shell has already
  * ended. Output that arrives while the screen is being captured is held back and sent right after
- * it, so nothing is lost or sent twice. Returns a function that disconnects it.
+ * it unless the screen already shows it, so nothing is lost or sent twice. Returns a function that
+ * disconnects it.
  */
-export function attachToTerminal(session: TerminalSession, listener: TerminalListener): () => void {
-  let heldBack: TerminalServerMessage[] | undefined = [];
-  const attached: TerminalListener = (message) => {
-    if (heldBack) heldBack.push(message);
+export function attachToTerminal(
+  session: TerminalSession,
+  listener: (message: TerminalServerMessage) => void,
+): () => void {
+  let heldBack: { message: TerminalServerMessage; sequence?: number }[] | undefined = [];
+  const attached: SessionListener = (message, sequence) => {
+    if (heldBack) heldBack.push({ message, sequence });
     else listener(message);
   };
   session.listeners.add(attached);
-  // Writes are parsed in order: once this empty write is, everything before it is on the screen.
-  session.screen.write("", () => {
-    if (!session.listeners.has(attached) || !heldBack) return;
-    const snapshot = session.serializer.serialize({ scrollback: SCROLLBACK_LINES });
-    if (snapshot !== "") listener({ type: "output", data: snapshot });
-    const pending = heldBack;
-    heldBack = undefined;
-    for (const message of pending) listener(message);
-    if (session.summary.status === "exited" && !pending.some((message) => message.type === "exit")) {
-      listener({ type: "exit", exitCode: session.summary.exitCode ?? 0 });
-    }
-  });
+  void session.host
+    .snapshot(session.summary.id, SCROLLBACK_LINES)
+    .catch(() => ({ sequence: 0, data: "" }))
+    .then((snapshot) => {
+      if (!session.listeners.has(attached) || !heldBack) return;
+      if (snapshot.data !== "") listener({ type: "output", data: snapshot.data });
+      const pending = heldBack;
+      heldBack = undefined;
+      for (const { message, sequence } of pending) {
+        if (sequence === undefined || sequence > snapshot.sequence) listener(message);
+      }
+      if (session.summary.status === "exited" && !pending.some(({ message }) => message.type === "exit")) {
+        listener({ type: "exit", exitCode: session.summary.exitCode ?? 0 });
+      }
+    });
   return () => session.listeners.delete(attached);
 }
 
 /** Types into a running terminal (keys and pastes); ignored once it has exited. */
 export function writeToTerminal(session: TerminalSession, data: string): void {
-  if (session.summary.status === "running") session.pty.write(data);
+  if (session.summary.status === "running") session.host.send({ type: "input", id: session.summary.id, data });
 }
 
 /** Tells the shell its new size, so full-screen programs redraw for the panel. */
 export function resizeTerminal(session: TerminalSession, cols: number, rows: number): void {
   if (session.summary.status !== "running") return;
-  const columns = clampSize(cols, DEFAULT_COLUMNS, 500);
-  const lines = clampSize(rows, DEFAULT_ROWS, 200);
-  session.pty.resize(columns, lines);
-  session.screen.resize(columns, lines);
-}
-
-/** Ends a terminal's shell (and whatever runs in it) and forgets it. */
-export function closeTerminal(actor: StorageActor, terminalId: string): void {
-  const session = requireTerminal(actor, terminalId);
-  getTerminalRegistry().delete(terminalId);
-  session.listeners.clear();
-  if (session.summary.status === "running") session.pty.kill();
-  session.screen.dispose();
+  session.host.send({
+    type: "resize",
+    id: session.summary.id,
+    cols: clampSize(cols, DEFAULT_COLUMNS, 500),
+    rows: clampSize(rows, DEFAULT_ROWS, 200),
+  });
 }
 
 /**
- * The terminal service: ends every shell when CMM stops, so none is left running without it.
+ * Makes a terminal a job (it keeps running when CMM closes, restarts or is updated) or an ordinary
+ * terminal again (it ends with CMM).
+ */
+export function setTerminalJob(actor: StorageActor, terminalId: string, isJob: boolean): TerminalSummary {
+  const session = requireTerminal(actor, terminalId);
+  session.host.send({ type: "set-job", id: terminalId, isJob });
+  session.summary = { ...session.summary, isJob };
+  return session.summary;
+}
+
+/** Ends a terminal's shell (and whatever runs in it) and forgets it: nothing of it is kept. */
+export function closeTerminal(actor: StorageActor, terminalId: string): void {
+  const session = requireTerminal(actor, terminalId);
+  getTerminalRegistry().sessions.delete(terminalId);
+  session.listeners.clear();
+  session.host.send({ type: "kill", id: terminalId });
+}
+
+/**
+ * The terminal service: on start, picks up the jobs a terminal host kept running while CMM was
+ * closed; on stop, disconnects from the hosts, which end every terminal that isn't a job.
  *
  * @example
  * const BACKGROUND_SERVICES = [createTerminalService(), …];
@@ -315,14 +411,29 @@ export function closeTerminal(actor: StorageActor, terminalId: string): void {
 export function createTerminalService(): BackgroundService {
   return {
     name: "terminal",
-    start: () => undefined,
+    start: () => {
+      const registry = getTerminalRegistry();
+      registry.discovery = discoverTerminalHosts()
+        .then((hosts) => {
+          for (const { host, sessions } of hosts) {
+            handleHostEvents(host);
+            for (const state of sessions) registerSession(host, state);
+          }
+          const jobCount = hosts.reduce((count, { sessions }) => count + sessions.length, 0);
+          if (jobCount > 0) console.log(`[cmm] terminals: ${jobCount} job(s) still running from before`);
+        })
+        .catch((discoveryError: unknown) =>
+          console.error("[cmm] terminals: could not find running jobs", discoveryError),
+        )
+        .finally(() => {
+          registry.isDiscovered = true;
+        });
+    },
     stop: () => {
       const registry = getTerminalRegistry();
-      for (const session of registry.values()) {
-        if (session.summary.status === "running") session.pty.kill();
-        session.screen.dispose();
-      }
-      registry.clear();
+      for (const session of registry.sessions.values()) session.listeners.clear();
+      registry.sessions.clear();
+      disconnectTerminalHosts();
     },
   };
 }

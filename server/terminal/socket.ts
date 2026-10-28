@@ -13,6 +13,7 @@ import { hasValidLaunchToken, readCookie } from "@/server/security/launch-token"
 import {
   attachToTerminal,
   readTerminalAvailability,
+  readTerminalsPending,
   requireTerminal,
   resizeTerminal,
   writeToTerminal,
@@ -77,6 +78,12 @@ export function handleTerminalUpgrade(
   head: Buffer,
   { config, expectedLaunchToken }: { config: CmmConfig; expectedLaunchToken: string | undefined },
 ): void {
+  // Right after CMM starts, the jobs that kept running are still being found: a panel reconnecting to one waits.
+  const terminalsPending = readTerminalsPending();
+  if (terminalsPending) {
+    void terminalsPending.then(() => handleTerminalUpgrade(request, socket, head, { config, expectedLaunchToken }));
+    return;
+  }
   const terminalId = parseTerminalSocketPath(request.url ?? "");
   const cookieHeader = request.headers.cookie;
   if (!terminalId) return refuse(socket, 404, "Not Found");

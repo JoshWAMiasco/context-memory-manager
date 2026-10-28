@@ -35,6 +35,7 @@ import { formatShortcut, isCommandShortcut } from "@/lib/client/shortcuts";
 import {
   dockTerminal,
   isDockedPanel,
+  isShownInDock,
   readPanelLayout,
   registerDockColumn,
   setDockMinimized,
@@ -172,7 +173,7 @@ function ShowTerminalRail({ hasUnread, onShow }: { hasUnread: boolean; onShow: (
 function useDockedTerminals() {
   const { data } = useTerminals();
   const dockState = useTerminalDockState();
-  const terminals = data?.available ? data.terminals : [];
+  const terminals = (data?.available ? data.terminals : []).filter((terminal) => isShownInDock(dockState, terminal));
   const docked = terminals.filter((terminal) => isDockedPanel(dockState, terminal.id));
   const isFolded = dockState.isDockMinimized === true;
   useEffect(() => registerDockColumn(), []);
@@ -362,7 +363,10 @@ function StackedView() {
   const terminal = useOpenTerminal();
   const { data } = useTerminals();
   const dockState = useTerminalDockState();
-  const terminals = useMemo(() => (data?.available ? data.terminals : []), [data]);
+  const terminals = useMemo(
+    () => (data?.available ? data.terminals : []).filter((openTerminal) => isShownInDock(dockState, openTerminal)),
+    [data, dockState],
+  );
   useEffect(() => registerDockColumn(), []);
 
   // Every terminal goes to the Terminal view; a new one is shown at once.

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ArchiveRestore,
+  ServerCog,
   Expand,
   KeyRound,
   LayoutGrid,
@@ -50,6 +51,8 @@ const PAGE_LINKS: { href: string; title: string; icon: LucideIcon }[] = [
   { href: "/", title: "Drives", icon: LayoutGrid },
   { href: "/backup", title: "Backup", icon: ArchiveRestore },
   { href: "/trash", title: "Trash", icon: Trash2 },
+  // After the bottom bar's links (it shows the first three), so Jobs is in the drawer only.
+  { href: "/jobs", title: "Jobs", icon: ServerCog },
   { href: "/settings", title: "Settings", icon: Settings },
 ];
 
